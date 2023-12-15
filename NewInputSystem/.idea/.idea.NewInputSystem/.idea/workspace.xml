@@ -4,7 +4,23 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="271a4084-16ba-4a3b-9485-b7b05b1b2c46" name="Changes" comment="updated everything to new project" />
+    <list default="true" id="271a4084-16ba-4a3b-9485-b7b05b1b2c46" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/Assets/Scenes/2.unity" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/SomeScript.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/TestFinder.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/UI/FILENAME 1.asset" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/UI/FILENAME.asset" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/UI/Test.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/UI/Test2.cs" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Assets/UI/test2.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.NewInputSystem/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.NewInputSystem/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scenes/Main.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/Main.unity" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/UI/InputDisplay.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/UI/InputDisplay.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ProjectSettings/EditorBuildSettings.asset" beforeDir="false" afterPath="$PROJECT_DIR$/ProjectSettings/EditorBuildSettings.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ProjectSettings/InputManager.asset" beforeDir="false" afterPath="$PROJECT_DIR$/ProjectSettings/InputManager.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ProjectSettings/ProjectSettings.asset" beforeDir="false" afterPath="$PROJECT_DIR$/ProjectSettings/ProjectSettings.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ProjectSettings/QualitySettings.asset" beforeDir="false" afterPath="$PROJECT_DIR$/ProjectSettings/QualitySettings.asset" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -14,42 +30,39 @@
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
   </component>
   <component name="HighlightingSettingsPerFile">
-    <setting file="mock:///home/yuu/src/UniTASTestClients/NewInputSystem/Assets/Scenes/Main.unity" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///home/yuu/src/UniTASTestClients/NewInputSystem/Assets/Scenes/Main.unity.meta" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///home/yuu/src/UniTASTestClients/NewInputSystem/Assets/UI.meta" root0="SKIP_HIGHLIGHTING" />
-    <setting file="mock:///home/yuu/src/UniTASTestClients/NewInputSystem/Assets/UI/InputDisplay.cs.meta" root0="SKIP_HIGHLIGHTING" />
     <setting file="mock:///home/yuu/src/UniTASTestClients/NewInputSystem/ProjectSettings/ProjectSettings.asset" root0="SKIP_HIGHLIGHTING" />
   </component>
   <component name="MetaFilesCheckinStateConfiguration" checkMetaFiles="true" />
-  <component name="ProjectColorInfo"><![CDATA[{
-  "customColor": "",
-  "associatedIndex": 7
-}]]></component>
+  <component name="ProjectColorInfo">{
+  &quot;customColor&quot;: &quot;&quot;,
+  &quot;associatedIndex&quot;: 7
+}</component>
   <component name="ProjectId" id="2YHGmNo2Y1OUmfUAMoc8vYZFsL8" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "WebServerToolWindowFactoryState": "false",
-    "git-widget-placeholder": "main",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/home/yuu/test_client.patch&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   },
-  "keyToStringList": {
-    "rider.external.source.directories": [
-      "/home/yuu/.config/JetBrains/Rider2023.2/resharper-host/DecompilerCache",
-      "/home/yuu/.config/JetBrains/Rider2023.2/resharper-host/SourcesCache",
-      "/home/yuu/.local/share/Symbols/src"
+  &quot;keyToStringList&quot;: {
+    &quot;rider.external.source.directories&quot;: [
+      &quot;/home/yuu/.config/JetBrains/Rider2023.2/resharper-host/DecompilerCache&quot;,
+      &quot;/home/yuu/.config/JetBrains/Rider2023.2/resharper-host/SourcesCache&quot;,
+      &quot;/home/yuu/.local/share/Symbols/src&quot;
     ]
   }
-}]]></component>
+}</component>
   <component name="RunManager" selected="Attach to Unity Editor.Attach to Unity Editor">
     <configuration name="Standalone Player" type="RunUnityExe" factoryName="Unity Executable">
       <option name="EXE_PATH" value="$PROJECT_DIR$/build/build.x86_64" />
@@ -104,7 +117,14 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1700175249917</updated>
-      <workItem from="1700175250961" duration="593000" />
+      <workItem from="1700175250961" duration="1252000" />
+      <workItem from="1700973550549" duration="6602000" />
+      <workItem from="1700991566506" duration="13000" />
+      <workItem from="1701658898238" duration="603000" />
+      <workItem from="1701714729774" duration="1498000" />
+      <workItem from="1701875791869" duration="1881000" />
+      <workItem from="1702068556070" duration="1300000" />
+      <workItem from="1702651764019" duration="1330000" />
     </task>
     <task id="LOCAL-00001" summary="updated everything to new project">
       <option name="closed" value="true" />
@@ -114,7 +134,23 @@
       <option name="project" value="LOCAL" />
       <updated>1700175818906</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="updated">
+      <option name="closed" value="true" />
+      <created>1700175995646</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1700175995646</updated>
+    </task>
+    <task id="LOCAL-00003" summary="another updated">
+      <option name="closed" value="true" />
+      <created>1700176013623</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1700176013623</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -126,6 +162,8 @@
   <component name="VcsManagerConfiguration">
     <option name="CLEAR_INITIAL_COMMIT_MESSAGE" value="true" />
     <MESSAGE value="updated everything to new project" />
-    <option name="LAST_COMMIT_MESSAGE" value="updated everything to new project" />
+    <MESSAGE value="updated" />
+    <MESSAGE value="another updated" />
+    <option name="LAST_COMMIT_MESSAGE" value="another updated" />
   </component>
 </project>
