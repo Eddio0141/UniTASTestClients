@@ -2,11 +2,12 @@ use std::{
     fs,
     net::{IpAddr, Ipv4Addr, SocketAddr, TcpStream},
     path::Path,
-    process::Command,
+    process::{Command, Stdio},
+    thread,
     time::Duration,
 };
 
-use crate::{fs_utils::copy_dir_all, Os};
+use crate::{fs_utils::copy_dir_all, Os, WIN_UNITY_EXE_NAME};
 
 mod unity_2022_3_41f1_base;
 
@@ -26,6 +27,7 @@ pub struct Test {
 
 struct TestArgs<'a> {
     game_dir: &'a Path,
+    stream: TcpStream,
 }
 
 impl Test {
@@ -36,34 +38,57 @@ impl Test {
             panic!("game dir for test unity game doesn't exist");
         }
 
-        let game_bin = "build";
-        let game_bin = match &self.os {
-            Os::Linux => format!("{game_bin}.x86_64"),
-            Os::Windows => format!("{game_bin}.exe"),
+        // TODO: check what happens here for 32 bit unity games
+        let execute_bin = match &self.os {
+            Os::Linux => "run_bepinex.sh",
+            Os::Windows => WIN_UNITY_EXE_NAME,
         };
 
         // copy bepinex before running of course
         copy_dir_all(bepinex_dir, &game_dir).expect("failed to copy BepInEx dir contents to game");
 
-        // write movie files if required
-
         // execute game
-        Command::new(game_dir.join(game_bin))
+        println!("executing unity game");
+        Command::new(game_dir.join(execute_bin))
+            .current_dir(&game_dir)
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
             .spawn()
             .expect("failed to run unity game");
 
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 8001);
+
         // now connect
-        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8001);
-        if let Err(err) = TcpStream::connect_timeout(&addr, Duration::from_secs(30)) {
-            eprintln!("failed to connect to UniTAS for {}: {err}", self.name);
-            self.move_log(&game_dir, logs_dir);
-            return;
+        let mut stream = None;
+        let fail_secs = 30usize;
+        for i in 0..fail_secs {
+            match TcpStream::connect_timeout(&addr, Duration::from_secs(30)) {
+                Ok(s) => {
+                    stream = Some(s);
+                    break;
+                }
+                Err(err) => {
+                    // last error?
+                    if i == fail_secs - 1 {
+                        eprintln!("failed to connect to UniTAS for {}: {err}", self.name);
+                        self.move_log(&game_dir, logs_dir);
+                        return;
+                    }
+
+                    // wait and try again
+                    thread::sleep(Duration::from_secs(1));
+                }
+            }
         }
+
+        println!("started new TCP connection");
 
         // run tests
         let test_args = TestArgs {
             game_dir: &game_dir,
+            stream: stream.unwrap(),
         };
+
         (self.test)(test_args);
     }
 
