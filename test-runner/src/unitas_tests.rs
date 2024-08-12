@@ -1,5 +1,4 @@
 use std::{
-    borrow::Borrow,
     fs,
     io::{Read, Write},
     net::{IpAddr, Ipv4Addr, SocketAddr, TcpStream},
