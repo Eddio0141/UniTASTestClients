@@ -142,6 +142,12 @@ impl Test {
         println!("test is initialised, running test");
 
         (self.test)(test_args);
+
+        println!("test completed, copying log file");
+
+        self.move_log(&game_dir, logs_dir);
+
+        println!("done");
     }
 
     fn move_log(&self, game_dir: &Path, logs_dir: &Path) {
