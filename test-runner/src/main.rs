@@ -72,7 +72,7 @@ fn main() {
 
     let bepinex_dir = current_dir.join("BepInEx");
     dl_bepinex(&bepinex_dir, &os, &arch);
-    setup_bepinex(&bepinex_dir, &os, &arch);
+    setup_bepinex(&bepinex_dir, &arch);
     setup_unitas(current_dir, &bepinex_dir);
     setup_unitas_config(&bepinex_dir);
 
@@ -91,9 +91,13 @@ fn main() {
 }
 
 fn setup_unitas(exe_dir: &Path, bepinex_dir: &Path) {
+    println!("setting up UniTAS");
+
     // copy unitas in bepinex dir
     let unitas_dir = exe_dir.join("UniTAS");
     copy_dir_all(unitas_dir, bepinex_dir).expect("failed to copy UniTAS dir contents to game");
+
+    println!("done");
 }
 
 fn game_bin_name(os: &Os, arch: &Arch) -> &'static str {
@@ -110,16 +114,11 @@ const GAME_BIN_NAME: &str = "build";
 const WIN_UNITY_EXE_NAME: &str = formatcp!("{GAME_BIN_NAME}.exe");
 const LINUX_UNITY_EXE_NAME: &str = formatcp!("{GAME_BIN_NAME}.x86_64");
 
-fn setup_bepinex(bepinex_dir: &Path, os: &Os, arch: &Arch) {
-    // in case of linux, we gotta modify run_bepinex.sh to be executable and target the correct
-    // binary
-    match os {
-        Os::Linux => (),
-        Os::Windows => return,
-    }
-
+fn setup_bepinex(bepinex_dir: &Path, arch: &Arch) {
     #[cfg(target_os = "linux")]
     {
+        println!("configuring bepinex for linux");
+
         let run_bepinex_file = bepinex_dir.join("run_bepinex.sh");
 
         // modify run_bepinex to execute correct executable
@@ -133,7 +132,7 @@ fn setup_bepinex(bepinex_dir: &Path, os: &Os, arch: &Arch) {
             .find(find_key)
             .expect("failed to find executable_name config in run_bepinex.sh");
 
-        let exe_name = game_bin_name(os, arch);
+        let exe_name = game_bin_name(&Os::Linux, arch);
 
         run_bepinex_content.insert_str(find_index + find_key.len() + 1, exe_name);
 
@@ -150,10 +149,14 @@ fn setup_bepinex(bepinex_dir: &Path, os: &Os, arch: &Arch) {
 
         fs::set_permissions(run_bepinex_file, perms)
             .expect("failed to set execute permissions for run_bepinex.sh");
+
+        println!("done");
     }
 }
 
 fn setup_unitas_config(bepinex_dir: &Path) {
+    println!("writing UniTAS config");
+
     let cfg = bepinex_dir.join("BepInEx").join("config");
 
     fs::create_dir_all(&cfg).expect("failed to create directory for UniTAS config file");
@@ -164,9 +167,12 @@ Enable = true
 "#;
 
     fs::write(cfg, contents).expect("failed to write config for UniTAS");
+
+    println!("done");
 }
 
 fn dl_bepinex(dl_dir: &Path, os: &Os, arch: &Arch) {
+    println!("downloading bepinex");
     let url = "https://api.github.com/repos/BepInEx/BepInEx/releases/latest";
 
     // github requires us to have User-Agent header
@@ -245,4 +251,6 @@ fn dl_bepinex(dl_dir: &Path, os: &Os, arch: &Arch) {
     archive
         .extract(dl_dir)
         .expect("failed to extract BepInEx download");
+
+    println!("done");
 }

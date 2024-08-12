@@ -76,6 +76,8 @@ impl UniTasStream {
 
 impl Test {
     pub fn run(&self, exe_dir: &Path, bepinex_dir: &Path, logs_dir: &Path) {
+        println!("test initialising for {}", self.name);
+
         let game_dir = exe_dir.join(self.name);
 
         if !game_dir.is_dir() {
@@ -89,7 +91,9 @@ impl Test {
         };
 
         // copy bepinex before running of course
+        println!("copying bepinex to game folder");
         copy_dir_all(bepinex_dir, &game_dir).expect("failed to copy BepInEx dir contents to game");
+        println!("done");
 
         // execute game
         println!("executing unity game");
@@ -105,6 +109,7 @@ impl Test {
         // now connect
         let mut stream = None;
         let fail_secs = 30usize;
+        println!("starting TCP connection to UniTAS remote");
         for i in 0..fail_secs {
             match TcpStream::connect_timeout(&addr, Duration::from_secs(30)) {
                 Ok(s) => {
@@ -125,7 +130,7 @@ impl Test {
             }
         }
 
-        println!("started new TCP connection");
+        println!("connected");
 
         // run tests
         let stream = UniTasStream::new(stream.unwrap());
@@ -133,6 +138,8 @@ impl Test {
             game_dir: &game_dir,
             stream,
         };
+
+        println!("test is initialised, running test");
 
         (self.test)(test_args);
     }
