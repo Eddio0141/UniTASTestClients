@@ -97,7 +97,7 @@ impl Test {
 
         // execute game
         println!("executing unity game");
-        Command::new(game_dir.join(execute_bin))
+        let mut process = Command::new(game_dir.join(execute_bin))
             .current_dir(&game_dir)
             .stdout(Stdio::null())
             .stderr(Stdio::null())
@@ -146,6 +146,12 @@ impl Test {
         println!("test completed, copying log file");
 
         self.move_log(&game_dir, logs_dir);
+
+        println!("done");
+
+        println!("killing game");
+
+        process.kill().expect("failed to stop running game");
 
         println!("done");
     }
