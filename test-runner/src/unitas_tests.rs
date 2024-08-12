@@ -13,7 +13,7 @@ use crate::{fs_utils::copy_dir_all, Os, WIN_UNITY_EXE_NAME};
 mod unity_2022_3_41f1_base;
 
 pub fn get_linux_tests() -> Vec<Test> {
-    vec![]
+    vec![unity_2022_3_41f1_base::get()]
 }
 
 pub fn get_win_tests() -> Vec<Test> {
