@@ -1,5 +1,7 @@
 use std::{
+    borrow::Borrow,
     fs,
+    io::{Read, Write},
     net::{IpAddr, Ipv4Addr, SocketAddr, TcpStream},
     path::Path,
     process::{Command, Stdio},
@@ -27,7 +29,50 @@ pub struct Test {
 
 struct TestArgs<'a> {
     game_dir: &'a Path,
+    stream: UniTasStream,
+}
+
+struct UniTasStream {
     stream: TcpStream,
+    buf: [u8; 1024],
+}
+
+impl UniTasStream {
+    fn new(stream: TcpStream) -> Self {
+        Self {
+            stream,
+            buf: [0; 1024],
+        }
+    }
+
+    fn send(&mut self, content: &str) {
+        // wait for the >>
+        loop {
+            let _ = self
+                .stream
+                .read(&mut self.buf)
+                .expect("failed to read from UniTAS TCP stream");
+
+            if String::from_utf8_lossy(&self.buf).trim_end_matches('\0') == ">> " {
+                break;
+            }
+        }
+
+        self.stream
+            .write_all(content.as_bytes())
+            .expect("failed to write to UniTAS TCP stream");
+    }
+
+    fn recieve(&mut self) -> String {
+        let _ = self
+            .stream
+            .read(&mut self.buf)
+            .expect("failed to read from UniTAS TCP stream");
+
+        String::from_utf8_lossy(&self.buf)
+            .trim_end_matches(['\0', '\n', ' '])
+            .to_owned()
+    }
 }
 
 impl Test {
@@ -84,9 +129,10 @@ impl Test {
         println!("started new TCP connection");
 
         // run tests
+        let stream = UniTasStream::new(stream.unwrap());
         let test_args = TestArgs {
             game_dir: &game_dir,
-            stream: stream.unwrap(),
+            stream,
         };
 
         (self.test)(test_args);
