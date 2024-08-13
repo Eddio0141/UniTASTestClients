@@ -4,16 +4,14 @@ on: [ push, pull_request ]
 
 jobs:
   buildUnityGames:
-    name: build unity game ${{ matrix.targetGame }}
+    name: build unity game ${{ matrix.targetGame.path }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         targetGame:
-          path:
-            - 2022.3.41f1-base
-          targetPlatform:
-            - StandaloneLinux64
+          - path: 2022.3.41f1-base
+            targetPlatform: StandaloneLinux64
     steps:
       - name: checkout
         uses: actions/checkout@v4

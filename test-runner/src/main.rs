@@ -4,15 +4,15 @@ use std::{
     env::{self, current_exe},
     fmt::Display,
     fs::{self, create_dir_all},
-    io::Cursor,
     path::Path,
 };
 
 use const_format::formatcp;
+use download::{dl_bepinex, dl_test_games};
 use fs_utils::copy_dir_all;
 use unitas_tests::{get_linux_tests, get_win_tests};
-use zip::ZipArchive;
 
+mod download;
 mod fs_utils;
 mod unitas_tests;
 
@@ -73,6 +73,7 @@ fn main() {
 
     let bepinex_dir = current_dir.join("BepInEx");
     dl_bepinex(&bepinex_dir, &os, &arch);
+    dl_test_games(current_dir);
     setup_bepinex(&bepinex_dir, &arch);
     setup_unitas(current_dir, &bepinex_dir);
     setup_unitas_config(&bepinex_dir);
@@ -104,16 +105,16 @@ fn setup_unitas(exe_dir: &Path, bepinex_dir: &Path) {
 fn game_bin_name(os: &Os, arch: &Arch) -> &'static str {
     match &os {
         Os::Linux => match arch {
-            Arch::X64 => LINUX_UNITY_EXE_NAME,
+            Arch::X64 => GAME_BIN_NAME,
             Arch::X86 => todo!(),
         },
+        // TODO: does windows require this
         Os::Windows => WIN_UNITY_EXE_NAME,
     }
 }
 
 const GAME_BIN_NAME: &str = "build";
 const WIN_UNITY_EXE_NAME: &str = formatcp!("{GAME_BIN_NAME}.exe");
-const LINUX_UNITY_EXE_NAME: &str = formatcp!("{GAME_BIN_NAME}.x86_64");
 
 fn setup_bepinex(bepinex_dir: &Path, arch: &Arch) {
     #[cfg(target_os = "linux")]
@@ -168,90 +169,6 @@ Enable = true
 "#;
 
     fs::write(cfg, contents).expect("failed to write config for UniTAS");
-
-    println!("done");
-}
-
-fn dl_bepinex(dl_dir: &Path, os: &Os, arch: &Arch) {
-    println!("downloading bepinex");
-    let url = "https://api.github.com/repos/BepInEx/BepInEx/releases/latest";
-
-    // github requires us to have User-Agent header
-    let client = reqwest::blocking::Client::builder()
-        .user_agent(env!("CARGO_PKG_NAME"))
-        .build()
-        .expect("failed to create reqwest client");
-
-    let response = client
-        .get(url)
-        .send()
-        .expect("failed to get response for BepInEx latest release");
-    let text = response
-        .text()
-        .expect("failed to get contents of BepInEx latest release");
-    let json: serde_json::Value =
-        serde_json::from_str(&text).expect("failed to parse github's json response");
-
-    let tag_name_clean = json
-        .get("tag_name")
-        .expect("failed to get tag name for BepInEx release")
-        .as_str()
-        .expect("failed to get tag name as string");
-    let tag_name_clean = &tag_name_clean[1..];
-    let file_name_postfix = format!("_{tag_name_clean}.zip");
-
-    let release_name = format!("{os}_{arch}");
-
-    let dl_link = json
-        .get("assets")
-        .expect("failed to get assets in BepInEx release")
-        .as_array()
-        .expect("failed to parse assets as array in BepInEx release")
-        .iter()
-        .find_map(|artifact| {
-            let name = artifact
-                .get("name")
-                .expect("failed to get name of BepInEx release")
-                .as_str()
-                .expect("failed to get name of BepInEx release");
-            if name != format!("BepInEx_{release_name}{file_name_postfix}") {
-                return None;
-            }
-
-            let url = artifact
-                .get("browser_download_url")
-                .expect("failed to get BepInEx download url")
-                .as_str()
-                .expect("failed to get BepInEx download url")
-                .to_string();
-
-            Some(url)
-        })
-        .expect("failed to find the BepInEx file in the latest release");
-
-    if dl_dir.is_dir() {
-        fs::remove_dir_all(dl_dir).expect("failed to remove old BepInEx dir");
-    }
-
-    // dl
-    let response = client
-        .get(dl_link)
-        .build()
-        .expect("failed to GET request for BepInEx download");
-    let bytes = client
-        .execute(response)
-        .expect("failed to GET request for BepInEx download")
-        .bytes()
-        .expect("failed to get contents of latest BepInEx release");
-
-    fs::create_dir_all(dl_dir).expect("failed to create dir for BepInEx download");
-
-    let mut archive = ZipArchive::new(Cursor::new(bytes))
-        .expect("failed to load latest BepInEx release as zip archive");
-
-    archive
-        .extract(dl_dir)
-        .expect("failed to extract BepInEx download");
 
     println!("done");
 }
