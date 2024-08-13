@@ -1,9 +1,11 @@
+#[cfg(target_os = "linux")]
+use std::os::unix::fs::PermissionsExt;
 use std::{fs, io::Cursor, path::Path, time::Duration};
 
 use reqwest::redirect::Policy;
 use zip::ZipArchive;
 
-use crate::{Arch, Os};
+use crate::{Arch, Os, GAME_BIN_NAME};
 
 pub fn dl_unitas(unitas_dir: &Path, use_local_unitas: bool) {
     if unitas_dir.is_dir() && use_local_unitas {
@@ -44,6 +46,8 @@ pub fn dl_unitas(unitas_dir: &Path, use_local_unitas: bool) {
         .extract(unitas_dir)
         .expect("failed to extract unitas");
     println!("extracted");
+
+    println!("done");
 }
 
 pub fn dl_bepinex(dl_dir: &Path, os: &Os, arch: &Arch) {
@@ -203,9 +207,30 @@ pub fn dl_test_games(exe_dir: &Path) {
 
         println!("extracting");
         archive
-            .extract(dl_dir)
+            .extract(&dl_dir)
             .expect("failed to extract unity game");
         println!("extracted");
+
+        // chmod game binary
+        #[cfg(target_os = "linux")]
+        {
+            println!("changing game binary execution permission");
+
+            let game_bin = dl_dir.join(GAME_BIN_NAME);
+
+            // set perms for execution
+            let mut perms = game_bin
+                .metadata()
+                .expect("failed to get game file metadata")
+                .permissions();
+
+            perms.set_mode(0o744);
+
+            fs::set_permissions(game_bin, perms)
+                .expect("failed to set execute permissions for game");
+
+            println!("applied mode u+x to game binary");
+        }
     }
 
     println!("done");
