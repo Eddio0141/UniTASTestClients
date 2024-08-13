@@ -12,12 +12,23 @@
     flake-parts.url = "github:hercules-ci/flake-parts";
   };
 
-  outputs = { flake-parts, nixpkgs, rust-overlay, ... } @ inputs:
+  outputs =
+    {
+      flake-parts,
+      nixpkgs,
+      rust-overlay,
+      ...
+    }@inputs:
     flake-parts.lib.mkFlake { inherit inputs; } {
-      systems = [
-        "x86_64-linux"
-      ];
-      perSystem = { self', inputs', system, pkgs, ... }:
+      systems = [ "x86_64-linux" ];
+      perSystem =
+        {
+          self',
+          inputs',
+          system,
+          pkgs,
+          ...
+        }:
         let
           rust-doc = pkgs.writeShellApplication {
             name = "rust-doc";
@@ -31,22 +42,26 @@
         {
           _module.args.pkgs = import nixpkgs {
             inherit system;
-            overlays = [
-              (import rust-overlay)
-            ];
+            overlays = [ (import rust-overlay) ];
           };
 
           devShells.default = pkgs.mkShell {
             RUST_BACKTRACE = "1";
             packages = with pkgs; [
               (rust.override {
-                extensions = [ "rust-analyzer" "rust-src" ];
+                extensions = [
+                  "rust-analyzer"
+                  "rust-src"
+                ];
               })
               rust-doc
               openssl
               pkg-config
             ];
           };
+
+          packages.test-runner = pkgs.callPackage (import ./nix/build-test-runner.nix) { };
+          packages.default = self'.packages.test-runner;
         };
     };
 }

@@ -60,14 +60,13 @@ jobs:
           workspaces: test-runner -> test-runner
 
       - name: build release
-        run: nix develop -c -- cargo build --release
-        working-directory: test-runner
+        run: nix build .\#test-runner
 
       - name: get built artifacts
         uses: actions/upload-artifact@v4
         with:
           name: test-runner-unix
-          path: test-runner/target/release/test-runner
+          path: result/bin/test-runner
   buildTestRunnerWindows:
     name: build test runner for windows
     runs-on: windows-latest
