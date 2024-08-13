@@ -1,9 +1,10 @@
+#[cfg(target_os = "linux")]
+use std::os::unix::fs::PermissionsExt;
 use std::{
     env::{self, current_exe},
     fmt::Display,
     fs::{self, create_dir_all},
     io::Cursor,
-    os::unix::fs::PermissionsExt,
     path::Path,
 };
 
