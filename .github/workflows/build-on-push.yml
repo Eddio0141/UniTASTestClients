@@ -1,0 +1,95 @@
+name: build on push
+
+on: [ push, pull_request ]
+
+jobs:
+  buildUnityGames:
+    name: build unity game ${{ matrix.targetGame }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        targetGame:
+          - 2022.3.41f1-base
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - uses: actions/cache@v4
+        with:
+          path: ${{ matrix.targetGame }}/Library
+          key: Library-${{ hashFiles('${{ matrix.targetGame }}/Assets/**', '${{ matrix.targetGame }}/Packages/**', '${{ matrix.targetGame }}/ProjectSettings/**') }}
+          restore-keys: |
+            Library-
+
+      - name: build project
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          targetPlatform: StandaloneLinux64
+          projectPath: ${{ matrix.targetGame }}
+          buildsPath: ${{ matrix.targetGame }}/build
+          buildName: build
+
+      # Output
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.targetGame }}
+          path: ${{ matrix.targetGame }}/build
+  buildTestRunnerLinux:
+    name: build test runner for linux
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: install Nix
+        uses: cachix/install-nix-action@v27
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: test-runner -> test-runner
+
+      - name: build release
+        run: nix develop -c -- cargo build --release
+        working-directory: test-runner
+
+      - name: get built artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-runner-unix
+          path: test-runner/target/release/test-runner
+  buildTestRunnerWindows:
+    name: build test runner for windows
+    runs-on: windows-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: rustup toolchain install
+        uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: test-runner -> test-runner
+
+      - name: build release
+        run: cargo build --release
+        working-directory: test-runner
+
+      - name: get built artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-runner-win
+          path: test-runner/target/release/test-runner.exe
