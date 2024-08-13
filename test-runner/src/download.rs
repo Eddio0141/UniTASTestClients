@@ -1,9 +1,50 @@
-use std::{fs, io::Cursor, path::Path};
+use std::{fs, io::Cursor, path::Path, time::Duration};
 
 use reqwest::redirect::Policy;
 use zip::ZipArchive;
 
 use crate::{Arch, Os};
+
+pub fn dl_unitas(unitas_dir: &Path, use_local_unitas: bool) {
+    if unitas_dir.is_dir() && use_local_unitas {
+        println!(
+            "skipping downloading unitas, already found UniTAS directory and --use-local-unitas is set"
+        );
+        return;
+    }
+
+    println!("downloading unitas");
+
+    let url = "https://nightly.link/Eddio0141/UniTAS/workflows/build-on-push/main/Release.zip";
+
+    let client = reqwest::blocking::Client::builder()
+        .redirect(Policy::default())
+        .build()
+        .expect("failed to create client for downloading unitas");
+
+    let response = client
+        .get(url)
+        .build()
+        .expect("failed to build get request for downloading unitas");
+    let bytes = client
+        .execute(response)
+        .expect("failed to download unitas")
+        .bytes()
+        .expect("failed to download unitas contents");
+
+    println!("downloaded");
+
+    fs::create_dir_all(unitas_dir).expect("failed to create directory for unitas");
+
+    let mut archive =
+        ZipArchive::new(Cursor::new(bytes)).expect("failed to load unitas as zip archive");
+
+    println!("extracting");
+    archive
+        .extract(unitas_dir)
+        .expect("failed to extract unitas");
+    println!("extracted");
+}
 
 pub fn dl_bepinex(dl_dir: &Path, os: &Os, arch: &Arch) {
     println!("downloading bepinex");
@@ -134,6 +175,7 @@ pub fn dl_test_games(exe_dir: &Path) {
 
     let client = reqwest::blocking::Client::builder()
         .redirect(Policy::default())
+        .timeout(Duration::from_secs(60))
         .build()
         .expect("failed to create client for downloading unity games");
 

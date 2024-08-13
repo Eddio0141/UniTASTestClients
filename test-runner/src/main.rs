@@ -8,7 +8,7 @@ use std::{
 };
 
 use const_format::formatcp;
-use download::{dl_bepinex, dl_test_games};
+use download::{dl_bepinex, dl_test_games, dl_unitas};
 use fs_utils::copy_dir_all;
 use unitas_tests::{get_linux_tests, get_win_tests};
 
@@ -71,11 +71,21 @@ fn main() {
         _ => panic!("unsupported architecture for testing"),
     };
 
+    let mut args = env::args().skip(1);
+    // currently there's only this arg
+    let use_local_unitas = args.next();
+    let use_local_unitas = match use_local_unitas {
+        Some(use_local_unitas) => use_local_unitas == "--use-local-unitas",
+        None => false,
+    };
+
     let bepinex_dir = current_dir.join("BepInEx");
+    let unitas_dir = current_dir.join("UniTAS");
     dl_bepinex(&bepinex_dir, &os, &arch);
+    dl_unitas(&unitas_dir, use_local_unitas);
     dl_test_games(current_dir);
     setup_bepinex(&bepinex_dir, &arch);
-    setup_unitas(current_dir, &bepinex_dir);
+    setup_unitas(&unitas_dir, &bepinex_dir);
     setup_unitas_config(&bepinex_dir);
 
     // for all UniTAS logs
@@ -92,11 +102,9 @@ fn main() {
     }
 }
 
-fn setup_unitas(exe_dir: &Path, bepinex_dir: &Path) {
+fn setup_unitas(unitas_dir: &Path, bepinex_dir: &Path) {
     println!("setting up UniTAS");
 
-    // copy unitas in bepinex dir
-    let unitas_dir = exe_dir.join("UniTAS");
     copy_dir_all(unitas_dir, bepinex_dir).expect("failed to copy UniTAS dir contents to game");
 
     println!("done");
