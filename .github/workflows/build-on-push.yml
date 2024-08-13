@@ -10,7 +10,10 @@ jobs:
       fail-fast: false
       matrix:
         targetGame:
-          - 2022.3.41f1-base
+          path:
+            - 2022.3.41f1-base
+          targetPlatform:
+            - StandaloneLinux64
     steps:
       - name: checkout
         uses: actions/checkout@v4
@@ -19,8 +22,8 @@ jobs:
 
       - uses: actions/cache@v4
         with:
-          path: ${{ matrix.targetGame }}/Library
-          key: Library-${{ hashFiles('${{ matrix.targetGame }}/Assets/**', '${{ matrix.targetGame }}/Packages/**', '${{ matrix.targetGame }}/ProjectSettings/**') }}
+          path: ${{ matrix.targetGame.path }}/Library
+          key: Library-${{ hashFiles('${{ matrix.targetGame.path }}/Assets/**', '${{ matrix.targetGame.path }}/Packages/**', '${{ matrix.targetGame.path }}/ProjectSettings/**') }}
           restore-keys: |
             Library-
 
@@ -31,16 +34,16 @@ jobs:
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
-          targetPlatform: StandaloneLinux64
-          projectPath: ${{ matrix.targetGame }}
-          buildsPath: ${{ matrix.targetGame }}/build
+          targetPlatform: ${{ matrix.targetGame.targetPlatform }}
+          projectPath: ${{ matrix.targetGame.path }}
+          buildsPath: ${{ matrix.targetGame.path }}/build
           buildName: build
 
       # Output
       - uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.targetGame }}
-          path: ${{ matrix.targetGame }}/build
+          name: ${{ matrix.targetGame.path }}
+          path: ${{ matrix.targetGame.path }}/build/${{ matrix.targetGame.targetPlatform }}
   buildTestRunnerLinux:
     name: build test runner for linux
     runs-on: ubuntu-latest
