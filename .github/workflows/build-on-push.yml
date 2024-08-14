@@ -41,42 +41,15 @@ jobs:
         with:
           name: ${{ matrix.targetGame.path }}
           path: ${{ matrix.targetGame.path }}/build/${{ matrix.targetGame.targetPlatform }}
-  buildTestRunnerLinux:
-    name: build test runner for linux
-    runs-on: ubuntu-latest
+  buildTestRunner:
+    name: build test runner for ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - name: checkout
         uses: actions/checkout@v4
-
-      - name: install Nix
-        uses: cachix/install-nix-action@v27
-        with:
-          nix_path: nixpkgs=channel:nixos-unstable
-
-      - name: rust cache
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: test-runner -> test-runner
-
-      - name: build release
-        run: nix build .\#test-runner
-
-      - name: get built artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-runner-unix
-          path: result/bin/test-runner
-  buildTestRunnerWindows:
-    name: build test runner for windows
-    runs-on: windows-latest
-    steps:
-      - name: checkout
-        uses: actions/checkout@v4
-
-      - name: rustup toolchain install
-        uses: dtolnay/rust-toolchain@v1
-        with:
-          toolchain: stable
 
       - name: rust cache
         uses: Swatinem/rust-cache@v2
@@ -87,7 +60,15 @@ jobs:
         run: cargo build --release
         working-directory: test-runner
 
-      - name: get built artifacts
+      - if: matrix.os == 'ubuntu-latest'
+        name: get built artifacts (unix)
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-runner-unix
+          path: test-runner/target/release/test-runner
+
+      - if: matrix.os == 'windows-latest'
+        name: get built artifacts (windows)
         uses: actions/upload-artifact@v4
         with:
           name: test-runner-win
