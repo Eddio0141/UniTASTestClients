@@ -10,7 +10,7 @@ use crate::{Arch, Os, GAME_BIN_NAME};
 pub fn dl_unitas(unitas_dir: &Path, use_local_unitas: bool) {
     if unitas_dir.is_dir() {
         if use_local_unitas {
-            println!( "skipping downloading unitas, already found UniTAS directory and --use-local-unitas is set");
+            println!("skipping downloading unitas, already found UniTAS directory and --use-local-unitas is set");
             return;
         }
 
