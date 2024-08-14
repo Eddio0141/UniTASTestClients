@@ -76,7 +76,7 @@ fn main() {
     let use_local_unitas = args.next();
     let use_local_unitas = match use_local_unitas {
         Some(use_local_unitas) => use_local_unitas == "--use-local-unitas",
-        None => false,
+        None => true,
     };
 
     let bepinex_dir = current_dir.join("BepInEx");
