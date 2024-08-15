@@ -60,6 +60,9 @@ impl UniTasStream {
         self.stream
             .write_all(content.as_bytes())
             .expect("failed to write to UniTAS TCP stream");
+        self.stream
+            .flush()
+            .expect("failed to flush to UniTAS TCP stream");
     }
 
     fn recieve(&mut self) -> String {
