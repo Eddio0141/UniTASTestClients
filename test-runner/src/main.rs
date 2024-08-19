@@ -73,16 +73,16 @@ fn main() {
 
     let mut args = env::args().skip(1);
     // currently there's only this arg
-    let use_local_unitas = args.next();
-    let use_local_unitas = match use_local_unitas {
-        Some(use_local_unitas) => use_local_unitas == "--use-local-unitas",
-        None => true,
+    let download_unitas = args.next();
+    let download_unitas = match download_unitas {
+        Some(use_local_unitas) => use_local_unitas == "--download-unitas",
+        None => false,
     };
 
     let bepinex_dir = current_dir.join("BepInEx");
     let unitas_dir = current_dir.join("UniTAS");
     dl_bepinex(&bepinex_dir, &os, &arch);
-    dl_unitas(&unitas_dir, use_local_unitas);
+    dl_unitas(&unitas_dir, download_unitas);
     dl_test_games(current_dir);
     setup_bepinex(&bepinex_dir, &arch);
     setup_unitas(&unitas_dir, &bepinex_dir);
