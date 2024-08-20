@@ -9,5 +9,6 @@ public class UGui : MonoBehaviour
     public void Click()
     {
         _clickCount++;
+        Debug.Log($"click number {_clickCount}");
     }
 }

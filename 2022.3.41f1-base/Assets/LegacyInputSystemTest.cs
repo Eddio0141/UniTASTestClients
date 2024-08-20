@@ -47,6 +47,8 @@ public class LegacyInputSystemTest : MonoBehaviour
             yield return null;
         }
 
+        Debug.Log("space press check done");
+
         _sceneTest.StartTest();
     }
 }

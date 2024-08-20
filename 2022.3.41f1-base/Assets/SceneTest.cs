@@ -22,6 +22,7 @@ public class SceneTest : MonoBehaviour
         op!.allowSceneActivation = false;
         op.completed += a =>
         {
+            Debug.Log("loaded Scene2");
             _asyncOpCallbackProgress = a.progress;
             _asyncOpCallbackAllowSceneActivation = a.allowSceneActivation;
             _asyncOpCallbackIsDone = a.isDone;
