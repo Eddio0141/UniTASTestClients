@@ -33,47 +33,50 @@ struct TestArgs<'a> {
 
 struct UniTasStream {
     stream: TcpStream,
-    buf: [u8; 1024],
+    buf: Vec<u8>,
+    buf_msg_len: [u8; 8], // u32 (int) length
 }
 
 impl UniTasStream {
     fn new(stream: TcpStream) -> Self {
         Self {
             stream,
-            buf: [0; 1024],
+            buf: Vec::with_capacity(1024),
+            buf_msg_len: [0; 8],
         }
     }
 
     fn send(&mut self, content: &str) {
         // wait for the >>
         loop {
-            let _ = self
-                .stream
-                .read(&mut self.buf)
-                .expect("failed to read from UniTAS TCP stream");
-
-            if String::from_utf8_lossy(&self.buf).trim_end_matches('\0') == ">> " {
+            if self.receive() == ">>" {
                 break;
             }
         }
 
+        let content_len_raw = content.len().to_le_bytes();
+        let content = content.as_bytes();
+
+        let content = [&content_len_raw, content].concat();
+
         self.stream
-            .write_all(content.as_bytes())
+            .write_all(&content)
             .expect("failed to write to UniTAS TCP stream");
-        self.stream
-            .flush()
-            .expect("failed to flush to UniTAS TCP stream");
     }
 
-    fn recieve(&mut self) -> String {
-        let _ = self
-            .stream
-            .read(&mut self.buf)
+    fn receive(&mut self) -> String {
+        self.stream
+            .read_exact(&mut self.buf_msg_len)
+            .expect("failed to read length of message from UniTAS TCP stream");
+
+        let msg_len = u64::from_le_bytes(self.buf_msg_len) as usize;
+
+        self.buf.resize(msg_len, 0);
+        self.stream
+            .read_exact(&mut self.buf)
             .expect("failed to read from UniTAS TCP stream");
 
-        String::from_utf8_lossy(&self.buf)
-            .trim_end_matches(['\0', '\n', ' '])
-            .to_owned()
+        String::from_utf8_lossy(&self.buf).trim_end().to_owned()
     }
 }
 
@@ -102,6 +105,7 @@ impl Test {
         println!("executing unity game");
         let mut process = Command::new(game_dir.join(execute_bin))
             .current_dir(&game_dir)
+            .arg("-batchmode")
             .stdout(Stdio::null())
             .stderr(Stdio::null())
             .spawn()
