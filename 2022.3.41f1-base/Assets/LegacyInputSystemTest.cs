@@ -23,7 +23,8 @@ public class LegacyInputSystemTest : MonoBehaviour
 
     private IEnumerator Test()
     {
-        while (_jumpButtonDownCount + _jumpButtonUpCount + _spaceDownKeyCodeCount + _spaceUpKeyCodeCount + _spaceDownStringCount + _spaceUpStringCount < ButtonCountTest * 6)
+        while (_jumpButtonDownCount + _jumpButtonUpCount + _spaceDownKeyCodeCount + _spaceUpKeyCodeCount +
+               _spaceDownStringCount + _spaceUpStringCount < ButtonCountTest * 6)
         {
             if (Input.GetButtonDown("Jump"))
                 _jumpButtonDownCount++;
@@ -38,10 +39,10 @@ public class LegacyInputSystemTest : MonoBehaviour
                 _spaceUpKeyCodeCount++;
 
             if (Input.GetKeyDown("space"))
-                _spaceDownKeyCodeCount++;
+                _spaceDownStringCount++;
 
             if (Input.GetKeyUp("space"))
-                _spaceUpKeyCodeCount++;
+                _spaceUpStringCount++;
 
             yield return null;
         }
