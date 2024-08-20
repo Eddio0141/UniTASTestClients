@@ -21,20 +21,21 @@ fn test(mut test_args: TestArgs) {
     let stream = &mut test_args.stream;
 
     stream.send("play('movie.lua')");
-    stream.send("runner = service('IMovieRunner')");
 
     loop {
-        stream.send("print(runner.MovieEnd)");
-        let response = stream.recieve();
-        if response == "true" {
+        stream.send("print(movie_status().basically_running)");
+        let response = stream.receive();
+        if response == "false" {
             break;
         }
         thread::sleep(Duration::from_secs(1));
     }
+    thread::sleep(Duration::from_secs(5));
 
     // check results
-    // stream.send("legacy_input_system_test = traverse('LegacyInputSystemTest')");
+    stream.send("legacy_input_system_test = traverse('LegacyInputSystemTest')");
+    stream.send("print(legacy_input_system_test.field('_jumpButtonDownCount').get_value())");
 
-    // let response = test_args.stream.recieve();
-    // println!("response: {response}");
+    let response = test_args.stream.receive();
+    println!("response: {response}");
 }
