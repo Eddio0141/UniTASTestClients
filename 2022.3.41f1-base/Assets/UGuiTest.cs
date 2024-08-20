@@ -2,7 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using UnityEngine;
 
 [SuppressMessage("ReSharper", "NotAccessedField.Local")]
-public class UGui : MonoBehaviour
+public class UGuiTest : MonoBehaviour
 {
     private static int _clickCount;
     
