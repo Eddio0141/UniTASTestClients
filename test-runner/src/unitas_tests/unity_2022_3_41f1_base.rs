@@ -30,12 +30,67 @@ fn test(mut test_args: TestArgs) {
         }
         thread::sleep(Duration::from_secs(1));
     }
-    thread::sleep(Duration::from_secs(5));
 
     // check results
+    // LegacyInputSystemTest.cs
     stream.send("legacy_input_system_test = traverse('LegacyInputSystemTest')");
-    stream.send("print(legacy_input_system_test.field('_jumpButtonDownCount').get_value())");
+    let legacy_input_system_test_fields = [
+        "_jumpButtonDownCount",
+        "_jumpButtonUpCount",
+        "_spaceDownKeyCodeCount",
+        "_spaceUpKeyCodeCount",
+        "_spaceDownStringCount",
+        "_spaceUpStringCount",
+    ];
+    for field in legacy_input_system_test_fields {
+        stream.send(&format!(
+            "print(legacy_input_system_test.field('{field}').get_value())"
+        ));
+        assert_eq!(
+            stream.receive(),
+            "5",
+            "checking LegacyInputSystemTest.{field} field to be 5"
+        );
+    }
 
-    let response = test_args.stream.receive();
-    println!("response: {response}");
+    // SceneTest.cs
+    stream.send("scene_test = traverse('SceneTest')");
+
+    stream.send("print(scene_test.field('_asyncOpCallbackProgress').get_value())");
+    assert_eq!(
+        stream.receive(),
+        "1",
+        "checking SceneTest callback progress value"
+    );
+
+    stream.send("print(scene_test.field('_asyncOpCallbackAllowSceneActivation').get_value())");
+    assert_eq!(
+        stream.receive(),
+        "true",
+        "checking SceneTest callback allow scene activation value"
+    );
+
+    stream.send("print(scene_test.field('_asyncOpCallbackIsDone').get_value())");
+    assert_eq!(
+        stream.receive(),
+        "true",
+        "checking SceneTest callback IsDone value"
+    );
+
+    stream.send("print(scene_test.field('_asyncOpDoneFrame').get_value())");
+    assert_eq!(
+        stream.receive(),
+        "35",
+        "checking SceneTest callback done timing frame"
+    );
+
+    // UGuiTest.cs
+    stream.send("ugui_test = traverse('UGuiTest')");
+
+    stream.send("print(ugui_test.field('_clickCount').get_value())");
+    assert_eq!(
+        stream.receive(),
+        "5",
+        "checking UGuiTest button press count"
+    );
 }
