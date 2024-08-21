@@ -10,7 +10,8 @@ end
 f(100)
 
 -- UGuiTest
-mouse.move(960, 540)
+-- TODO: once game resolution is deterministic, set this to center of screen
+mouse.move(0, 0)
 f()
 
 for i = 1, 5 do
