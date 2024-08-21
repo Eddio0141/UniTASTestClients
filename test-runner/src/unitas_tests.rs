@@ -41,7 +41,7 @@ impl UniTasStream {
     fn new(stream: TcpStream) -> Self {
         Self {
             stream,
-            buf: Vec::with_capacity(1024),
+            buf: Vec::new(),
             buf_msg_len: [0; 8],
         }
     }
