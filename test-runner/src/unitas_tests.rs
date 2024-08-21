@@ -164,6 +164,9 @@ impl Test {
     }
 
     fn move_log(&self, game_dir: &Path, logs_dir: &Path) {
+        // 2 seconds to flush usually
+        thread::sleep(Duration::from_secs(2));
+
         let log_src = game_dir.join("BepInEx").join("UniTAS.log");
         let log_dst = logs_dir.join(format!("{}.log", self.name));
         if let Err(err) = fs::copy(&log_src, &log_dst) {
