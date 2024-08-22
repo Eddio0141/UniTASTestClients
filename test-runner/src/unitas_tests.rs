@@ -90,7 +90,6 @@ impl Test {
             panic!("game dir for test unity game doesn't exist");
         }
 
-        // TODO: check what happens here for 32 bit unity games
         let execute_bin = match &self.os {
             Os::Linux => "run_bepinex.sh",
             Os::Windows => WIN_UNITY_EXE_NAME,
