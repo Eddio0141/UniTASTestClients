@@ -1,4 +1,4 @@
-use std::{fs, thread, time::Duration};
+use std::fs;
 
 use crate::Os;
 
@@ -21,15 +21,7 @@ fn test(mut test_args: TestArgs) {
     let stream = &mut test_args.stream;
 
     stream.send("play('movie.lua')");
-
-    loop {
-        stream.send("print(movie_status().basically_running)");
-        let response = stream.receive();
-        if response == "false" {
-            break;
-        }
-        thread::sleep(Duration::from_secs(1));
-    }
+    stream.wait_for_movie_end();
 
     // check results
     // LegacyInputSystemTest.cs

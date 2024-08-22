@@ -78,6 +78,16 @@ impl UniTasStream {
 
         String::from_utf8_lossy(&self.buf).trim_end().to_owned()
     }
+
+    fn wait_for_movie_end(&mut self) {
+        loop {
+            self.send("print(movie_status().basically_running)");
+            if self.receive() == "false" {
+                break;
+            }
+            thread::sleep(Duration::from_secs(1));
+        }
+    }
 }
 
 impl Test {
