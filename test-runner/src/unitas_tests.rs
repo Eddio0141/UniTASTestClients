@@ -109,7 +109,6 @@ impl Test {
         println!("copying bepinex to game folder");
         copy_dir_all_blocking(bepinex_dir, &game_dir)
             .expect("failed to copy BepInEx dir contents to game");
-        println!("done");
 
         // execute game
         println!("executing unity game");
@@ -164,13 +163,11 @@ impl Test {
 
         self.move_log(&game_dir, logs_dir);
 
-        println!("done");
-
         println!("killing game");
 
         process.kill().expect("failed to stop running game");
 
-        println!("done");
+        println!("game stopped successfully");
     }
 
     fn move_log(&self, game_dir: &Path, logs_dir: &Path) {

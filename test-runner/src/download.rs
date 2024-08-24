@@ -1,8 +1,9 @@
 #[cfg(target_os = "linux")]
 use std::os::unix::fs::PermissionsExt;
-use std::{io::Cursor, path::Path, time::Duration};
+use std::{fmt::Write, io::Cursor, path::Path, time::Duration};
 
-use reqwest::redirect::Policy;
+use indicatif::{MultiProgress, ProgressBar, ProgressState, ProgressStyle};
+use reqwest::{header::CONTENT_LENGTH, redirect::Policy};
 use tokio::{
     fs,
     task::{self, JoinSet},
@@ -12,10 +13,9 @@ use zip::ZipArchive;
 
 use crate::{Arch, Os, GAME_BIN_NAME};
 
-pub async fn dl_unitas(unitas_dir: &Path, download_unitas: bool) {
+pub async fn dl_unitas(unitas_dir: &Path, download_unitas: bool, pb: MultiProgress) {
     if unitas_dir.is_dir() {
         if !download_unitas {
-            println!("skipping downloading unitas, already found UniTAS directory and --download-unitas argument isn't passed");
             return;
         }
 
@@ -25,9 +25,7 @@ pub async fn dl_unitas(unitas_dir: &Path, download_unitas: bool) {
             .expect("failed to remove existing UniTAS directory");
     }
 
-    println!("downloading unitas");
-
-    let url = "https://nightly.link/Eddio0141/UniTAS/workflows/build-on-push/main/Release.zip";
+    let url = "https://nightly.link/Eddio0141/UniTAS/workflows/build-on-push/main/UniTAS.zip";
 
     let client = reqwest::Client::builder()
         .redirect(Policy::default())
@@ -38,32 +36,53 @@ pub async fn dl_unitas(unitas_dir: &Path, download_unitas: bool) {
         .get(url)
         .build()
         .expect("failed to build get request for downloading unitas");
-    let bytes = client
+    let response = client
         .execute(response)
         .await
-        .expect("failed to download unitas")
-        .bytes()
-        .await
-        .expect("failed to download unitas contents");
+        .expect("failed to download unitas");
+    let len = response
+        .headers()
+        .get(CONTENT_LENGTH)
+        .expect("failed to get size of UniTAS download")
+        .to_str()
+        .expect("size of UniTAS download isn't a string")
+        .parse::<u64>()
+        .expect("size of UniTAS download isn't a u64");
+    let mut bytes = response.bytes_stream();
+    let mut dl_buff = Vec::with_capacity(len as usize);
 
-    println!("downloaded UniTAS");
+    let pb = pb.add(dl_progress_bar(len));
+    pb.set_message("downloading UniTAS");
+
+    while let Some(chunk) = bytes.next().await {
+        let chunk = chunk.expect("failed to get chunk for UniTAS download");
+        for byte in chunk {
+            dl_buff.push(byte);
+        }
+
+        pb.set_position(dl_buff.len() as u64);
+    }
+
+    pb.finish_with_message("downloaded UniTAS");
 
     fs::create_dir_all(unitas_dir)
         .await
         .expect("failed to create directory for unitas");
 
     let mut archive =
-        ZipArchive::new(Cursor::new(bytes)).expect("failed to load unitas as zip archive");
+        ZipArchive::new(Cursor::new(dl_buff)).expect("failed to load unitas as zip archive");
 
-    println!("extracting UniTAS");
-    archive
-        .extract(unitas_dir)
-        .expect("failed to extract unitas");
-    println!("extracted UniTAS");
+    let unitas_dir = unitas_dir.to_path_buf();
+    task::spawn_blocking(move || {
+        archive
+            .extract(unitas_dir)
+            .expect("failed to extract unitas");
+    })
+    .await
+    .unwrap();
 }
 
-pub async fn dl_bepinex(dl_dir: &Path, os: &Os, arch: &Arch) {
-    println!("downloading bepinex");
+pub async fn dl_bepinex(dl_dir: &Path, os: &Os, arch: &Arch, pb: MultiProgress) {
     let url = "https://api.github.com/repos/BepInEx/BepInEx/releases/latest";
 
     // github requires us to have User-Agent header
@@ -123,11 +142,11 @@ pub async fn dl_bepinex(dl_dir: &Path, os: &Os, arch: &Arch) {
                 .as_u64()
                 .expect("BepInEx download size isn't u64");
 
-            Some((url, size as usize))
+            Some((url, size))
         })
         .expect("failed to find the BepInEx file in the latest release");
 
-    let mut dl_buff = Vec::with_capacity(dl_size);
+    let mut dl_buff = Vec::with_capacity(dl_size as usize);
 
     let remove_dl_dir_task = if dl_dir.is_dir() {
         let dl_dir = dl_dir.to_path_buf();
@@ -153,14 +172,18 @@ pub async fn dl_bepinex(dl_dir: &Path, os: &Os, arch: &Arch) {
         .expect("failed to GET request for BepInEx download")
         .bytes_stream();
 
+    let pb = pb.add(dl_progress_bar(dl_size));
+    pb.set_message("downloading BepInEx");
+
     while let Some(chunk) = bytes.next().await {
         let chunk = chunk.expect("failed to get BepInEx download next chunk");
         for byte in chunk {
             dl_buff.push(byte);
         }
+        pb.set_position(dl_buff.len() as u64);
     }
 
-    println!("downloaded BepInEx");
+    pb.finish_with_message("downloaded BepInEx");
 
     if let Some(task) = remove_dl_dir_task {
         task.await.unwrap();
@@ -183,7 +206,7 @@ pub async fn dl_bepinex(dl_dir: &Path, os: &Os, arch: &Arch) {
     .unwrap();
 }
 
-pub async fn dl_test_games(exe_dir: &Path) {
+pub async fn dl_test_games(exe_dir: &Path, pb: MultiProgress) {
     let url = "https://nightly.link/Eddio0141/UniTASTestClients/workflows/build-on-push/main";
 
     let response = reqwest::get(url)
@@ -232,6 +255,7 @@ pub async fn dl_test_games(exe_dir: &Path) {
     // now download from links
     for (name, link) in links {
         let exe_dir = exe_dir.to_path_buf();
+        let pb = pb.clone();
         dl_tasks.spawn(async move {
             let client = reqwest::Client::builder()
                 .redirect(Policy::default())
@@ -239,38 +263,54 @@ pub async fn dl_test_games(exe_dir: &Path) {
                 .build()
                 .expect("failed to create client for downloading unity games");
 
-            println!("downloading unity game `{name}`");
-
             let response = client
                 .get(link)
                 .build()
                 .expect("failed to build get request for downloading unity game");
-            let bytes = client
+            let response = client
                 .execute(response)
                 .await
-                .expect("failed to download unity game")
-                .bytes()
-                .await
-                .expect("failed to download unity game contents");
+                .expect("failed to download unity game");
+            let len = response
+                .headers()
+                .get(CONTENT_LENGTH)
+                .expect("somehow didn't get content length for download")
+                .to_str()
+                .expect("failed to get content length for downloading game")
+                .parse::<u64>()
+                .expect("failed to convert download length for game to a u64");
+            let mut dl_buff = Vec::with_capacity(len as usize);
 
-            println!("downloaded game `{name}`");
+            let mut bytes = response.bytes_stream();
+
+            let pb = pb.add(dl_progress_bar(len));
+            pb.set_message(format!("downloading game `{name}`"));
+
+            while let Some(chunk) = bytes.next().await {
+                let chunk = chunk.expect("failed to download unity game contents");
+
+                for byte in chunk {
+                    dl_buff.push(byte);
+                }
+                pb.set_position(dl_buff.len() as u64);
+            }
+
+            pb.finish_with_message(format!("downloaded game `{name}`"));
 
             let dl_dir = exe_dir.join(&name);
             fs::create_dir_all(&dl_dir)
                 .await
                 .expect("failed to create directory for unity game");
 
-            let mut archive = ZipArchive::new(Cursor::new(bytes))
+            let mut archive = ZipArchive::new(Cursor::new(dl_buff))
                 .expect("failed to load unity game as zip archive");
 
             {
                 let dl_dir = dl_dir.clone();
                 task::spawn_blocking(move || {
-                    println!("extracting game `{name}`");
                     archive
                         .extract(&dl_dir)
                         .expect("failed to extract unity game");
-                    println!("extracted game `{name}");
                 })
             }
             .await
@@ -297,6 +337,20 @@ pub async fn dl_test_games(exe_dir: &Path) {
     }
 
     while dl_tasks.join_next().await.is_some() {}
+}
 
-    println!("all games are downloaded and ready");
+fn dl_progress_bar(dl_size: u64) -> ProgressBar {
+    let pb = ProgressBar::new(dl_size);
+    pb.set_style(
+        ProgressStyle::with_template(
+            "[{elapsed_precise}] [{bar:40.cyan/blue}] {bytes:>7}/{total_bytes:7} ({bytes_per_sec}) {msg}",
+        )
+        .unwrap()
+        .with_key("eta", |state: &ProgressState, w: &mut dyn Write| {
+            write!(w, "{:.1}s", state.eta().as_secs_f64()).unwrap()
+        })
+        .progress_chars("##-"),
+    );
+
+    pb
 }

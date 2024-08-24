@@ -9,6 +9,7 @@ use std::{
 use const_format::formatcp;
 use download::{dl_bepinex, dl_test_games, dl_unitas};
 use fs_utils::copy_dir_all;
+use indicatif::MultiProgress;
 use tokio::{
     fs,
     task::{self, JoinSet},
@@ -92,24 +93,28 @@ async fn main() {
     };
 
     // start download and setup tasks
+    let pb = MultiProgress::new();
+
     let dl_bepinex_task = {
         let bepinex_dir = bepinex_dir.clone();
         let arch = arch.clone();
+        let pb = pb.clone();
         task::spawn(async move {
-            dl_bepinex(&bepinex_dir, &os, &arch).await;
+            dl_bepinex(&bepinex_dir, &os, &arch, pb).await;
         })
     };
     let dl_unitas_task = {
         let unitas_dir = unitas_dir.clone();
+        let pb = pb.clone();
         task::spawn(async move {
-            dl_unitas(&unitas_dir, download_unitas).await;
+            dl_unitas(&unitas_dir, download_unitas, pb).await;
         })
     };
 
     let dl_games_task = {
         let current_dir = current_dir.to_path_buf();
         task::spawn(async move {
-            dl_test_games(&current_dir).await;
+            dl_test_games(&current_dir, pb).await;
         })
     };
 
@@ -159,8 +164,6 @@ async fn main() {
 }
 
 async fn setup_unitas(unitas_dir: &Path, bepinex_dir: &Path) {
-    println!("setting up UniTAS");
-
     copy_dir_all(unitas_dir, bepinex_dir)
         .await
         .expect("failed to copy UniTAS dir contents to game");
@@ -183,13 +186,9 @@ const WIN_UNITY_EXE_NAME: &str = formatcp!("{GAME_BIN_NAME}.exe");
 async fn setup_bepinex(bepinex_dir: &Path, arch: &Arch) {
     #[cfg(target_os = "linux")]
     {
-        println!("configuring bepinex for linux");
-
         let run_bepinex_file = bepinex_dir.join("run_bepinex.sh");
 
         // modify run_bepinex to execute correct executable
-        println!("modifying run_bepinex.sh to execute the correct executable");
-
         let mut run_bepinex_content = fs::read_to_string(&run_bepinex_file)
             .await
             .expect("failed to open run_bepinex.sh");
@@ -222,8 +221,6 @@ async fn setup_bepinex(bepinex_dir: &Path, arch: &Arch) {
 }
 
 async fn setup_unitas_config(bepinex_dir: &Path) {
-    println!("writing UniTAS config");
-
     let cfg = bepinex_dir.join("BepInEx").join("config");
 
     fs::create_dir_all(&cfg)
