@@ -1,13 +1,18 @@
 #[cfg(target_os = "linux")]
 use std::os::unix::fs::PermissionsExt;
-use std::{fs, io::Cursor, path::Path, time::Duration};
+use std::{io::Cursor, path::Path, time::Duration};
 
 use reqwest::redirect::Policy;
+use tokio::{
+    fs,
+    task::{self, JoinSet},
+};
+use tokio_stream::StreamExt;
 use zip::ZipArchive;
 
 use crate::{Arch, Os, GAME_BIN_NAME};
 
-pub fn dl_unitas(unitas_dir: &Path, download_unitas: bool) {
+pub async fn dl_unitas(unitas_dir: &Path, download_unitas: bool) {
     if unitas_dir.is_dir() {
         if !download_unitas {
             println!("skipping downloading unitas, already found UniTAS directory and --download-unitas argument isn't passed");
@@ -15,14 +20,16 @@ pub fn dl_unitas(unitas_dir: &Path, download_unitas: bool) {
         }
 
         // delete directory
-        fs::remove_dir_all(unitas_dir).expect("failed to remove existing UniTAS directory");
+        fs::remove_dir_all(unitas_dir)
+            .await
+            .expect("failed to remove existing UniTAS directory");
     }
 
     println!("downloading unitas");
 
     let url = "https://nightly.link/Eddio0141/UniTAS/workflows/build-on-push/main/Release.zip";
 
-    let client = reqwest::blocking::Client::builder()
+    let client = reqwest::Client::builder()
         .redirect(Policy::default())
         .build()
         .expect("failed to create client for downloading unitas");
@@ -33,32 +40,34 @@ pub fn dl_unitas(unitas_dir: &Path, download_unitas: bool) {
         .expect("failed to build get request for downloading unitas");
     let bytes = client
         .execute(response)
+        .await
         .expect("failed to download unitas")
         .bytes()
+        .await
         .expect("failed to download unitas contents");
 
-    println!("downloaded");
+    println!("downloaded UniTAS");
 
-    fs::create_dir_all(unitas_dir).expect("failed to create directory for unitas");
+    fs::create_dir_all(unitas_dir)
+        .await
+        .expect("failed to create directory for unitas");
 
     let mut archive =
         ZipArchive::new(Cursor::new(bytes)).expect("failed to load unitas as zip archive");
 
-    println!("extracting");
+    println!("extracting UniTAS");
     archive
         .extract(unitas_dir)
         .expect("failed to extract unitas");
-    println!("extracted");
-
-    println!("done");
+    println!("extracted UniTAS");
 }
 
-pub fn dl_bepinex(dl_dir: &Path, os: &Os, arch: &Arch) {
+pub async fn dl_bepinex(dl_dir: &Path, os: &Os, arch: &Arch) {
     println!("downloading bepinex");
     let url = "https://api.github.com/repos/BepInEx/BepInEx/releases/latest";
 
     // github requires us to have User-Agent header
-    let client = reqwest::blocking::Client::builder()
+    let client = reqwest::Client::builder()
         .user_agent(env!("CARGO_PKG_NAME"))
         .build()
         .expect("failed to create reqwest client");
@@ -66,9 +75,11 @@ pub fn dl_bepinex(dl_dir: &Path, os: &Os, arch: &Arch) {
     let response = client
         .get(url)
         .send()
+        .await
         .expect("failed to get response for BepInEx latest release");
     let text = response
         .text()
+        .await
         .expect("failed to get contents of BepInEx latest release");
     let json: serde_json::Value =
         serde_json::from_str(&text).expect("failed to parse github's json response");
@@ -83,7 +94,7 @@ pub fn dl_bepinex(dl_dir: &Path, os: &Os, arch: &Arch) {
 
     let release_name = format!("{os}_{arch}");
 
-    let dl_link = json
+    let (dl_link, dl_size) = json
         .get("assets")
         .expect("failed to get assets in BepInEx release")
         .as_array()
@@ -106,45 +117,80 @@ pub fn dl_bepinex(dl_dir: &Path, os: &Os, arch: &Arch) {
                 .expect("failed to get BepInEx download url")
                 .to_string();
 
-            Some(url)
+            let size = artifact
+                .get("size")
+                .expect("failed to get BepInEx download size")
+                .as_u64()
+                .expect("BepInEx download size isn't u64");
+
+            Some((url, size as usize))
         })
         .expect("failed to find the BepInEx file in the latest release");
 
-    if dl_dir.is_dir() {
-        fs::remove_dir_all(dl_dir).expect("failed to remove old BepInEx dir");
-    }
+    let mut dl_buff = Vec::with_capacity(dl_size);
+
+    let remove_dl_dir_task = if dl_dir.is_dir() {
+        let dl_dir = dl_dir.to_path_buf();
+        let task = task::spawn(async move {
+            fs::remove_dir_all(dl_dir)
+                .await
+                .expect("failed to remove old BepInEx dir");
+        });
+        Some(task)
+    } else {
+        None
+    };
 
     // dl
     let response = client
         .get(dl_link)
         .build()
         .expect("failed to GET request for BepInEx download");
-    let bytes = client
+
+    let mut bytes = client
         .execute(response)
+        .await
         .expect("failed to GET request for BepInEx download")
-        .bytes()
-        .expect("failed to get contents of latest BepInEx release");
+        .bytes_stream();
 
-    fs::create_dir_all(dl_dir).expect("failed to create dir for BepInEx download");
+    while let Some(chunk) = bytes.next().await {
+        let chunk = chunk.expect("failed to get BepInEx download next chunk");
+        for byte in chunk {
+            dl_buff.push(byte);
+        }
+    }
 
-    let mut archive = ZipArchive::new(Cursor::new(bytes))
-        .expect("failed to load latest BepInEx release as zip archive");
+    println!("downloaded BepInEx");
 
-    archive
-        .extract(dl_dir)
-        .expect("failed to extract BepInEx download");
+    if let Some(task) = remove_dl_dir_task {
+        task.await.unwrap();
+        fs::create_dir_all(dl_dir)
+            .await
+            .expect("failed to create dir for BepInEx download");
+    }
 
-    println!("done");
+    let dl_dir = dl_dir.to_owned();
+
+    task::spawn_blocking(move || {
+        let mut archive = ZipArchive::new(Cursor::new(dl_buff))
+            .expect("failed to load latest BepInEx release as zip archive");
+
+        archive
+            .extract(dl_dir)
+            .expect("failed to extract BepInEx download");
+    })
+    .await
+    .unwrap();
 }
 
-pub fn dl_test_games(exe_dir: &Path) {
-    println!("downloading unity games");
-
+pub async fn dl_test_games(exe_dir: &Path) {
     let url = "https://nightly.link/Eddio0141/UniTASTestClients/workflows/build-on-push/main";
 
-    let response = reqwest::blocking::get(url)
+    let response = reqwest::get(url)
+        .await
         .expect("failed to get latest unity test game builds")
         .text()
+        .await
         .expect("failed to get text content for latest unity test game builds");
 
     // extract links
@@ -169,72 +215,88 @@ pub fn dl_test_games(exe_dir: &Path) {
 
         // filter out test-runner itself
         // named like test-runner-unix, test-runner-win
+        let name = name.to_string();
         let Some(i) = line.rfind('-') else {
-            return Some((name, line));
+            return Some((name, line.to_string()));
         };
 
         if line[..i].ends_with(env!("CARGO_PKG_NAME")) {
             None
         } else {
-            Some((name, line))
+            Some((name, line.to_string()))
         }
     });
 
-    let client = reqwest::blocking::Client::builder()
-        .redirect(Policy::default())
-        .timeout(Duration::from_secs(60))
-        .build()
-        .expect("failed to create client for downloading unity games");
+    let mut dl_tasks = JoinSet::new();
 
     // now download from links
     for (name, link) in links {
-        println!("downloading unity game `{name}` with link `{link}`");
+        let exe_dir = exe_dir.to_path_buf();
+        dl_tasks.spawn(async move {
+            let client = reqwest::Client::builder()
+                .redirect(Policy::default())
+                .timeout(Duration::from_secs(60))
+                .build()
+                .expect("failed to create client for downloading unity games");
 
-        let response = client
-            .get(link)
-            .build()
-            .expect("failed to build get request for downloading unity game");
-        let bytes = client
-            .execute(response)
-            .expect("failed to download unity game")
-            .bytes()
-            .expect("failed to download unity game contents");
+            println!("downloading unity game `{name}`");
 
-        println!("downloaded");
+            let response = client
+                .get(link)
+                .build()
+                .expect("failed to build get request for downloading unity game");
+            let bytes = client
+                .execute(response)
+                .await
+                .expect("failed to download unity game")
+                .bytes()
+                .await
+                .expect("failed to download unity game contents");
 
-        let dl_dir = exe_dir.join(name);
-        fs::create_dir_all(&dl_dir).expect("failed to create directory for unity game");
+            println!("downloaded game `{name}`");
 
-        let mut archive =
-            ZipArchive::new(Cursor::new(bytes)).expect("failed to load unity game as zip archive");
+            let dl_dir = exe_dir.join(&name);
+            fs::create_dir_all(&dl_dir)
+                .await
+                .expect("failed to create directory for unity game");
 
-        println!("extracting");
-        archive
-            .extract(&dl_dir)
-            .expect("failed to extract unity game");
-        println!("extracted");
+            let mut archive = ZipArchive::new(Cursor::new(bytes))
+                .expect("failed to load unity game as zip archive");
 
-        // chmod game binary
-        #[cfg(target_os = "linux")]
-        {
-            println!("changing game binary execution permission");
+            {
+                let dl_dir = dl_dir.clone();
+                task::spawn_blocking(move || {
+                    println!("extracting game `{name}`");
+                    archive
+                        .extract(&dl_dir)
+                        .expect("failed to extract unity game");
+                    println!("extracted game `{name}");
+                })
+            }
+            .await
+            .unwrap();
 
-            let game_bin = dl_dir.join(GAME_BIN_NAME);
+            // chmod game binary
+            #[cfg(target_os = "linux")]
+            {
+                let game_bin = dl_dir.join(GAME_BIN_NAME);
 
-            // set perms for execution
-            let mut perms = game_bin
-                .metadata()
-                .expect("failed to get game file metadata")
-                .permissions();
+                // set perms for execution
+                let mut perms = game_bin
+                    .metadata()
+                    .expect("failed to get game file metadata")
+                    .permissions();
 
-            perms.set_mode(0o744);
+                perms.set_mode(0o744);
 
-            fs::set_permissions(game_bin, perms)
-                .expect("failed to set execute permissions for game");
-
-            println!("applied mode u+x to game binary");
-        }
+                fs::set_permissions(game_bin, perms)
+                    .await
+                    .expect("failed to set execute permissions for game");
+            }
+        });
     }
 
-    println!("done");
+    while dl_tasks.join_next().await.is_some() {}
+
+    println!("all games are downloaded and ready");
 }

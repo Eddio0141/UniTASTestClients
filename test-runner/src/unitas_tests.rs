@@ -8,7 +8,7 @@ use std::{
     time::Duration,
 };
 
-use crate::{fs_utils::copy_dir_all, Os, WIN_UNITY_EXE_NAME};
+use crate::{fs_utils::copy_dir_all_blocking, Os, WIN_UNITY_EXE_NAME};
 
 mod unity_2022_3_41f1_base;
 
@@ -107,7 +107,8 @@ impl Test {
 
         // copy bepinex before running of course
         println!("copying bepinex to game folder");
-        copy_dir_all(bepinex_dir, &game_dir).expect("failed to copy BepInEx dir contents to game");
+        copy_dir_all_blocking(bepinex_dir, &game_dir)
+            .expect("failed to copy BepInEx dir contents to game");
         println!("done");
 
         // execute game
