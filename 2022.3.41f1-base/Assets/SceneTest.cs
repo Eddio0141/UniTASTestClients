@@ -18,7 +18,7 @@ public class SceneTest : MonoBehaviour
 
     private static IEnumerator StartTestCoroutine()
     {
-        var op = SceneManager.LoadSceneAsync("Scene2");
+        var op = SceneManager.LoadSceneAsync("MovieTest2");
         op!.allowSceneActivation = false;
         op.completed += a =>
         {
