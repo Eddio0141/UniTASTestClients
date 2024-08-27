@@ -8,7 +8,7 @@ use std::{
     time::Duration,
 };
 
-use crate::{fs_utils::copy_dir_all_blocking, Os, WIN_UNITY_EXE_NAME};
+use crate::{cli::Args, fs_utils::copy_dir_all_blocking, Os, WIN_UNITY_EXE_NAME};
 
 mod unity_2022_3_41f1_base;
 
@@ -91,7 +91,7 @@ impl UniTasStream {
 }
 
 impl Test {
-    pub fn run(&self, exe_dir: &Path, bepinex_dir: &Path, logs_dir: &Path) {
+    pub fn run(&self, exe_dir: &Path, bepinex_dir: &Path, logs_dir: &Path, args: &Args) {
         println!("test initialising for {}", self.name);
 
         let game_dir = exe_dir.join(self.name);
@@ -120,7 +120,7 @@ impl Test {
             .spawn()
             .expect("failed to run unity game");
 
-        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 8080);
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), args.port);
 
         // now connect
         let mut stream = None;

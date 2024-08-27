@@ -2,8 +2,10 @@
 name = "test-runner"
 version = "0.1.0"
 edition = "2021"
+description = "Tool to automatically execute unity games with UniTAS and BepInEx, and run tests on them"
 
 [dependencies]
+clap = { version = "4.5.16", features = ["derive"] }
 const_format = "0.2.32"
 indicatif = "0.17.8"
 reqwest = { version = "0.12.5", features = ["stream"] }

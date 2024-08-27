@@ -6,6 +6,8 @@ use std::{
     path::Path,
 };
 
+use clap::Parser;
+use cli::Args;
 use const_format::formatcp;
 use download::{dl_bepinex, dl_test_games, dl_unitas};
 use fs_utils::copy_dir_all;
@@ -16,6 +18,7 @@ use tokio::{
 };
 use unitas_tests::{get_linux_tests, get_win_tests};
 
+mod cli;
 mod download;
 mod fs_utils;
 mod unitas_tests;
@@ -66,14 +69,7 @@ async fn main() {
     let bepinex_dir = current_dir.join("BepInEx");
     let unitas_dir = current_dir.join("UniTAS");
 
-    // get args
-    let mut args = env::args().skip(1);
-    // currently there's only this arg
-    let download_unitas = args.next();
-    let download_unitas = match download_unitas {
-        Some(use_local_unitas) => use_local_unitas == "--download-unitas",
-        None => false,
-    };
+    let args = Args::parse();
 
     // os & arch
     let os = match env::consts::OS {
@@ -107,7 +103,7 @@ async fn main() {
         let unitas_dir = unitas_dir.clone();
         let pb = pb.clone();
         task::spawn(async move {
-            dl_unitas(&unitas_dir, download_unitas, pb).await;
+            dl_unitas(&unitas_dir, args.download_unitas, pb).await;
         })
     };
 
@@ -126,7 +122,7 @@ async fn main() {
     {
         let bepinex_dir = bepinex_dir.clone();
         post_bepinex_dl_tasks.spawn(async move {
-            setup_unitas_config(&bepinex_dir).await;
+            setup_unitas_config(&bepinex_dir, args.port).await;
         });
     }
 
@@ -159,7 +155,7 @@ async fn main() {
 
     // run
     for test in tests {
-        test.run(current_dir, &bepinex_dir, &logs_dir);
+        test.run(current_dir, &bepinex_dir, &logs_dir, &args);
     }
 }
 
@@ -220,7 +216,7 @@ async fn setup_bepinex(bepinex_dir: &Path, arch: &Arch) {
     }
 }
 
-async fn setup_unitas_config(bepinex_dir: &Path) {
+async fn setup_unitas_config(bepinex_dir: &Path, port: u16) {
     let cfg = bepinex_dir.join("BepInEx").join("config");
 
     fs::create_dir_all(&cfg)
@@ -228,9 +224,12 @@ async fn setup_unitas_config(bepinex_dir: &Path) {
         .expect("failed to create directory for UniTAS config file");
 
     let cfg = cfg.join("UniTAS.cfg");
-    let contents = r#"[Remote]
+    let contents = format!(
+        r#"[Remote]
 Enable = true
-"#;
+Port = {port}
+"#
+    );
 
     fs::write(cfg, contents)
         .await
