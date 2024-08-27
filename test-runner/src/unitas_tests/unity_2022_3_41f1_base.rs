@@ -24,7 +24,6 @@ fn test(mut test_args: TestArgs) {
     stream.wait_for_movie_end();
 
     // check results
-    // TODO: don't use assert macros, they panic
 
     // LegacyInputSystemTest.cs
     stream.send("legacy_input_system_test = traverse('LegacyInputSystemTest')");
