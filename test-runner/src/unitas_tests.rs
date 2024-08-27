@@ -120,7 +120,7 @@ impl Test {
             .spawn()
             .expect("failed to run unity game");
 
-        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 8001);
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 8080);
 
         // now connect
         let mut stream = None;
