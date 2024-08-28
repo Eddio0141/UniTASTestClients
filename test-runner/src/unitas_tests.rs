@@ -43,6 +43,11 @@ struct UniTasStream {
 
 impl UniTasStream {
     fn new(stream: TcpStream) -> Self {
+        // add timeout to the stream
+        let timeout = Some(Duration::from_secs(30));
+        stream.set_read_timeout(timeout).unwrap();
+        stream.set_write_timeout(timeout).unwrap();
+
         Self {
             stream,
             buf: Vec::new(),
