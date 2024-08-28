@@ -186,13 +186,13 @@ impl Test {
 
         println!("[{}]", self.name);
 
-        let success = (self.test)(test_args)?;
-
-        println!("\ntest completed");
+        let success = (self.test)(test_args);
 
         self.move_log(&game_dir, logs_dir);
-
         process.kill().context("failed to stop running game")?;
+
+        let success = success?;
+        println!("\ntest completed");
 
         if success {
             Ok(())
