@@ -115,6 +115,7 @@ impl Test {
         let mut process = Command::new(game_dir.join(execute_bin))
             .current_dir(&game_dir)
             .arg("-batchmode")
+            .arg("-nographics")
             .stdout(Stdio::null())
             .stderr(Stdio::null())
             .spawn()
