@@ -4,8 +4,10 @@ use std::{
     env::{self, current_exe},
     fmt::Display,
     path::Path,
+    process::ExitCode,
 };
 
+use anyhow::{bail, Context, Result};
 use clap::Parser;
 use cli::Args;
 use const_format::formatcp;
@@ -21,6 +23,7 @@ use unitas_tests::{get_linux_tests, get_win_tests};
 mod cli;
 mod download;
 mod fs_utils;
+mod symbols;
 mod unitas_tests;
 
 #[derive(Clone)]
@@ -62,9 +65,9 @@ impl Display for Arch {
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<ExitCode> {
     // dirs in executable dir is all unity games for testing
-    let current_exe = current_exe().expect("failed to get current exe dir");
+    let current_exe = current_exe().context("failed to get current exe dir")?;
     let current_dir = current_exe.parent().unwrap();
     let bepinex_dir = current_dir.join("BepInEx");
     let unitas_dir = current_dir.join("UniTAS");
@@ -75,12 +78,12 @@ async fn main() {
     let os = match env::consts::OS {
         "linux" => Os::Linux,
         "windows" => Os::Windows,
-        _ => panic!("unsupported os for testing"),
+        _ => bail!("unsupported os for testing"),
     };
     let arch = match env::consts::ARCH {
         "x86" => Arch::X86,
         "x86_64" => Arch::X64,
-        _ => panic!("unsupported architecture for testing"),
+        _ => bail!("unsupported architecture for testing"),
     };
 
     let tests = match os {
@@ -121,28 +124,25 @@ async fn main() {
 
     {
         let bepinex_dir = bepinex_dir.clone();
-        post_bepinex_dl_tasks.spawn(async move {
-            setup_unitas_config(&bepinex_dir, args.port).await;
-        });
+        post_bepinex_dl_tasks
+            .spawn(async move { setup_unitas_config(&bepinex_dir, args.port).await });
     }
 
     {
         let bepinex_dir = bepinex_dir.clone();
         let arch = arch.clone();
-        post_bepinex_dl_tasks.spawn(async move {
-            setup_bepinex(&bepinex_dir, &arch).await;
-        });
+        post_bepinex_dl_tasks.spawn(async move { setup_bepinex(&bepinex_dir, &arch).await });
     }
 
     // for all UniTAS logs
     let logs_dir = current_dir.join("logs");
     fs::create_dir_all(&logs_dir)
         .await
-        .expect("failed to create folder for logs");
+        .context("failed to create folder for logs")?;
 
     // wait for unitas and bepinex dl
     dl_unitas_task.await.unwrap();
-    setup_unitas(&unitas_dir, &bepinex_dir).await;
+    setup_unitas(&unitas_dir, &bepinex_dir).await?;
 
     dl_games_task.await.unwrap();
 
@@ -150,14 +150,22 @@ async fn main() {
 
     // run
     for test in tests {
-        test.run(current_dir, &bepinex_dir, &logs_dir, &args);
+        test.run(current_dir, &bepinex_dir, &logs_dir, &args)?;
     }
+
+    Ok(ExitCode::SUCCESS)
 }
 
-async fn setup_unitas(unitas_dir: &Path, bepinex_dir: &Path) {
+async fn setup_unitas(unitas_dir: &Path, bepinex_dir: &Path) -> Result<()> {
     copy_dir_all(unitas_dir, bepinex_dir)
         .await
-        .expect("failed to copy UniTAS dir contents to game");
+        .with_context(|| {
+            format!(
+                "failed to copy UniTAS dir contents from `{}` to game folder `{}`",
+                unitas_dir.display(),
+                bepinex_dir.display()
+            )
+        })
 }
 
 fn game_bin_name(os: &Os, arch: &Arch) -> &'static str {
@@ -174,20 +182,26 @@ fn game_bin_name(os: &Os, arch: &Arch) -> &'static str {
 const GAME_BIN_NAME: &str = "build";
 const WIN_UNITY_EXE_NAME: &str = formatcp!("{GAME_BIN_NAME}.exe");
 
-async fn setup_bepinex(bepinex_dir: &Path, arch: &Arch) {
+async fn setup_bepinex(bepinex_dir: &Path, arch: &Arch) -> Result<()> {
     #[cfg(target_os = "linux")]
     {
         let run_bepinex_file = bepinex_dir.join("run_bepinex.sh");
 
         // modify run_bepinex to execute correct executable
-        let mut run_bepinex_content = fs::read_to_string(&run_bepinex_file)
-            .await
-            .expect("failed to open run_bepinex.sh");
+        let mut run_bepinex_content =
+            fs::read_to_string(&run_bepinex_file)
+                .await
+                .with_context(|| {
+                    format!(
+                        "failed to open run_bepinex.sh from `{}`",
+                        run_bepinex_file.display()
+                    )
+                })?;
 
         let find_key = "executable_name=";
         let find_index = run_bepinex_content
             .find(find_key)
-            .expect("failed to find executable_name config in run_bepinex.sh");
+            .context("failed to find executable_name config in run_bepinex.sh")?;
 
         let exe_name = game_bin_name(&Os::Linux, arch);
 
@@ -195,28 +209,48 @@ async fn setup_bepinex(bepinex_dir: &Path, arch: &Arch) {
 
         fs::write(&run_bepinex_file, run_bepinex_content)
             .await
-            .expect("failed to write to run_bepinex.sh");
+            .with_context(|| {
+                format!(
+                    "failed to write run_bepinex.sh content to `{}`",
+                    run_bepinex_file.display()
+                )
+            })?;
 
         // set perms for execution
         let mut perms = run_bepinex_file
             .metadata()
-            .expect("failed to get run_bepinex.sh metadata")
+            .with_context(|| {
+                format!(
+                    "failed to get run_bepinex.sh metadata from path `{}`",
+                    run_bepinex_file.display()
+                )
+            })?
             .permissions();
 
         perms.set_mode(0o744);
 
-        fs::set_permissions(run_bepinex_file, perms)
+        fs::set_permissions(&run_bepinex_file, perms)
             .await
-            .expect("failed to set execute permissions for run_bepinex.sh");
+            .with_context(|| {
+                format!(
+                    "failed to set execute permissions for run_bepinex.sh at path `{}`",
+                    run_bepinex_file.display()
+                )
+            })?;
     }
+
+    Ok(())
 }
 
-async fn setup_unitas_config(bepinex_dir: &Path, port: u16) {
+async fn setup_unitas_config(bepinex_dir: &Path, port: u16) -> Result<()> {
     let cfg = bepinex_dir.join("BepInEx").join("config");
 
-    fs::create_dir_all(&cfg)
-        .await
-        .expect("failed to create directory for UniTAS config file");
+    fs::create_dir_all(&cfg).await.with_context(|| {
+        format!(
+            "failed to create directory for UniTAS config file at path `{}`",
+            cfg.display()
+        )
+    })?;
 
     let cfg = cfg.join("UniTAS.cfg");
     let contents = format!(
@@ -226,7 +260,10 @@ Port = {port}
 "#
     );
 
-    fs::write(cfg, contents)
-        .await
-        .expect("failed to write config for UniTAS");
+    fs::write(&cfg, contents).await.with_context(|| {
+        format!(
+            "failed to write config for UniTAS to path `{}`",
+            cfg.display()
+        )
+    })
 }

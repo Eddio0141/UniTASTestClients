@@ -8,9 +8,13 @@ use std::{
     time::Duration,
 };
 
-use crate::{cli::Args, fs_utils::copy_dir_all_blocking, Os, WIN_UNITY_EXE_NAME};
+use crate::{cli::Args, fs_utils::copy_dir_all_blocking, symbols, Os, WIN_UNITY_EXE_NAME};
+
+use anyhow::{Context, Result};
+use thiserror::Error;
 
 mod unity_2022_3_41f1_base;
+mod utils;
 
 pub fn get_linux_tests() -> Vec<Test> {
     vec![unity_2022_3_41f1_base::get()]
@@ -23,7 +27,7 @@ pub fn get_win_tests() -> Vec<Test> {
 pub struct Test {
     name: &'static str,
     os: Os,
-    test: fn(test_args: TestArgs),
+    test: fn(test_args: TestArgs) -> Result<bool>,
 }
 
 struct TestArgs<'a> {
@@ -46,10 +50,10 @@ impl UniTasStream {
         }
     }
 
-    fn send(&mut self, content: &str) {
+    fn send(&mut self, content: &str) -> Result<()> {
         // wait for the >>
         loop {
-            if self.receive() == ">>" {
+            if self.receive()? == ">>" {
                 break;
             }
         }
@@ -61,29 +65,29 @@ impl UniTasStream {
 
         self.stream
             .write_all(&content)
-            .expect("failed to write to UniTAS TCP stream");
+            .context("failed to send message to UniTAS remote")
     }
 
-    fn receive(&mut self) -> String {
+    fn receive(&mut self) -> Result<String> {
         self.stream
             .read_exact(&mut self.buf_msg_len)
-            .expect("failed to read length of message from UniTAS TCP stream");
+            .context("failed to read UniTAS remote response's message length")?;
 
         let msg_len = u64::from_le_bytes(self.buf_msg_len) as usize;
 
         self.buf.resize(msg_len, 0);
         self.stream
             .read_exact(&mut self.buf)
-            .expect("failed to read from UniTAS TCP stream");
+            .context("failed to read UniTAS remote response")?;
 
-        String::from_utf8_lossy(&self.buf).trim_end().to_owned()
+        Ok(String::from_utf8_lossy(&self.buf).trim_end().to_owned())
     }
 
-    fn wait_for_movie_end(&mut self) {
+    fn wait_for_movie_end(&mut self) -> Result<()> {
         loop {
-            self.send("print(movie_status().basically_running)");
-            if self.receive() == "false" {
-                break;
+            self.send("print(movie_status().basically_running)")?;
+            if self.receive()? == "false" {
+                return Ok(());
             }
             thread::sleep(Duration::from_secs(1));
         }
@@ -91,7 +95,13 @@ impl UniTasStream {
 }
 
 impl Test {
-    pub fn run(&self, exe_dir: &Path, bepinex_dir: &Path, logs_dir: &Path, args: &Args) {
+    pub fn run(
+        &self,
+        exe_dir: &Path,
+        bepinex_dir: &Path,
+        logs_dir: &Path,
+        args: &Args,
+    ) -> Result<(), BatchTestError> {
         println!("test initialising for {}", self.name);
 
         let game_dir = exe_dir.join(self.name);
@@ -104,22 +114,32 @@ impl Test {
             Os::Linux => "run_bepinex.sh",
             Os::Windows => WIN_UNITY_EXE_NAME,
         };
+        let execute_bin = game_dir.join(execute_bin);
 
         // copy bepinex before running of course
-        println!("copying bepinex to game folder");
-        copy_dir_all_blocking(bepinex_dir, &game_dir)
-            .expect("failed to copy BepInEx dir contents to game");
+        copy_dir_all_blocking(bepinex_dir, &game_dir).with_context(|| {
+            format!(
+                "failed to copy BepInEx dir from `{}` to game folder `{}`",
+                bepinex_dir.display(),
+                game_dir.display()
+            )
+        })?;
 
         // execute game
         println!("executing unity game");
-        let mut process = Command::new(game_dir.join(execute_bin))
+        let mut process = Command::new(&execute_bin)
             .current_dir(&game_dir)
             .arg("-batchmode")
             .arg("-nographics")
             .stdout(Stdio::null())
             .stderr(Stdio::null())
             .spawn()
-            .expect("failed to run unity game");
+            .with_context(|| {
+                format!(
+                    "failed to run unity game, attempted to run `{}`",
+                    execute_bin.display()
+                )
+            })?;
 
         let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), args.port);
 
@@ -136,9 +156,12 @@ impl Test {
                 Err(err) => {
                     // last error?
                     if i == fail_secs - 1 {
-                        eprintln!("failed to connect to UniTAS for {}: {err}", self.name);
                         self.move_log(&game_dir, logs_dir);
-                        return;
+                        return Err(anyhow::Error::new(err)
+                            .context(format!(
+                                "failed to connect to UniTAS after {fail_secs} seconds"
+                            ))
+                            .into());
                     }
 
                     // wait and try again
@@ -147,7 +170,7 @@ impl Test {
             }
         }
 
-        println!("connected");
+        println!("connected\n");
 
         // run tests
         let stream = UniTasStream::new(stream.unwrap());
@@ -156,19 +179,21 @@ impl Test {
             stream,
         };
 
-        println!("test is initialised, running test");
+        println!("[{}]", self.name);
 
-        (self.test)(test_args);
+        let success = (self.test)(test_args)?;
 
-        println!("test completed, copying log file");
+        println!("\ntest completed");
 
         self.move_log(&game_dir, logs_dir);
 
-        println!("killing game");
+        process.kill().context("failed to stop running game")?;
 
-        process.kill().expect("failed to stop running game");
-
-        println!("game stopped successfully");
+        if success {
+            Ok(())
+        } else {
+            Err(BatchTestError::TestFail)
+        }
     }
 
     fn move_log(&self, game_dir: &Path, logs_dir: &Path) {
@@ -179,10 +204,19 @@ impl Test {
         let log_dst = logs_dir.join(format!("{}.log", self.name));
         if let Err(err) = fs::copy(&log_src, &log_dst) {
             eprintln!(
-                "failed to copy log file from `{}` to `{}`: {err}",
+                "{} failed to copy log file from `{}` to `{}`: {err}",
+                symbols::WARN,
                 log_src.display(),
                 log_dst.display()
             );
         }
     }
+}
+
+#[derive(Error, Debug)]
+pub enum BatchTestError {
+    #[error("all test didn't complete successfully")]
+    TestFail,
+    #[error(transparent)]
+    Other(#[from] anyhow::Error),
 }
