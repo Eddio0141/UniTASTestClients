@@ -188,11 +188,12 @@ impl Test {
 
         let success = (self.test)(test_args);
 
+        println!();
         self.move_log(&game_dir, logs_dir);
         process.kill().context("failed to stop running game")?;
 
         let success = success?;
-        println!("\ntest completed");
+        println!("test completed");
 
         if success {
             Ok(())
@@ -215,6 +216,8 @@ impl Test {
                 log_dst.display()
             );
         }
+
+        println!("moved log of last session into `{}`", logs_dir.display());
     }
 }
 
