@@ -134,11 +134,6 @@ async fn main() {
         });
     }
 
-    // create logs dir
-    fs::create_dir_all(current_dir.join("logs"))
-        .await
-        .expect("failed to create logs dir");
-
     // for all UniTAS logs
     let logs_dir = current_dir.join("logs");
     fs::create_dir_all(&logs_dir)
