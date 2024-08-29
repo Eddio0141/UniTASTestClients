@@ -105,16 +105,14 @@ async fn main() -> Result<ExitCode> {
     let dl_unitas_task = {
         let unitas_dir = unitas_dir.clone();
         let pb = pb.clone();
-        task::spawn(async move {
-            dl_unitas(&unitas_dir, args.download_unitas, pb).await;
-        })
+        let token = args.github_token.to_owned();
+        task::spawn(async move { dl_unitas(&unitas_dir, args.download_unitas, pb, token).await })
     };
 
     let dl_games_task = {
         let current_dir = current_dir.to_path_buf();
-        task::spawn(async move {
-            dl_test_games(&current_dir, pb).await;
-        })
+        let token = args.github_token.to_owned();
+        task::spawn(async move { dl_test_games(&current_dir, pb, token).await })
     };
 
     // wait for bepinex download
@@ -141,10 +139,10 @@ async fn main() -> Result<ExitCode> {
         .context("failed to create folder for logs")?;
 
     // wait for unitas and bepinex dl
-    dl_unitas_task.await.unwrap();
+    dl_unitas_task.await.unwrap()?;
     setup_unitas(&unitas_dir, &bepinex_dir).await?;
 
-    dl_games_task.await.unwrap();
+    dl_games_task.await.unwrap()?;
 
     while post_bepinex_dl_tasks.join_next().await.is_some() {}
 

@@ -1,9 +1,14 @@
 #[cfg(target_os = "linux")]
 use std::os::unix::fs::PermissionsExt;
-use std::{fmt::Write, io::Cursor, path::Path, time::Duration};
+use std::{fmt::Write, io::Cursor, path::Path};
 
+use anyhow::Context;
+use anyhow::Result;
+use gh_api::Artifact;
+use gh_api::ArtifactFilter;
 use indicatif::{MultiProgress, ProgressBar, ProgressState, ProgressStyle};
-use reqwest::{header::CONTENT_LENGTH, redirect::Policy};
+use regex::Regex;
+use serde_json::Value;
 use tokio::{
     fs,
     task::{self, JoinSet},
@@ -13,10 +18,17 @@ use zip::ZipArchive;
 
 use crate::{Arch, Os, GAME_BIN_NAME};
 
-pub async fn dl_unitas(unitas_dir: &Path, download_unitas: bool, pb: MultiProgress) {
+mod gh_api;
+
+pub async fn dl_unitas(
+    unitas_dir: &Path,
+    download_unitas: bool,
+    pb: MultiProgress,
+    gh_token: String,
+) -> Result<()> {
     if unitas_dir.is_dir() {
         if !download_unitas {
-            return;
+            return Ok(());
         }
 
         // delete directory
@@ -25,33 +37,35 @@ pub async fn dl_unitas(unitas_dir: &Path, download_unitas: bool, pb: MultiProgre
             .expect("failed to remove existing UniTAS directory");
     }
 
-    let url = "https://nightly.link/Eddio0141/UniTAS/workflows/build-on-push/main/UniTAS.zip";
+    let artifact = gh_api::latest_artifacts(
+        "Eddio0141",
+        "UniTAS",
+        &gh_token,
+        "build-on-push.yml",
+        "main",
+        Some(ArtifactFilter::TargetName("UniTAS")),
+    )
+    .await
+    .context("failed to get latest build of UniTAS")?;
 
-    let client = reqwest::Client::builder()
-        .redirect(Policy::default())
-        .build()
-        .expect("failed to create client for downloading unitas");
+    let artifact = artifact
+        .first()
+        .context("failed to get download link for UniTAS")?;
 
-    let response = client
-        .get(url)
-        .build()
-        .expect("failed to build get request for downloading unitas");
-    let response = client
-        .execute(response)
+    let Artifact { link, dl_len, .. } = artifact;
+    let dl_len = *dl_len;
+
+    let response = gh_api::gh_api_client(link, &gh_token)
         .await
-        .expect("failed to download unitas");
-    let len = response
-        .headers()
-        .get(CONTENT_LENGTH)
-        .expect("failed to get size of UniTAS download")
-        .to_str()
-        .expect("size of UniTAS download isn't a string")
-        .parse::<u64>()
-        .expect("size of UniTAS download isn't a u64");
+        .context("failed to get download client for downloading UniTAS")?
+        .send()
+        .await
+        .context("failed to send request to download UniTAS")?;
     let mut bytes = response.bytes_stream();
-    let mut dl_buff = Vec::with_capacity(len as usize);
 
-    let pb = pb.add(dl_progress_bar(len));
+    let mut dl_buff = Vec::with_capacity(dl_len as usize);
+
+    let pb = pb.add(dl_progress_bar(dl_len));
     pb.set_message("downloading UniTAS");
 
     while let Some(chunk) = bytes.next().await {
@@ -80,6 +94,8 @@ pub async fn dl_unitas(unitas_dir: &Path, download_unitas: bool, pb: MultiProgre
     })
     .await
     .unwrap();
+
+    Ok(())
 }
 
 pub async fn dl_bepinex(dl_dir: &Path, os: &Os, arch: &Arch, pb: MultiProgress) {
@@ -96,12 +112,10 @@ pub async fn dl_bepinex(dl_dir: &Path, os: &Os, arch: &Arch, pb: MultiProgress) 
         .send()
         .await
         .expect("failed to get response for BepInEx latest release");
-    let text = response
-        .text()
+    let json: Value = response
+        .json()
         .await
         .expect("failed to get contents of BepInEx latest release");
-    let json: serde_json::Value =
-        serde_json::from_str(&text).expect("failed to parse github's json response");
 
     let tag_name_clean = json
         .get("tag_name")
@@ -206,84 +220,46 @@ pub async fn dl_bepinex(dl_dir: &Path, os: &Os, arch: &Arch, pb: MultiProgress) 
     .unwrap();
 }
 
-pub async fn dl_test_games(exe_dir: &Path, pb: MultiProgress) {
-    let url = "https://nightly.link/Eddio0141/UniTASTestClients/workflows/build-on-push/main";
+pub async fn dl_test_games(exe_dir: &Path, pb: MultiProgress, gh_token: String) -> Result<()> {
+    let artifacts = gh_api::latest_artifacts(
+        "Eddio0141",
+        "UniTASTestClients",
+        &gh_token,
+        "build-on-push.yml",
+        "main",
+        Some(ArtifactFilter::ExcludeNamePattern(
+            Regex::new(&format!("{}.*", env!("CARGO_PKG_NAME"))).unwrap(),
+        )),
+    )
+    .await
+    .context("failed to get latest build of UniTAS test games")?;
 
-    let response = reqwest::get(url)
-        .await
-        .expect("failed to get latest unity test game builds")
-        .text()
-        .await
-        .expect("failed to get text content for latest unity test game builds");
-
-    // extract links
-    let key = ".zip\"";
-    let links = response.lines().filter_map(|mut line| {
-        let i = line.find(key)?;
-
-        line = &line[..i + key.len() - 1];
-
-        // now find the other bracket, this shouldn't fail
-        let i = line
-            .rfind('"')
-            .expect("failed to find matching bracket for zip download link");
-
-        line = &line[i + 1..];
-
-        // grab name
-        let i = line.rfind(".").expect("failed to get name for artifact");
-        let name = &line[..i];
-        let i = line.rfind('/').expect("failed to get name for artifact");
-        let name = &name[i + 1..];
-
-        // filter out test-runner itself
-        // named like test-runner-unix, test-runner-win
-        let name = name.to_string();
-        let Some(i) = line.rfind('-') else {
-            return Some((name, line.to_string()));
-        };
-
-        if line[..i].ends_with(env!("CARGO_PKG_NAME")) {
-            None
-        } else {
-            Some((name, line.to_string()))
-        }
-    });
-
-    let mut dl_tasks = JoinSet::new();
+    let mut dl_tasks: JoinSet<std::prelude::v1::Result<(), anyhow::Error>> = JoinSet::new();
 
     // now download from links
-    for (name, link) in links {
+    for artifact in artifacts {
+        let Artifact { link, dl_len, name } = artifact;
+
         let exe_dir = exe_dir.to_path_buf();
         let pb = pb.clone();
+        let gh_token = gh_token.clone();
         dl_tasks.spawn(async move {
-            let client = reqwest::Client::builder()
-                .redirect(Policy::default())
-                .timeout(Duration::from_secs(60))
-                .build()
-                .expect("failed to create client for downloading unity games");
+            let dl_fail_err = |name, link| {
+                format!("failed to get response for downloading game `{name}` with link `{link}`")
+            };
 
-            let response = client
-                .get(link)
-                .build()
-                .expect("failed to build get request for downloading unity game");
-            let response = client
-                .execute(response)
+            let response = gh_api::gh_api_client(&link, &gh_token)
                 .await
-                .expect("failed to download unity game");
-            let len = response
-                .headers()
-                .get(CONTENT_LENGTH)
-                .expect("somehow didn't get content length for download")
-                .to_str()
-                .expect("failed to get content length for downloading game")
-                .parse::<u64>()
-                .expect("failed to convert download length for game to a u64");
-            let mut dl_buff = Vec::with_capacity(len as usize);
+                .with_context(|| dl_fail_err(&name, &link))?
+                .send()
+                .await
+                .with_context(|| dl_fail_err(&name, &link))?;
+
+            let mut dl_buff = Vec::with_capacity(dl_len as usize);
 
             let mut bytes = response.bytes_stream();
 
-            let pb = pb.add(dl_progress_bar(len));
+            let pb = pb.add(dl_progress_bar(dl_len));
             pb.set_message(format!("downloading game `{name}`"));
 
             while let Some(chunk) = bytes.next().await {
@@ -333,10 +309,16 @@ pub async fn dl_test_games(exe_dir: &Path, pb: MultiProgress) {
                     .await
                     .expect("failed to set execute permissions for game");
             }
+
+            Ok(())
         });
     }
 
-    while dl_tasks.join_next().await.is_some() {}
+    while let Some(res) = dl_tasks.join_next().await {
+        res.unwrap()?;
+    }
+
+    Ok(())
 }
 
 fn dl_progress_bar(dl_size: u64) -> ProgressBar {
