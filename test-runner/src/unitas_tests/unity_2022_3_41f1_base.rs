@@ -1,4 +1,4 @@
-use std::fs;
+use std::{fs, thread, time::Duration};
 
 use crate::{unitas_tests::utils::assert_eq, Os};
 
@@ -110,6 +110,84 @@ fn test(mut test_args: TestArgs) -> Result<bool> {
         stream.receive()?.as_str(),
         "5",
         || "didn't match click count of 5".to_string(),
+    ) {
+        res = false;
+    }
+
+    // multiple fixed updates in a row
+    // in this case, this pattern is made
+
+    // ...
+    // f: 0.02
+    // f: 0.04
+    // u: 0.04
+    // f: 0.06
+    // f: 0.08
+    // u: 0.08
+    // f: 0.10
+    // f: 0.12
+    // u: 0.12
+    let max_fixed_update_count = 4u8;
+
+    stream.send(&format!(
+        r#"time = traverse('UnityEngine.Time')
+time.property('maximumDeltaTime').set_value(0.3333333)
+time.property('fixedDeltaTime').set_value(0.02)
+time.property('timeScale').set_value(1)
+service('ITimeWrapper').capture_frame_time = 0.04
+
+wait_for_update = true
+fixed_update_count = 0
+update_count = 0
+
+printed_results = false
+
+patch("UniTAS.Patcher.Implementations.UnityEvents.UnityEvents.InvokeFixedUpdate", function(this)
+    if traverse(this).field("_calledFixedUpdate").get_value() or wait_for_update then
+        return
+    end
+
+    if fixed_update_count >= {max_fixed_update_count} then
+        if not printed_results then
+            print(fixed_update_count)
+            print(update_count)
+            printed_results = true
+        end
+        return
+    end
+
+    fixed_update_count = fixed_update_count + 1
+end, "method")
+patch("UniTAS.Patcher.Implementations.UnityEvents.UnityEvents.InvokeUpdate", function(this)
+    if traverse(this).field("_updated").get_value() or fixed_update_count >= {max_fixed_update_count} then
+        return
+    end
+
+    wait_for_update = false
+    update_count = update_count + 1
+end, "method")
+"#
+    ))?;
+
+    // ignore messages
+    for _ in 0..4 {
+        stream.receive()?;
+    }
+
+    if !assert_eq(
+        "multiple fixed update: fixed update count",
+        stream.receive()?.as_str(),
+        &max_fixed_update_count.to_string(),
+        || "mismatch in FixedUpdate count".to_string(),
+    ) {
+        res = false;
+    }
+
+    if !assert_eq(
+        "multiple fixed update: update count",
+        stream.receive()?.as_str(),
+        "2",
+        || "mismatch in Update count".to_string(),
     ) {
         res = false;
     }
