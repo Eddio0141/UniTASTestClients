@@ -66,6 +66,8 @@ impl Display for Arch {
 
 #[tokio::main]
 async fn main() -> Result<ExitCode> {
+    env_logger::init();
+
     // dirs in executable dir is all unity games for testing
     let current_exe = current_exe().context("failed to get current exe dir")?;
     let current_dir = current_exe.parent().unwrap();
