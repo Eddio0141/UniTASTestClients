@@ -1,6 +1,7 @@
 use std::{
+    collections::VecDeque,
     fs,
-    io::{Read, Write},
+    io::{self, Read, Write},
     net::{IpAddr, Ipv4Addr, SocketAddr, TcpStream},
     path::Path,
     process::{Command, Stdio},
@@ -11,6 +12,7 @@ use std::{
 use crate::{cli::Args, fs_utils::copy_dir_all_blocking, symbols, Os, WIN_UNITY_EXE_NAME};
 
 use anyhow::{Context, Result};
+use log::{debug, trace};
 use thiserror::Error;
 
 mod unity_2022_3_41f1_base;
@@ -39,29 +41,88 @@ struct UniTasStream {
     stream: TcpStream,
     buf: Vec<u8>,
     buf_msg_len: [u8; 8], // u32 (int) length
+    received_queue: VecDeque<String>,
+    ready_to_send: bool,
 }
 
+#[repr(u8)]
+enum ReceivePrefix {
+    Prefix = 0,
+    Stdout = 1,
+}
+
+impl From<u8> for ReceivePrefix {
+    fn from(value: u8) -> Self {
+        match value {
+            0 => ReceivePrefix::Prefix,
+            1 => ReceivePrefix::Stdout,
+            _ => unimplemented!(
+                "invalid ReceivePrefix value `{value}`, forgot to implement new prefix on rust side?"
+            ),
+        }
+    }
+}
+
+const HUMAN_PREFIX: &str = ">> ";
+
+const ERR_PREFIX_READ_FAIL: &str = "failed to receive UniTAS remote prefix";
+
 impl UniTasStream {
-    fn new(stream: TcpStream) -> Self {
+    fn new(mut stream: TcpStream) -> Result<Self, io::Error> {
         // add timeout to the stream
         let timeout = Some(Duration::from_secs(30));
         stream.set_read_timeout(timeout).unwrap();
         stream.set_write_timeout(timeout).unwrap();
 
-        Self {
+        let mut buf = vec![0; HUMAN_PREFIX.len()];
+
+        // initialise connection
+        stream.read_exact(&mut buf)?;
+        assert_eq!(
+            String::from_utf8_lossy(&buf),
+            HUMAN_PREFIX,
+            "somehow there's a mismatch in expected initial message"
+        );
+        // verify we are a script
+        buf.resize(1, 0);
+        buf[0] = 0;
+        stream.write_all(&buf)?;
+
+        Ok(Self {
             stream,
-            buf: Vec::new(),
+            buf,
             buf_msg_len: [0; 8],
-        }
+            ready_to_send: true,
+            received_queue: VecDeque::new(),
+        })
     }
 
     fn send(&mut self, content: &str) -> Result<()> {
-        // wait for the >>
-        loop {
-            if self.receive()? == ">>" {
-                break;
+        trace!("send to remote call with content `{content}`");
+        if !self.ready_to_send {
+            debug!("can't send message to remote yet, `ready_to_send` is false");
+
+            // wait for prefix
+            loop {
+                self.buf.resize(size_of::<ReceivePrefix>(), 0);
+                self.stream.read_exact(&mut self.buf).with_context(|| {
+                    format!("{ERR_PREFIX_READ_FAIL}, can't send data to remote")
+                })?;
+
+                match ReceivePrefix::from(self.buf[0]) {
+                    ReceivePrefix::Prefix => {
+                        debug!("ready to send to remote");
+                        break;
+                    }
+                    ReceivePrefix::Stdout => {
+                        let msg = self.read_stdout()?;
+                        debug!("got stdout message: `{msg}`, adding to queue");
+                        self.received_queue.push_back(msg);
+                    }
+                }
             }
         }
+        self.ready_to_send = false;
 
         let content_len_raw = content.len().to_le_bytes();
         let content = content.as_bytes();
@@ -70,10 +131,42 @@ impl UniTasStream {
 
         self.stream
             .write_all(&content)
-            .context("failed to send message to UniTAS remote")
+            .context("failed to send message to UniTAS remote")?;
+
+        trace!("sent msg to remote, msg len: {}", content.len());
+
+        Ok(())
     }
 
     fn receive(&mut self) -> Result<String> {
+        trace!("receive call");
+
+        if let Some(msg) = self.received_queue.pop_front() {
+            trace!("found message in queue already, `{msg}`");
+            return Ok(msg);
+        }
+
+        loop {
+            self.buf.resize(size_of::<ReceivePrefix>(), 0);
+            self.stream.read_exact(&mut self.buf).with_context(|| {
+                format!("{ERR_PREFIX_READ_FAIL}, failed to receive data from remote")
+            })?;
+
+            match ReceivePrefix::from(self.buf[0]) {
+                ReceivePrefix::Prefix => {
+                    self.ready_to_send = true;
+                    debug!("received prefix data from remote, ready to send");
+                }
+                ReceivePrefix::Stdout => break,
+            }
+        }
+
+        trace!("reading stdout message");
+        self.read_stdout()
+    }
+
+    fn read_stdout(&mut self) -> Result<String> {
+        // use after reading message type prefix
         self.stream
             .read_exact(&mut self.buf_msg_len)
             .context("failed to read UniTAS remote response's message length")?;
@@ -85,7 +178,11 @@ impl UniTasStream {
             .read_exact(&mut self.buf)
             .context("failed to read UniTAS remote response")?;
 
-        Ok(String::from_utf8_lossy(&self.buf).trim_end().to_owned())
+        let msg = String::from_utf8_lossy(&self.buf).trim_end().to_owned();
+
+        debug!("received stdout msg: `{msg}`, len: `{msg_len}`");
+
+        Ok(msg)
     }
 
     fn wait_for_movie_end(&mut self) -> Result<()> {
@@ -151,7 +248,7 @@ impl Test {
         // now connect
         let mut stream = None;
         let fail_secs = 30usize;
-        println!("starting TCP connection to UniTAS remote");
+        println!("connecting to UniTAS remote...");
         for i in 0..fail_secs {
             match TcpStream::connect_timeout(&addr, Duration::from_secs(30)) {
                 Ok(s) => {
@@ -175,10 +272,10 @@ impl Test {
             }
         }
 
+        let stream = UniTasStream::new(stream.unwrap()).context("failed to initialise connection to UniTAS, verifying connection as a script has failed")?;
+
         println!("connected\n");
 
-        // run tests
-        let stream = UniTasStream::new(stream.unwrap());
         let test_args = TestArgs {
             game_dir: &game_dir,
             stream,
@@ -186,6 +283,7 @@ impl Test {
 
         println!("[{}]", self.name);
 
+        // run tests
         let success = (self.test)(test_args);
 
         println!();
