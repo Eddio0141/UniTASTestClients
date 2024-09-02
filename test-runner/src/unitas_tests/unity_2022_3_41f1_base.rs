@@ -1,4 +1,4 @@
-use std::{fs, thread, time::Duration};
+use std::fs;
 
 use crate::{unitas_tests::utils::assert_eq, Os};
 
