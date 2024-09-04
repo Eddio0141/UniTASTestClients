@@ -1,4 +1,4 @@
-#[cfg(target_os = "linux")]
+#[cfg(target_family = "unix")]
 use std::os::unix::fs::PermissionsExt;
 use std::{fmt::Write, io::Cursor, path::Path};
 
@@ -293,7 +293,7 @@ pub async fn dl_test_games(exe_dir: &Path, pb: MultiProgress, gh_token: String) 
             .unwrap();
 
             // chmod game binary
-            #[cfg(target_os = "linux")]
+            #[cfg(target_family = "unix")]
             {
                 let game_bin = dl_dir.join(GAME_BIN_NAME);
 

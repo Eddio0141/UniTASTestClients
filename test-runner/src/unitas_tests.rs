@@ -1,4 +1,4 @@
-#[cfg(target_os = "linux")]
+#[cfg(target_family = "unix")]
 use std::os::unix::process::ExitStatusExt;
 use std::{
     collections::VecDeque,
@@ -301,10 +301,15 @@ impl Test {
             Ok(())
         } else {
             let status = output.status;
-            let signal = if cfg!(target_os = "linux") {
-                status.signal()
-            } else {
-                None
+            let signal: Option<i32>;
+
+            #[cfg(target_family = "unix")]
+            {
+                signal = status.signal();
+            };
+            #[cfg(not(target_family = "unix"))]
+            {
+                signal = None;
             };
 
             // check if not sigkill (process.kill() would terminate it with sigkill)

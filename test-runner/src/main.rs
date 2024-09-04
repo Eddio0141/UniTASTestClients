@@ -1,4 +1,4 @@
-#[cfg(target_os = "linux")]
+#[cfg(target_family = "unix")]
 use std::os::unix::fs::PermissionsExt;
 use std::{
     env::{self, current_exe},
@@ -183,7 +183,7 @@ const GAME_BIN_NAME: &str = "build";
 const WIN_UNITY_EXE_NAME: &str = formatcp!("{GAME_BIN_NAME}.exe");
 
 async fn setup_bepinex(bepinex_dir: &Path, arch: &Arch) -> Result<()> {
-    #[cfg(target_os = "linux")]
+    #[cfg(target_family = "unix")]
     {
         let run_bepinex_file = bepinex_dir.join("run_bepinex.sh");
 
