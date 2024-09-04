@@ -54,7 +54,10 @@ pub async fn latest_artifacts<'a>(
 
     // check if use run, return Some(id) if its valid
     let use_run = |workflow: &Value| {
-        if workflow.get("head_branch").unwrap().as_str().unwrap() == branch {
+        if workflow.get("status").unwrap().as_str().unwrap() == "completed"
+            && workflow.get("head_branch").unwrap().as_str().unwrap() == branch
+            && workflow.get("conclusion").unwrap().as_str().unwrap() == "success"
+        {
             Some(workflow.get("id").unwrap().as_u64().unwrap())
         } else {
             None
