@@ -1,3 +1,5 @@
+#[cfg(target_os = "linux")]
+use std::os::unix::process::ExitStatusExt;
 use std::{
     collections::VecDeque,
     fs,
@@ -233,8 +235,8 @@ impl Test {
             .current_dir(&game_dir)
             .arg("-batchmode")
             .arg("-nographics")
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
             .spawn()
             .with_context(|| {
                 format!(
@@ -290,13 +292,36 @@ impl Test {
         self.move_log(&game_dir, logs_dir);
         process.kill().context("failed to stop running game")?;
 
+        let output = process.wait_with_output().unwrap();
+
         let success = success?;
         println!("test completed");
 
         if success {
             Ok(())
         } else {
-            Err(BatchTestError::TestFail)
+            let status = output.status;
+            let signal = if cfg!(target_os = "linux") {
+                status.signal()
+            } else {
+                None
+            };
+
+            // check if not sigkill (process.kill() would terminate it with sigkill)
+            let err = if status.success() || signal == Some(9) {
+                BatchTestError::TestFail
+            } else {
+                let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
+                let stderr = String::from_utf8_lossy(&output.stderr).into_owned();
+                BatchTestError::GameCrash {
+                    stdout,
+                    stderr,
+                    code: status.code(),
+                    signal,
+                }
+            };
+
+            Err(err)
         }
     }
 
@@ -323,6 +348,13 @@ impl Test {
 pub enum BatchTestError {
     #[error("all test didn't complete successfully")]
     TestFail,
+    #[error("game has crashed, exit code: {}\nstdout:\n{stdout}\n\nstderr:\n{stderr}", code.map(|c| c.to_string()).unwrap_or_else(|| format!("None, signal: {}", signal.map(|s| s.to_string()).unwrap_or_else(|| "None".to_string()))))]
+    GameCrash {
+        stdout: String,
+        stderr: String,
+        code: Option<i32>,
+        signal: Option<i32>,
+    },
     #[error(transparent)]
     Other(#[from] anyhow::Error),
 }
