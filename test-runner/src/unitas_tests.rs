@@ -291,10 +291,10 @@ impl Test {
         let success = (self.test)(test_args);
 
         println!();
-        self.move_log(&game_dir, logs_dir);
         process.kill().context("failed to stop running game")?;
 
         let output = process.wait_with_output().unwrap();
+        self.move_log(&game_dir, logs_dir);
 
         let success = success?;
         println!("test completed");
