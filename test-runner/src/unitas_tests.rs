@@ -235,8 +235,10 @@ impl Test {
             .current_dir(&game_dir)
             .arg("-batchmode")
             .arg("-nographics")
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
+            .args(["-logFile", STDOUT_LOG_FILENAME])
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .stdin(Stdio::null())
             .spawn()
             .with_context(|| {
                 format!(
@@ -293,7 +295,7 @@ impl Test {
         println!();
         process.kill().context("failed to stop running game")?;
 
-        let output = process.wait_with_output().unwrap();
+        let status = process.wait().unwrap();
         self.move_log(&game_dir, logs_dir);
 
         let success = success?;
@@ -302,7 +304,6 @@ impl Test {
         if success {
             Ok(())
         } else {
-            let status = output.status;
             let signal: Option<i32>;
 
             #[cfg(target_family = "unix")]
@@ -318,11 +319,7 @@ impl Test {
             let err = if status.success() || signal == Some(9) {
                 BatchTestError::TestFail
             } else {
-                let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
-                let stderr = String::from_utf8_lossy(&output.stderr).into_owned();
                 BatchTestError::GameCrash {
-                    stdout,
-                    stderr,
                     code: status.code(),
                     signal,
                 }
@@ -333,6 +330,17 @@ impl Test {
     }
 
     fn move_log(&self, game_dir: &Path, logs_dir: &Path) {
+        let log_src = game_dir.join(STDOUT_LOG_FILENAME);
+        let log_dst = logs_dir.join(format!("{}-{STDOUT_LOG_FILENAME}", self.name));
+        if let Err(err) = fs::copy(&log_src, &log_dst) {
+            eprintln!(
+                "{} failed to copy stdout log file from `{}` to `{}`: {err}",
+                symbols::WARN,
+                log_src.display(),
+                log_dst.display()
+            );
+        }
+
         // 2 seconds to flush usually
         thread::sleep(Duration::from_millis(2500));
 
@@ -351,14 +359,14 @@ impl Test {
     }
 }
 
+const STDOUT_LOG_FILENAME: &str = "stdout.log";
+
 #[derive(Error, Debug)]
 pub enum BatchTestError {
     #[error("all test didn't complete successfully")]
     TestFail,
-    #[error("game has crashed, exit code: {}\nstdout:\n{stdout}\n\nstderr:\n{stderr}", code.map(|c| c.to_string()).unwrap_or_else(|| format!("None, signal: {}", signal.map(|s| s.to_string()).unwrap_or_else(|| "None".to_string()))))]
+    #[error("game has crashed, exit code: {}", code.map(|c| c.to_string()).unwrap_or_else(|| format!("None, signal: {}", signal.map(|s| s.to_string()).unwrap_or_else(|| "None".to_string()))))]
     GameCrash {
-        stdout: String,
-        stderr: String,
         code: Option<i32>,
         signal: Option<i32>,
     },
