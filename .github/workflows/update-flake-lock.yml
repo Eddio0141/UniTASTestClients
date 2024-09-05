@@ -18,5 +18,4 @@ jobs:
           pr-title: "Update flake.lock"
           pr-labels: |
             dependencies
-      - name: Cargo check
-        run: nix develop -c bash -c "cd test-runner && cargo check"
+          token: ${{ secrets.GH_TOKEN_FOR_UPDATES }}
