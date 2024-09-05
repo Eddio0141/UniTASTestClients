@@ -260,7 +260,9 @@ impl Test {
                 Err(err) => {
                     // last error?
                     if i == fail_secs - 1 {
+                        process.kill().context("failed to stop running game")?;
                         self.move_log(&game_dir, logs_dir);
+
                         return Err(anyhow::Error::new(err)
                             .context(format!(
                                 "failed to connect to UniTAS after {fail_secs} seconds"
