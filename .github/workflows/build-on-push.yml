@@ -12,6 +12,9 @@ jobs:
         targetGame:
           - path: 2022.3.41f1-base
             targetPlatform: StandaloneLinux64
+
+    # only run if not automation, dependabot only does cargo and flake upgrade only affects rust stuff, which is checked already
+    if: contains(github.event.pull_request.labels.*.name, 'automation') == false
     steps:
       - name: checkout
         uses: actions/checkout@v4
