@@ -4,3 +4,6 @@ updates:
     directory: "/test-runner"
     schedule:
       interval: "weekly"
+    labels:
+      - "dependencies"
+      - "automation"
