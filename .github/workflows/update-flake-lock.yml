@@ -18,5 +18,6 @@ jobs:
           pr-title: "Update flake.lock"
           pr-labels: |
             dependencies
+            automation
       - name: Cargo check
         run: nix develop -c bash -c "cd test-runner && cargo check"
