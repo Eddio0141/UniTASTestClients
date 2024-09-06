@@ -130,8 +130,7 @@ async fn main() -> Result<ExitCode> {
 
     {
         let bepinex_dir = bepinex_dir.clone();
-        let arch = arch.clone();
-        post_bepinex_dl_tasks.spawn(async move { setup_bepinex(&bepinex_dir, &arch).await });
+        post_bepinex_dl_tasks.spawn(async move { setup_bepinex(&bepinex_dir).await });
     }
 
     // for all UniTAS logs
@@ -168,21 +167,11 @@ async fn setup_unitas(unitas_dir: &Path, bepinex_dir: &Path) -> Result<()> {
         })
 }
 
-fn game_bin_name(os: &Os, arch: &Arch) -> &'static str {
-    match &os {
-        Os::Linux => match arch {
-            Arch::X64 => GAME_BIN_NAME,
-            Arch::X86 => todo!(),
-        },
-        // TODO: does windows require this
-        Os::Windows => WIN_UNITY_EXE_NAME,
-    }
-}
-
 const GAME_BIN_NAME: &str = "build";
 const WIN_UNITY_EXE_NAME: &str = formatcp!("{GAME_BIN_NAME}.exe");
+const UNIX_UNITY_EXE_NAME: &str = formatcp!("{GAME_BIN_NAME}.x86_64");
 
-async fn setup_bepinex(bepinex_dir: &Path, arch: &Arch) -> Result<()> {
+async fn setup_bepinex(bepinex_dir: &Path) -> Result<()> {
     #[cfg(target_family = "unix")]
     {
         let run_bepinex_file = bepinex_dir.join("run_bepinex.sh");
@@ -203,9 +192,7 @@ async fn setup_bepinex(bepinex_dir: &Path, arch: &Arch) -> Result<()> {
             .find(find_key)
             .context("failed to find executable_name config in run_bepinex.sh")?;
 
-        let exe_name = game_bin_name(&Os::Linux, arch);
-
-        run_bepinex_content.insert_str(find_index + find_key.len() + 1, exe_name);
+        run_bepinex_content.insert_str(find_index + find_key.len() + 1, UNIX_UNITY_EXE_NAME);
 
         fs::write(&run_bepinex_file, run_bepinex_content)
             .await

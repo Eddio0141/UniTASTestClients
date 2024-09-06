@@ -38,7 +38,7 @@ jobs:
           targetPlatform: ${{ matrix.targetGame.targetPlatform }}
           projectPath: ${{ matrix.targetGame.path }}
           buildsPath: ${{ matrix.targetGame.path }}/build
-          buildName: build
+          buildName: build.x86_64
 
       - uses: actions/upload-artifact@v4
         with:
