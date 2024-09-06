@@ -14,7 +14,7 @@ jobs:
             targetPlatform: StandaloneLinux64
 
     # only run if not automation, dependabot only does cargo and flake upgrade only affects rust stuff, which is checked already
-    if: contains(github.event.pull_request.labels.*.name, 'automation') == false
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'automation') }}
     steps:
       - name: checkout
         uses: actions/checkout@v4
@@ -50,7 +50,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
-    if: contains(github.event.pull_request.labels.*.name, 'automation') == false
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'automation') }}
     steps:
       - name: checkout
         uses: actions/checkout@v4
