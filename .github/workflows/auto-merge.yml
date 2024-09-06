@@ -10,8 +10,14 @@ jobs:
   auto-merge:
     runs-on: ubuntu-latest
     if: contains(github.event.pull_request.labels.*.name, 'automation')
+    env:
+      CARGO_CHECK: ${{ contains(github.event.pull_request.labels.*.name, 'cargo check') }}
     steps:
-      - if: contains(github.event.pull_request.labels.*.name, 'cargo check')
+      - if: env.CARGO_CHECK
+        name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v13
+
+      - if: env.CARGO_CHECK
         name: Cargo check
         run: nix develop -c bash -c "cd test-runner && cargo check"
 

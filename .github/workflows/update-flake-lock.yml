@@ -20,3 +20,4 @@ jobs:
             dependencies
             automation
             cargo check
+          token: ${{ secrets.GH_TOKEN_FOR_UPDATES }}
