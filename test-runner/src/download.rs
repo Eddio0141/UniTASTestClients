@@ -16,6 +16,8 @@ use tokio::{
 use tokio_stream::StreamExt;
 use zip::ZipArchive;
 
+use crate::cli::ReplaceGame;
+use crate::fs_utils;
 use crate::{Arch, Os, GAME_BIN_NAME};
 
 mod gh_api;
@@ -220,7 +222,12 @@ pub async fn dl_bepinex(dl_dir: &Path, os: &Os, arch: &Arch, pb: MultiProgress) 
     .unwrap();
 }
 
-pub async fn dl_test_games(exe_dir: &Path, pb: MultiProgress, gh_token: String) -> Result<()> {
+pub async fn dl_test_games(
+    exe_dir: &Path,
+    pb: MultiProgress,
+    gh_token: String,
+    replace_games: Vec<ReplaceGame>,
+) -> Result<()> {
     let artifacts = gh_api::latest_artifacts(
         "Eddio0141",
         "UniTASTestClients",
@@ -234,16 +241,40 @@ pub async fn dl_test_games(exe_dir: &Path, pb: MultiProgress, gh_token: String) 
     .await
     .context("failed to get latest build of UniTAS test games")?;
 
-    let mut dl_tasks: JoinSet<std::prelude::v1::Result<(), anyhow::Error>> = JoinSet::new();
+    let mut dl_tasks: JoinSet<std::result::Result<(), anyhow::Error>> = JoinSet::new();
 
     // now download from links
     for artifact in artifacts {
         let Artifact { link, dl_len, name } = artifact;
 
+        let use_local_file = replace_games.iter().find_map(|replace_game| {
+            if replace_game.name == name {
+                Some(replace_game.game_path.to_owned())
+            } else {
+                None
+            }
+        });
+
         let exe_dir = exe_dir.to_path_buf();
         let pb = pb.clone();
         let gh_token = gh_token.clone();
         dl_tasks.spawn(async move {
+            let dl_dir = exe_dir.join(&name);
+
+            if let Some(use_local_folder) = use_local_file {
+                fs_utils::copy_dir_all(&use_local_folder, &dl_dir)
+                    .await
+                    .with_context(|| {
+                        format!(
+                            "failed to copy game folder from `{}` to `{}`",
+                            use_local_folder.display(),
+                            dl_dir.display()
+                        )
+                    })?;
+
+                return Ok(());
+            }
+
             let dl_fail_err = |name, link| {
                 format!("failed to get response for downloading game `{name}` with link `{link}`")
             };
@@ -273,7 +304,6 @@ pub async fn dl_test_games(exe_dir: &Path, pb: MultiProgress, gh_token: String) 
 
             pb.finish_with_message(format!("downloaded game `{name}`"));
 
-            let dl_dir = exe_dir.join(&name);
             fs::create_dir_all(&dl_dir)
                 .await
                 .expect("failed to create directory for unity game");

@@ -75,6 +75,7 @@ async fn main() -> Result<ExitCode> {
     let unitas_dir = current_dir.join("UniTAS");
 
     let args = Args::parse();
+    args.validate()?;
 
     // os & arch
     let os = match env::consts::OS {
@@ -114,7 +115,8 @@ async fn main() -> Result<ExitCode> {
     let dl_games_task = {
         let current_dir = current_dir.to_path_buf();
         let token = args.github_token.to_owned();
-        task::spawn(async move { dl_test_games(&current_dir, pb, token).await })
+        let replace_games = args.replace_game.to_owned();
+        task::spawn(async move { dl_test_games(&current_dir, pb, token, replace_games).await })
     };
 
     // wait for bepinex download
