@@ -1,4 +1,4 @@
-name: update-flake-lock
+name: update flake lock
 on:
   workflow_dispatch: # allows manual triggering
   schedule:
@@ -19,5 +19,4 @@ jobs:
           pr-labels: |
             dependencies
             automation
-      - name: Cargo check
-        run: nix develop -c bash -c "cd test-runner && cargo check"
+            cargo check

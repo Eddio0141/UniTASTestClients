@@ -1,6 +1,5 @@
-name: Auto-merge
+name: auto merge
 on:
-  workflow_dispatch:
   pull_request:
 
 permissions:
@@ -8,17 +7,14 @@ permissions:
   pull-requests: write
 
 jobs:
-  automated:
+  auto-merge:
     runs-on: ubuntu-latest
-    if: contains(github.event.pull_request.labels.*.name, 'automation') && github.repository == 'Eddio0141/UniTASTestClients'
+    if: contains(github.event.pull_request.labels.*.name, 'automation')
     steps:
-      - name: Wait on check
-        uses: lewagon/wait-on-check-action@v1.3.4
-        with:
-          ref: ${{ github.ref }}
-          running-workflow-name: "automated"
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-            
+      - if: contains(github.event.pull_request.labels.*.name, 'cargo check')
+        name: Cargo check
+        run: nix develop -c bash -c "cd test-runner && cargo check"
+
       - name: Auto-merge for PRs
         run: gh pr merge --auto --merge "$PR_URL"
         env:
