@@ -19,7 +19,9 @@ jobs:
 
       - if: env.CARGO_CHECK
         name: Cargo check
-        run: nix develop -c bash -c "cd test-runner && cargo check"
+        run: |
+          ls -la
+          nix develop -c bash -c "cd test-runner && cargo check"
 
       - name: Auto-merge for PRs
         run: gh pr merge --auto --merge "$PR_URL"
