@@ -18,7 +18,8 @@ use zip::ZipArchive;
 
 use crate::cli::ReplaceGame;
 use crate::fs_utils;
-use crate::{Arch, Os, GAME_BIN_NAME};
+use crate::UNIX_UNITY_EXE_NAME;
+use crate::{Arch, Os};
 
 mod gh_api;
 
@@ -325,7 +326,7 @@ pub async fn dl_test_games(
             // chmod game binary
             #[cfg(target_family = "unix")]
             {
-                let game_bin = dl_dir.join(GAME_BIN_NAME);
+                let game_bin = dl_dir.join(UNIX_UNITY_EXE_NAME);
 
                 // set perms for execution
                 let mut perms = game_bin
