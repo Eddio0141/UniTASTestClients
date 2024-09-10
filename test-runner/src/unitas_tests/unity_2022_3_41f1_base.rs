@@ -27,6 +27,9 @@ fn test(mut test_args: TestArgs) -> Result<bool> {
 
     let stream = &mut test_args.stream;
 
+    stream.send("full_access(true)")?;
+    stream.receive()?;
+
     stream.send("play('movie.lua')")?;
     stream.wait_for_movie_end()?;
 
