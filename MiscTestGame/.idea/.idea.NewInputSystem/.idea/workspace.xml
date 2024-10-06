@@ -4,8 +4,18 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="271a4084-16ba-4a3b-9485-b7b05b1b2c46" name="Changes" comment="updated everything to new project">
+    <list default="true" id="271a4084-16ba-4a3b-9485-b7b05b1b2c46" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.NewInputSystem/.idea/projectSettingsUpdater.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.NewInputSystem/.idea/projectSettingsUpdater.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/.idea.NewInputSystem/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.NewInputSystem/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/Scenes/Main.unity" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/Scenes/Main.unity" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/SpawnScriptableObj.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/SpawnScriptableObj.cs.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/UI.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/UI/InputDisplay.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/UI/InputDisplay.cs.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ProjectSettings/QualitySettings.asset" beforeDir="false" afterPath="$PROJECT_DIR$/ProjectSettings/QualitySettings.asset" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../test-runner/Cargo.lock" beforeDir="false" afterPath="$PROJECT_DIR$/../test-runner/Cargo.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../test-runner/Cargo.toml" beforeDir="false" afterPath="$PROJECT_DIR$/../test-runner/Cargo.toml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -28,27 +38,20 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "WebServerToolWindowFactoryState": "false",
-    "git-widget-placeholder": "scriptable-object",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "vue.rearranger.settings.migration": "true"
-  },
-  "keyToStringList": {
-    "rider.external.source.directories": [
-      "/home/yuu/.config/JetBrains/Rider2024.1/resharper-host/DecompilerCache",
-      "/home/yuu/.config/JetBrains/Rider2024.1/resharper-host/SourcesCache",
-      "/home/yuu/.local/share/Symbols/src"
-    ]
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RunManager" selected="Attach to Unity Editor.Attach to Unity Editor">
     <configuration name="Standalone Player" type="RunUnityExe" factoryName="Unity Executable">
       <option name="EXE_PATH" value="$PROJECT_DIR$/build/build.x86_64" />
@@ -105,6 +108,11 @@
       <updated>1700175249917</updated>
       <workItem from="1700175250961" duration="593000" />
       <workItem from="1716412524598" duration="737000" />
+      <workItem from="1727844336236" duration="1363000" />
+      <workItem from="1727931002030" duration="2112000" />
+      <workItem from="1727933412904" duration="2289000" />
+      <workItem from="1727935819756" duration="966000" />
+      <workItem from="1728182222830" duration="104000" />
     </task>
     <task id="LOCAL-00001" summary="updated everything to new project">
       <option name="closed" value="true" />
@@ -129,6 +137,7 @@
   </component>
   <component name="UnityUnitTestConfiguration" currentTestLauncher="Both" />
   <component name="VcsManagerConfiguration">
+    <option name="LOCAL_CHANGES_DETAILS_PREVIEW_SHOWN" value="false" />
     <option name="CLEAR_INITIAL_COMMIT_MESSAGE" value="true" />
     <MESSAGE value="updated everything to new project" />
     <option name="LAST_COMMIT_MESSAGE" value="updated everything to new project" />

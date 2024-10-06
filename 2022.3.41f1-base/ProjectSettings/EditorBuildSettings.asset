@@ -11,4 +11,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/MovieTest2.unity
     guid: 8fd213d3f9d1707d2915514db0b21e7f
+  - enabled: 1
+    path: Assets/Scenes/FrameAdvancing.unity
+    guid: 342cfcc2ff4bede72987ab604ce4fa7a
   m_configObjects: {}

@@ -195,5 +195,68 @@ end, "method")
         res = false;
     }
 
+    // FrameAdvanceAnimator.cs
+    stream.send(
+        r#"event_coroutine(function()
+    service("ISceneWrapper").load_scene("FrameAdvancing")
+    service('ITimeWrapper').capture_frame_time = 0.01
+    local y = coroutine.yield
+
+    y("UpdateUnconditional")
+
+    local fa = service("IFrameAdvancing")
+    local fa_update_mode = traverse("FrameAdvanceMode").field("Update").get_value()
+
+    fa.FrameAdvance(1, fa_update_mode)
+    for _ = 1, 250 do
+        y("UpdateUnconditional")
+    end
+
+    local timeTriggerFrame = traverse("FrameAdvanceAnimator").field("_timeTriggerTime");
+    -- local timeTriggerFrame = traverse("FrameAdvanceAnimator").field("_timeTriggerFrame"); -- TODO: once frame advancing fixes time env inaccuracies
+    -- https://github.com/Eddio0141/UniTAS/issues/238
+    local timeTriggerLegacyFrame = traverse("FrameAdvanceLegacyAnimation").field("_timeTriggerTime");
+    local timeTriggerLegacyBlendFrame = traverse("FrameAdvanceLegacyAnimation").field("_timeTriggerTimeBlend");
+    print("f1 Animator: " .. timeTriggerFrame.get_value())
+    print("f1 legacy Animation: " .. timeTriggerLegacyFrame.get_value())
+    print("f1 legacy Animation blend: " .. timeTriggerLegacyBlendFrame.get_value())
+
+    fa.TogglePause() -- resume
+
+    for _ = 1, 150 do
+        y("UpdateUnconditional")
+    end
+
+    print("f2 Animator: " .. timeTriggerFrame.get_value())
+    print("f2 legacy Animation: " .. timeTriggerLegacyFrame.get_value())
+    print("f2 legacy Animation blend: " .. timeTriggerLegacyBlendFrame.get_value())
+end)"#,
+    )?;
+
+    // if !assert_eq(
+    //     "frame advancing: paused Animator",
+    //     stream.receive()?.as_str(),
+    //     "f1: -1",
+    //     || "mismatch in initial value of Animator trigger tracker value".to_string(),
+    // ) {
+    //     res = false;
+    // }
+
+    println!("{}", stream.receive()?);
+    println!("{}", stream.receive()?);
+    println!("{}", stream.receive()?);
+    println!("{}", stream.receive()?);
+    println!("{}", stream.receive()?);
+    println!("{}", stream.receive()?);
+
+    // if !assert_eq(
+    //     "frame advancing: Animator trigger reach check",
+    //     stream.receive()?.as_str(),
+    //     "94",
+    //     || "mismatch in animation completion frame".to_string(),
+    // ) {
+    //     res = false;
+    // }
+
     Ok(res)
 }
