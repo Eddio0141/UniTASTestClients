@@ -2,10 +2,20 @@ f = movie.frame_advance
 
 -- LegacyInputSystemTest
 for i = 1, 5 do
+  if i == 1 then
+    key.hold("A")
+  elseif i == 3 then
+    key.hold("d")
+  end
   key.hold("space")
-  f(i)
+  f()
   key.release("space")
-  f(i)
+  f()
+  if i == 1 then
+    key.release("A")
+  elseif i == 3 then
+    key.release("d")
+  end
 end
 
 -- SceneTest

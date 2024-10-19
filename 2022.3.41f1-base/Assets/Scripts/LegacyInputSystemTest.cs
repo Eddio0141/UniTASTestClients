@@ -1,4 +1,5 @@
 using System.Collections;
+using JetBrains.Annotations;
 using UnityEngine;
 
 public class LegacyInputSystemTest : MonoBehaviour
@@ -10,6 +11,8 @@ public class LegacyInputSystemTest : MonoBehaviour
     private static int _spaceUpKeyCodeCount;
     private static int _spaceDownStringCount;
     private static int _spaceUpStringCount;
+
+    [UsedImplicitly] private static int _horizontalAxisMoveCount;
 
     private const int ButtonCountTest = 5;
 
@@ -26,6 +29,11 @@ public class LegacyInputSystemTest : MonoBehaviour
         while (_jumpButtonDownCount + _jumpButtonUpCount + _spaceDownKeyCodeCount + _spaceUpKeyCodeCount +
                _spaceDownStringCount + _spaceUpStringCount < ButtonCountTest * 6)
         {
+            if (Input.GetAxis("Horizontal") != 0)
+            {
+                _horizontalAxisMoveCount++;
+            }
+
             if (Input.GetButtonDown("Jump"))
                 _jumpButtonDownCount++;
 

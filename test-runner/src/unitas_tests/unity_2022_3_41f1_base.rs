@@ -61,6 +61,16 @@ fn test(mut test_args: TestArgs) -> Result<bool> {
         }
     }
 
+    stream.send("print(legacy_input_system_test.field('_horizontalAxisMoveCount').get_value())")?;
+    if !assert_eq(
+        "horizontal axis move count",
+        stream.receive()?.as_str(),
+        "6",
+        || "checking LegacyInputSystemTest._horizontalAxisMoveCount field".to_string(),
+    ) {
+        res = false;
+    }
+
     // SceneTest.cs
     stream.send("scene_test = traverse('SceneTest')")?;
 
@@ -98,7 +108,7 @@ fn test(mut test_args: TestArgs) -> Result<bool> {
     if !assert_eq(
         "SceneTest async op done frame",
         stream.receive()?.as_str(),
-        "35",
+        "19",
         || "checking SceneTest callback done timing frame".to_string(),
     ) {
         res = false;
