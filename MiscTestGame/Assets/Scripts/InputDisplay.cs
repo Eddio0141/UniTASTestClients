@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using TMPro;
@@ -40,55 +39,44 @@ public class InputDisplay : MonoBehaviour
         var rect = _parentRectTransform.rect;
         _textRectTransform.sizeDelta = new(rect.width, rect.height);
 
-        _cam = Camera.main;
-
-        Application.targetFrameRate = -1;
-        QualitySettings.vSyncCount = 0;
-
-        StartCoroutine(FpsUpdate());
+        StartCoroutine(CheckRes());
     }
 
-    private bool _noRefresh;
-    private Camera _cam;
-
-    private readonly List<int> _fpsHistory = new();
-    private int _fps;
-
-    private IEnumerator FpsUpdate()
+    private IEnumerator CheckRes()
     {
-        while (true)
+        for (int i = 0; i < 3; i++)
         {
+            Debug.Log($"resolution: {Screen.width}x{Screen.height}");
+            foreach (var res in Screen.resolutions)
+            {
+                Debug.Log($"found resolution: {res}");
+            }
+
             yield return new WaitForSeconds(0.5f);
-            _fps = _fpsHistory.Sum() / _fpsHistory.Count;
-            _fpsHistory.Clear();
         }
-        // ReSharper disable once IteratorNeverReturns
     }
+
+    private bool _smallRes;
 
     private void Update()
     {
-        _fpsHistory.Add((int)(1f / Time.unscaledDeltaTime));
+        if (_text == null) return;
 
-        // if (Time.time < 1f)
-        //     Debug.Log("update");
-        if (Input.GetKeyDown(KeyCode.H))
+        if (Input.GetKeyDown(KeyCode.J))
         {
-            _noRefresh = !_noRefresh;
-            if (_noRefresh)
+            _smallRes = !_smallRes;
+
+            if (_smallRes)
             {
-                _cam.rect = new(0f, 0f, 0f, 0f);
+                Screen.SetResolution(1700, 800, false);
             }
             else
             {
-                _cam.rect = new(0f, 0f, 1f, 1f);
+                Screen.SetResolution(1920, 1080, false);
             }
         }
 
-        if (_text == null) return;
-
         var builder = new StringBuilder();
-
-        builder.AppendLine($"fps: {_fps}");
 
         var mouse = Mouse.current;
         if (mouse == null)

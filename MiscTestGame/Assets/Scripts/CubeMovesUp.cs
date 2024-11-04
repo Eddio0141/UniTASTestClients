@@ -1,10 +1,12 @@
-using System;
 using UnityEngine;
 
 public class A : MonoBehaviour
 {
     private void Update()
     {
+        if (Input.GetAxis("Horizontal") != 0)
+            Debug.Log("Horizontal");
+        
         transform.position += transform.up * (Time.deltaTime * 0.1f);
     }
 
