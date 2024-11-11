@@ -30,5 +30,7 @@ internal static class RuntimeInitTest
     private static void AfterSceneLoad()
     {
         Debug.Log("AfterSceneLoad");
+        // force StructTest
+        _ = new StructTest();
     }
 }

@@ -1,39 +1,27 @@
-use crate::symbols;
+#[macro_export]
+macro_rules! assert_eq {
+    ($test_name: expr, $left: expr, $right: expr, $fail_msg: expr, $res: ident) => {{
+        let success = $left == $right;
+        let err = if success {
+            None
+        } else {
+            $res = false;
+            Some(format!(
+                "{}, left: `{:?}`, right: `{:?}`",
+                $fail_msg, $left, $right
+            ))
+        };
 
-#[must_use]
-/// Checks if `left` == `right`
-/// ## Returns
-/// True if equals
-pub fn assert_eq<T, F>(test_name: &str, left: T, right: T, message: F) -> bool
-where
-    F: FnOnce() -> String,
-    T: std::cmp::PartialEq + std::fmt::Debug,
-{
-    let success = left == right;
-    let err = if success {
-        None
-    } else {
-        Some(format!(
-            "{}, left: `{left:?}`, right: `{right:?}`",
-            message()
-        ))
-    };
+        let symbol = if success {
+            $crate::symbols::SUCCESS
+        } else {
+            $crate::symbols::ERROR
+        };
 
-    print_test_result(test_name, success, err);
+        println!("{symbol} {}", $test_name);
 
-    success
-}
-
-fn print_test_result(name: &str, success: bool, error: Option<String>) {
-    let symbol = if success {
-        symbols::SUCCESS
-    } else {
-        symbols::ERROR
-    };
-
-    println!("{symbol} {name}");
-
-    if let Some(error) = error {
-        println!("  Error: {error}");
-    }
+        if let Some(error) = err {
+            println!("  Error: {error}");
+        }
+    }};
 }

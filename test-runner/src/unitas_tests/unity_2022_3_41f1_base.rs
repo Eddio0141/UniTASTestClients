@@ -1,6 +1,6 @@
 use std::fs;
 
-use crate::{unitas_tests::utils::assert_eq, Os};
+use crate::{assert_eq, Os};
 
 use super::{Test, TestArgs};
 
@@ -51,81 +51,74 @@ fn test(mut test_args: TestArgs) -> Result<bool> {
         stream.send(&format!(
             "print(legacy_input_system_test.field('{field}').get_value())"
         ))?;
-        if !assert_eq(
-            &format!("jump button count field {field}"),
-            stream.receive()?.as_str(),
+        assert_eq!(
+            format!("jump button count field {field}"),
+            stream.receive()?,
             "5",
-            || format!("checking LegacyInputSystemTest.{field} field to be 5"),
-        ) {
-            res = false;
-        }
+            format!("checking LegacyInputSystemTest.{field} field to be 5"),
+            res
+        );
     }
 
     stream.send("print(legacy_input_system_test.field('_horizontalAxisMoveCount').get_value())")?;
-    if !assert_eq(
+    assert_eq!(
         "horizontal axis move count",
-        stream.receive()?.as_str(),
+        stream.receive()?,
         "6",
-        || "checking LegacyInputSystemTest._horizontalAxisMoveCount field".to_string(),
-    ) {
-        res = false;
-    }
+        "checking LegacyInputSystemTest._horizontalAxisMoveCount field",
+        res
+    );
 
     // SceneTest.cs
     stream.send("scene_test = traverse('SceneTest')")?;
 
     stream.send("print(scene_test.field('_asyncOpCallbackProgress').get_value())")?;
-    if !assert_eq(
+    assert_eq!(
         "async op callback progress",
-        stream.receive()?.as_str(),
+        stream.receive()?,
         "1",
-        || "async operation progress in callback isn't 1.0".to_string(),
-    ) {
-        res = false;
-    }
+        "async operation progress in callback isn't 1.0",
+        res
+    );
 
     stream.send("print(scene_test.field('_asyncOpCallbackAllowSceneActivation').get_value())")?;
-    if !assert_eq(
+    assert_eq!(
         "async operation callback allowSceneActivation",
-        stream.receive()?.as_str(),
+        stream.receive()?,
         "true",
-        || "allowSceneActivation is false".to_string(),
-    ) {
-        res = false;
-    }
+        "allowSceneActivation is false",
+        res
+    );
 
     stream.send("print(scene_test.field('_asyncOpCallbackIsDone').get_value())")?;
-    if !assert_eq(
+    assert_eq!(
         "async operation callback isDone",
-        stream.receive()?.as_str(),
+        stream.receive()?,
         "true",
-        || "isDone isn't true".to_string(),
-    ) {
-        res = false;
-    }
+        "isDone isn't true",
+        res
+    );
 
     stream.send("print(scene_test.field('_asyncOpDoneFrame').get_value())")?;
-    if !assert_eq(
+    assert_eq!(
         "SceneTest async op done frame",
-        stream.receive()?.as_str(),
+        stream.receive()?,
         "19",
-        || "checking SceneTest callback done timing frame".to_string(),
-    ) {
-        res = false;
-    }
+        "checking SceneTest callback done timing frame",
+        res
+    );
 
     // UGuiTest.cs
     stream.send("ugui_test = traverse('UGuiTest')")?;
 
     stream.send("print(ugui_test.field('_clickCount').get_value())")?;
-    if !assert_eq(
+    assert_eq!(
         "UGuiTest click count",
-        stream.receive()?.as_str(),
+        stream.receive()?,
         "5",
-        || "didn't match click count of 5".to_string(),
-    ) {
-        res = false;
-    }
+        "didn't match click count of 5",
+        res
+    );
 
     // multiple fixed updates in a row
     // in this case, this pattern is made
@@ -142,6 +135,8 @@ fn test(mut test_args: TestArgs) -> Result<bool> {
     // u: 0.12
     let max_fixed_update_count = 4u8;
 
+    // TODO: create standard way to easily read things
+    // TODO: on unity side, create a "results" class containing all results of the test
     stream.send(&format!(
         r#"time = traverse('UnityEngine.Time')
 time.property('maximumDeltaTime').set_value(0.3333333)
@@ -187,23 +182,37 @@ end, "method")
         stream.receive()?;
     }
 
-    if !assert_eq(
+    assert_eq!(
         "multiple fixed update: fixed update count",
-        stream.receive()?.as_str(),
-        &max_fixed_update_count.to_string(),
-        || "mismatch in FixedUpdate count".to_string(),
-    ) {
-        res = false;
-    }
+        stream.receive()?,
+        max_fixed_update_count.to_string(),
+        "mismatch in FixedUpdate count",
+        res
+    );
 
-    if !assert_eq(
+    assert_eq!(
         "multiple fixed update: update count",
-        stream.receive()?.as_str(),
+        stream.receive()?,
         "2",
-        || "mismatch in Update count".to_string(),
-    ) {
-        res = false;
-    }
+        "mismatch in Update count",
+        res
+    );
+
+    // struct test
+    stream.send(
+        r#"local StructTest = traverse("StructTest")
+        
+        print("StructTest._constrainedTestSuccess: " .. tostring(StructTest.field("_constrainedTestSuccess").get_value()))
+        "#,
+    )?;
+
+    assert_eq!(
+        "StructTest: constrained opcode test",
+        stream.receive()?,
+        "StructTest._constrainedTestSuccess: true",
+        "UniTAS failed to properly handle the constrained opcode",
+        res
+    );
 
     // FrameAdvanceAnimator.cs
     stream.send(
@@ -243,14 +252,13 @@ end, "method")
 end)"#,
     )?;
 
-    // if !assert_eq(
+    // assert_eq!(
     //     "frame advancing: paused Animator",
-    //     stream.receive()?.as_str(),
+    //     stream.receive()?,
     //     "f1: -1",
-    //     || "mismatch in initial value of Animator trigger tracker value".to_string(),
-    // ) {
-    //     res = false;
-    // }
+    //     "mismatch in initial value of Animator trigger tracker value",
+    //     res
+    // );
 
     println!("{}", stream.receive()?);
     println!("{}", stream.receive()?);
@@ -259,14 +267,13 @@ end)"#,
     println!("{}", stream.receive()?);
     println!("{}", stream.receive()?);
 
-    // if !assert_eq(
+    // assert_eq!(
     //     "frame advancing: Animator trigger reach check",
-    //     stream.receive()?.as_str(),
+    //     stream.receive()?,
     //     "94",
-    //     || "mismatch in animation completion frame".to_string(),
-    // ) {
-    //     res = false;
-    // }
+    //     "mismatch in animation completion frame",
+    //     res
+    // );
 
     Ok(res)
 }
