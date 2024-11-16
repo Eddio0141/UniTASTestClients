@@ -30,10 +30,25 @@ fn test(mut test_args: TestArgs) -> Result<bool> {
     stream.send("full_access(true)")?;
     stream.receive()?;
 
+    let mut res = true;
+
+    let fields = [
+        (
+            "SceneCountAfterAsyncLoad",
+            "2",
+            "Scene count is not matching after scene load",
+        ),
+        (
+            "SceneCountAfterAsyncUnload",
+            "1",
+            "Scene count is not matching after scene unload",
+        ),
+    ];
+
+    stream.run_general_tests(&fields, &mut res)?;
+
     stream.send("play('movie.lua')")?;
     stream.wait_for_movie_end()?;
-
-    let mut res = true;
 
     // check results
 
@@ -197,6 +212,9 @@ end, "method")
         "mismatch in Update count",
         res
     );
+
+    stream.send("full_access(true)")?;
+    stream.receive()?;
 
     // struct test
     stream.send(

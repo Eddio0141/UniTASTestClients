@@ -196,6 +196,69 @@ impl UniTasStream {
             thread::sleep(Duration::from_secs(1));
         }
     }
+
+    fn run_general_tests(&mut self, fields: &[(&str, &str, &str)], res: &mut bool) -> Result<()> {
+        self.send("service('ISceneWrapper').load_scene('General')")?;
+
+        let mut setup_fail = true;
+        for _ in 0..30 {
+            self.send("print(service('ISceneWrapper').ActiveSceneName)")?;
+            if self.receive()? == "General" {
+                setup_fail = false;
+                break;
+            }
+            thread::sleep(Duration::from_secs(1));
+        }
+
+        if setup_fail {
+            panic!("failed to load scene `General`");
+        }
+
+        // wait for general tests to finish
+        let mut setup_fail = true;
+        for _ in 0..30 {
+            self.send("print(traverse('Results').field('GeneralTestsDone').GetValue())")?;
+            if self.receive()? == "true" {
+                setup_fail = false;
+                break;
+            }
+            thread::sleep(Duration::from_secs(1));
+        }
+
+        if setup_fail {
+            println!(
+                "{} failed to complete general tests, something went wrong",
+                symbols::ERROR
+            );
+        } else {
+            let mut send_msg = String::from("local results = traverse('Results')");
+
+            for (name, _, _) in fields {
+                send_msg.push_str(&format!(" print(results.field('{name}').GetValue())"));
+            }
+
+            self.send(&send_msg)?;
+
+            let mut res_inner = true;
+            for (name, expected, fail_msg) in fields {
+                crate::assert_eq!(
+                    format!("Field check `{name}`"),
+                    self.receive()?,
+                    *expected,
+                    fail_msg,
+                    res_inner
+                );
+            }
+
+            if *res != res_inner {
+                *res = res_inner;
+            }
+        }
+
+        thread::sleep(Duration::from_millis(500));
+
+        Ok(())
+    }
 }
 
 impl Test {

@@ -1,6 +1,6 @@
 #[macro_export]
 macro_rules! assert_eq {
-    ($test_name: expr, $left: expr, $right: expr, $fail_msg: expr, $res: ident) => {{
+    ($test_name: expr, $left: expr, $right: expr, $fail_msg: expr, $res: ident) => {
         let success = $left == $right;
         let err = if success {
             None
@@ -23,5 +23,5 @@ macro_rules! assert_eq {
         if let Some(error) = err {
             println!("  Error: {error}");
         }
-    }};
+    };
 }
