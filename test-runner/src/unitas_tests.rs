@@ -123,8 +123,9 @@ impl UniTasStream {
                     }
                 }
             }
+        } else {
+            self.ready_to_send = false;
         }
-        self.ready_to_send = false;
 
         let content_len_raw = content.len().to_le_bytes();
         let content = content.as_bytes();
@@ -241,9 +242,10 @@ impl UniTasStream {
 
             let mut res_inner = true;
             for (name, expected, fail_msg) in fields {
+                let actual = self.receive()?;
                 crate::assert_eq!(
                     format!("Field check `{name}`"),
-                    self.receive()?,
+                    actual,
                     *expected,
                     fail_msg,
                     res_inner
