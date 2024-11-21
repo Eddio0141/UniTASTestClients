@@ -13,7 +13,7 @@ use std::{
 
 use crate::{cli::Args, fs_utils::copy_dir_all_blocking, symbols, Os, WIN_UNITY_EXE_NAME};
 
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use log::{debug, trace};
 use thiserror::Error;
 
@@ -72,7 +72,7 @@ const ERR_PREFIX_READ_FAIL: &str = "failed to receive UniTAS remote prefix";
 impl UniTasStream {
     fn new(mut stream: TcpStream) -> Result<Self, io::Error> {
         // add timeout to the stream
-        let timeout = Some(Duration::from_secs(30));
+        let timeout = Some(Duration::from_secs(1));
         stream.set_read_timeout(timeout).unwrap();
         stream.set_write_timeout(timeout).unwrap();
 
@@ -105,8 +105,12 @@ impl UniTasStream {
             debug!("can't send message to remote yet, `ready_to_send` is false");
 
             // wait for prefix
-            loop {
+            let mut no_response = true;
+            for _ in 0..30 {
                 self.buf.resize(size_of::<ReceivePrefix>(), 0);
+                self.stream
+                    .set_read_timeout(Some(Duration::from_secs(30)))
+                    .expect("failed to set timeout, somehow");
                 self.stream.read_exact(&mut self.buf).with_context(|| {
                     format!("{ERR_PREFIX_READ_FAIL}, can't send data to remote")
                 })?;
@@ -114,14 +118,26 @@ impl UniTasStream {
                 match ReceivePrefix::from(self.buf[0]) {
                     ReceivePrefix::Prefix => {
                         debug!("ready to send to remote");
+                        no_response = false;
                         break;
                     }
                     ReceivePrefix::Stdout => {
-                        let msg = self.read_stdout()?;
+                        let Some(msg) = self.read_stdout() else {
+                            thread::sleep(Duration::from_secs(1));
+                            continue;
+                        };
+                        let msg = msg.context("Failed to read message from UniTAS")?;
+
                         debug!("got stdout message: `{msg}`, adding to queue");
                         self.received_queue.push_back(msg);
+                        no_response = false;
+                        break;
                     }
                 }
+            }
+
+            if no_response {
+                bail!("UniTAS is not responding");
             }
         } else {
             self.ready_to_send = false;
@@ -149,8 +165,11 @@ impl UniTasStream {
             return Ok(msg);
         }
 
-        loop {
+        for _ in 0..30 {
             self.buf.resize(size_of::<ReceivePrefix>(), 0);
+            self.stream
+                .set_read_timeout(Some(Duration::from_secs(30)))
+                .expect("failed to set timeout, somehow");
             self.stream.read_exact(&mut self.buf).with_context(|| {
                 format!("{ERR_PREFIX_READ_FAIL}, failed to receive data from remote")
             })?;
@@ -159,33 +178,48 @@ impl UniTasStream {
                 ReceivePrefix::Prefix => {
                     self.ready_to_send = true;
                     debug!("received prefix data from remote, ready to send");
+                    continue;
                 }
-                ReceivePrefix::Stdout => break,
+                ReceivePrefix::Stdout => {
+                    let Some(msg) = self.read_stdout() else {
+                        thread::sleep(Duration::from_secs(1));
+                        continue;
+                    };
+                    return msg.context("failed to read message from UniTAS");
+                }
             }
         }
 
-        trace!("reading stdout message");
-        self.read_stdout()
+        bail!("UniTAS is not responding");
     }
 
-    fn read_stdout(&mut self) -> Result<String> {
+    fn read_stdout(&mut self) -> Option<io::Result<String>> {
         // use after reading message type prefix
         self.stream
-            .read_exact(&mut self.buf_msg_len)
-            .context("failed to read UniTAS remote response's message length")?;
+            .set_read_timeout(Some(Duration::from_secs(1)))
+            .expect("failed to set timeout somehow");
+        if let Err(err) = self.stream.read_exact(&mut self.buf_msg_len) {
+            if matches!(err.kind(), io::ErrorKind::TimedOut) {
+                return None;
+            }
+            return Some(Err(err));
+        }
 
         let msg_len = u64::from_le_bytes(self.buf_msg_len) as usize;
 
         self.buf.resize(msg_len, 0);
-        self.stream
-            .read_exact(&mut self.buf)
-            .context("failed to read UniTAS remote response")?;
+        if let Err(err) = self.stream.read_exact(&mut self.buf) {
+            if matches!(err.kind(), io::ErrorKind::TimedOut) {
+                return None;
+            }
+            return Some(Err(err));
+        }
 
         let msg = String::from_utf8_lossy(&self.buf).trim_end().to_owned();
 
         debug!("received stdout msg: `{msg}`, len: `{msg_len}`");
 
-        Ok(msg)
+        Some(Ok(msg))
     }
 
     fn wait_for_movie_end(&mut self) -> Result<()> {
