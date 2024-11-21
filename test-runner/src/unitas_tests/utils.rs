@@ -1,14 +1,14 @@
 #[macro_export]
 macro_rules! assert_eq {
-    ($test_name: expr, $left: expr, $right: expr, $fail_msg: expr, $res: ident) => {
-        let success = $left == $right;
+    ($test_name: expr, $expected: expr, $actual: expr, $fail_msg: expr, $res: ident) => {
+        let success = $expected == $actual;
         let err = if success {
             None
         } else {
             $res = false;
             Some(format!(
-                "{}, left: `{:?}`, right: `{:?}`",
-                $fail_msg, $left, $right
+                "{}, expected: `{:?}`, actual: `{:?}`",
+                $fail_msg, $expected, $actual
             ))
         };
 

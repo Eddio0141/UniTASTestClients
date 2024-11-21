@@ -279,8 +279,8 @@ impl UniTasStream {
                 let actual = self.receive()?;
                 crate::assert_eq!(
                     format!("Field check `{name}`"),
-                    actual,
                     *expected,
+                    actual,
                     fail_msg,
                     res_inner
                 );
