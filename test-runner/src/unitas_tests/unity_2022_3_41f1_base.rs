@@ -34,14 +34,74 @@ fn test(mut test_args: TestArgs) -> Result<bool> {
 
     let fields = [
         (
-            "SceneCountAfterAsyncLoad",
+            "SceneCountAsyncLoad",
             "2",
-            "Scene count is not matching after scene load",
+            "Scene count not matching after LoadSceneAsync call",
         ),
         (
-            "SceneCountAfterAsyncUnload",
+            "LoadedSceneCountAsyncLoad",
             "1",
-            "Scene count is not matching after scene unload",
+            "Loaded scene count not matching after LoadSceneAsync call",
+        ),
+        (
+            "SceneCountAsyncLoadAllowLoad",
+            "2",
+            "Scene count is not matching after allowSceneActivation true",
+        ),
+        (
+            "LoadedSceneCountAsyncLoadAllowLoad",
+            "1",
+            "Loaded scene count is not matching after allowSceneActivation true",
+        ),
+        (
+            "SceneCountAsyncLoadAllowLoadNextFrame",
+            "2",
+            "Scene count 1f after frame",
+        ),
+        (
+            "LoadedSceneCountAsyncLoadAllowLoadNextFrame",
+            "2",
+            "Loaded scene count 1f after frame",
+        ),
+        (
+            "SceneCountAsyncLoadCallback",
+            "2",
+            "Scene count in AsyncOperation event callback for load",
+        ),
+        (
+            "LoadedSceneCountAsyncLoadCallback",
+            "2",
+            "Loaded scene count in AsyncOperation event callback for load",
+        ),
+        (
+            "SceneCountAsyncUnload",
+            "2",
+            "Scene count after AsyncSceneUnload call",
+        ),
+        (
+            "LoadedSceneCountAsyncUnload",
+            "1",
+            "Loaded scene count after AsyncSceneUnload call",
+        ),
+        (
+            "SceneCountAsyncUnloadAllowLoadNextFrame",
+            "1",
+            "Scene count after 1f for scene unload",
+        ),
+        (
+            "LoadedSceneCountAsyncUnloadAllowLoadNextFrame",
+            "1",
+            "Loaded scene count after 1f for scene unload",
+        ),
+        (
+            "SceneCountAsyncUnloadCallback",
+            "1",
+            "Scene count in AsyncOperation callback for unload",
+        ),
+        (
+            "LoadedSceneCountAsyncUnloadCallback",
+            "1",
+            "Loaded scene count in AsyncOperation callback for unload",
         ),
     ];
 

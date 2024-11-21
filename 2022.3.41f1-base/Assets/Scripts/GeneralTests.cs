@@ -6,22 +6,44 @@ public class GeneralTests : MonoBehaviour
 {
     private IEnumerator Start()
     {
-        // scene async load
         var loadEmpty = SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!;
+        Results.SceneCountAsyncLoad = SceneManager.sceneCount;
+        Results.LoadedSceneCountAsyncLoad = SceneManager.loadedSceneCount;
+        loadEmpty.allowSceneActivation = false;
         loadEmpty.completed += _ =>
         {
             // sceneCount to get count including loading / unloading
-            Results.SceneCountAfterAsyncLoad = SceneManager.sceneCount;
+            Results.SceneCountAsyncLoadCallback = SceneManager.sceneCount;
+            Results.LoadedSceneCountAsyncLoadCallback = SceneManager.loadedSceneCount;
         };
-        
-        yield return loadEmpty;
+
         yield return null;
-        
+        loadEmpty.allowSceneActivation = true;
+        Results.SceneCountAsyncLoadAllowLoad = SceneManager.sceneCount;
+        Results.LoadedSceneCountAsyncLoadAllowLoad = SceneManager.loadedSceneCount;
+
+        yield return null;
+
+        Results.SceneCountAsyncLoadAllowLoadNextFrame = SceneManager.sceneCount;
+        Results.LoadedSceneCountAsyncLoadAllowLoadNextFrame = SceneManager.loadedSceneCount;
+
         var unloadEmpty = SceneManager.UnloadSceneAsync("Empty")!;
-        unloadEmpty.completed += _ => { Results.SceneCountAfterAsyncUnload = SceneManager.sceneCount; };
-        
-        yield return unloadEmpty;
+        Results.SceneCountAsyncUnload = SceneManager.sceneCount;
+        Results.LoadedSceneCountAsyncUnload = SceneManager.loadedSceneCount;
+        unloadEmpty.completed += _ =>
+        {
+            Results.SceneCountAsyncUnloadCallback = SceneManager.sceneCount;
+            Results.LoadedSceneCountAsyncUnloadCallback = SceneManager.loadedSceneCount;
+        };
+
+        yield return null;
+
+        Results.SceneCountAsyncUnloadAllowLoadNextFrame = SceneManager.sceneCount;
+        Results.LoadedSceneCountAsyncUnloadAllowLoadNextFrame = SceneManager.loadedSceneCount;
+
+        yield return null;
 
         Results.GeneralTestsDone = true;
+        Results.LogResults();
     }
 }
