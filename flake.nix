@@ -38,6 +38,20 @@
           };
 
           rust = pkgs.rust-bin.stable.latest.default;
+
+          local-test = pkgs.writeShellApplication {
+            name = "local-test";
+            runtimeInputs = with pkgs; [
+              gh
+            ];
+            text = builtins.concatStringsSep "\n" (
+              map (line: if (builtins.match "^SCRIPT_DIR=.*$" line) == null then line else "SCRIPT_DIR=$(pwd)") (
+                builtins.filter (e: builtins.isString e) (
+                  builtins.split "\n" (builtins.readFile ./test-runner/local-test.sh)
+                )
+              )
+            );
+          };
         in
         {
           _module.args.pkgs = import nixpkgs {
@@ -57,6 +71,7 @@
               rust-doc
               openssl
               pkg-config
+              local-test
             ];
           };
 

@@ -56,6 +56,8 @@ fn parse_replace_games(str: &str) -> Result<ReplaceGame, anyhow::Error> {
         bail!("expected pattern of `game-name=path`")
     };
 
+    let game_path = game_path.trim_matches('"');
+
     let game_path = PathBuf::from_str(game_path)
         .with_context(|| format!("failed to parse path `{game_path}` as a valid path"))?;
 
