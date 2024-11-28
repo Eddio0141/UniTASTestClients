@@ -11,4 +11,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/FrictionTest.unity
     guid: 29880c723cd1a059d85a15eeac62b252
+  - enabled: 1
+    path: Assets/Scenes/Empty.unity
+    guid: 1b20aec065dd68176a4aacfe79185b0e
   m_configObjects: {}
