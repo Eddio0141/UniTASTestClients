@@ -128,6 +128,61 @@ fn test(mut test_args: TestArgs) -> Result<bool> {
             "15",
             "Callback time of Async Load is wrong, frame delay should be done a while ago"
         ),
+        (
+            "AsyncLoadSyncLoadCallbackFrame",
+            "16",
+            "Callback time of Async Load should have no delay, since a non-async scene load was called",
+        ),
+        (
+            "AsyncLoadSyncLoadCallback2Frame",
+            "16",
+            "Callback time of Async Load should have no delay, since a non-async scene load was called",
+        ),
+        (
+            "AsyncLoadCallback5Frame",
+            "19",
+            "UniTAS didn't restore the frame delay after doing a sync scene load",
+        ),
+        (
+            "AfterLoadsSceneCount",
+            "8",
+            "Total scene count doesn't match",
+        ),
+        (
+            "AfterLoadsLoadedSceneCount",
+            "8",
+            "Total loaded scene count doesn't match",
+        ),
+        (
+            "AfterDoubleUnloadSceneCount",
+            "7",
+            "Scene count for double async unload should just decrease scene count by 1",
+        ),
+        (
+            "AfterDoubleUnloadLoadedSceneCount",
+            "7",
+            "Loaded scene count for double async unload should just decrease scene count by 1",
+        ),
+        (
+            "DoubleUnloadOperationIsNull",
+            "true",
+            "The double unload operation's second call isn't null"
+        ),
+        (
+            "DoubleUnloadDiffNameSuccess",
+            "true",
+            "Somehow failed to unload two scenes under different names at the same time",
+        ),
+        (
+            "DoubleUnloadDiffNameBefore2",
+            "true",
+            "Order of double unload is wrong",
+        ),
+        (
+            "DoubleUnloadNameIdSecondIsNull",
+            "true",
+            "Two unload operations in a row with matching name and ID will still not work"
+        )
     ];
 
     stream.run_general_tests(&fields, &mut res)?;
