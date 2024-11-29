@@ -6,25 +6,31 @@ using UnityEngine;
 public static class Results
 {
     // just after LoadSceneAsync call
-    public static int SceneCountAsyncLoad;
-    public static int LoadedSceneCountAsyncLoad;
+    public static int AsyncLoadSceneCount;
+    public static int AsyncLoadLoadedSceneCount;
     // just after allowSceneActivation true
-    public static int SceneCountAsyncLoadAllowLoad;
-    public static int LoadedSceneCountAsyncLoadAllowLoad;
+    public static int AsyncLoadAllowLoadSceneCount;
+    public static int AsyncLoadAllowLoadLoadedSceneCount;
     // 1f after allowSceneActivation true
-    public static int SceneCountAsyncLoadAllowLoadNextFrame;
-    public static int LoadedSceneCountAsyncLoadAllowLoadNextFrame;
+    public static int AsyncLoadAllowLoadNextFrameSceneCount;
+    public static int AsyncLoadAllowLoadNextFrameLoadedSceneCount;
     // on event callback
-    public static int SceneCountAsyncLoadCallback;
-    public static int LoadedSceneCountAsyncLoadCallback;
+    public static int AsyncLoadCallbackSceneCount;
+    public static int AsyncLoadCallbackLoadedSceneCount;
+    public static int AsyncLoadCallbackFrame;
 
     // same thing as LoadSceneAsync checks but for unload, allowSceneActivation is not a thing neither
-    public static int SceneCountAsyncUnload;
-    public static int LoadedSceneCountAsyncUnload;
-    public static int SceneCountAsyncUnloadAllowLoadNextFrame;
-    public static int LoadedSceneCountAsyncUnloadAllowLoadNextFrame;
-    public static int SceneCountAsyncUnloadCallback;
-    public static int LoadedSceneCountAsyncUnloadCallback;
+    public static int AsyncUnloadSceneCount;
+    public static int AsyncUnloadLoadedSceneCount;
+    public static int AsyncUnloadAllowLoadNextFrameSceneCount;
+    public static int AsyncUnloadAllowLoadNextFrameLoadedSceneCount;
+    public static int AsyncUnloadCallbackSceneCount;
+    public static int AsyncUnloadCallbackLoadedSceneCount;
+    public static int AsyncUnloadCallbackFrame;
+
+    public static int AsyncLoadCallback2Frame;
+    public static int AsyncLoadCallback3Frame;
+    public static int AsyncLoadCallback4Frame;
 
     public static bool GeneralTestsDone;
 

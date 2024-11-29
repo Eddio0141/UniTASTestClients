@@ -34,74 +34,99 @@ fn test(mut test_args: TestArgs) -> Result<bool> {
 
     let fields = [
         (
-            "SceneCountAsyncLoad",
+            "AsyncLoadSceneCount",
             "2",
             "Scene count not matching after LoadSceneAsync call",
         ),
         (
-            "LoadedSceneCountAsyncLoad",
+            "AsyncLoadLoadedSceneCount",
             "1",
             "Loaded scene count not matching after LoadSceneAsync call",
         ),
         (
-            "SceneCountAsyncLoadAllowLoad",
+            "AsyncLoadAllowLoadSceneCount",
             "2",
             "Scene count is not matching after allowSceneActivation true",
         ),
         (
-            "LoadedSceneCountAsyncLoadAllowLoad",
+            "AsyncLoadAllowLoadLoadedSceneCount",
             "1",
             "Loaded scene count is not matching after allowSceneActivation true",
         ),
         (
-            "SceneCountAsyncLoadAllowLoadNextFrame",
+            "AsyncLoadAllowLoadNextFrameSceneCount",
             "2",
             "Scene count 1f after frame",
         ),
         (
-            "LoadedSceneCountAsyncLoadAllowLoadNextFrame",
+            "AsyncLoadAllowLoadNextFrameLoadedSceneCount",
             "2",
             "Loaded scene count 1f after frame",
         ),
         (
-            "SceneCountAsyncLoadCallback",
+            "AsyncLoadCallbackSceneCount",
             "2",
             "Scene count in AsyncOperation event callback for load",
         ),
         (
-            "LoadedSceneCountAsyncLoadCallback",
+            "AsyncLoadCallbackLoadedSceneCount",
             "2",
             "Loaded scene count in AsyncOperation event callback for load",
         ),
         (
-            "SceneCountAsyncUnload",
+            "AsyncUnloadSceneCount",
             "2",
             "Scene count after AsyncSceneUnload call",
         ),
         (
-            "LoadedSceneCountAsyncUnload",
+            "AsyncUnloadLoadedSceneCount",
             "1",
             "Loaded scene count after AsyncSceneUnload call",
         ),
         (
-            "SceneCountAsyncUnloadAllowLoadNextFrame",
+            "AsyncUnloadAllowLoadNextFrameSceneCount",
             "1",
             "Scene count after 1f for scene unload",
         ),
         (
-            "LoadedSceneCountAsyncUnloadAllowLoadNextFrame",
+            "AsyncUnloadAllowLoadNextFrameLoadedSceneCount",
             "1",
             "Loaded scene count after 1f for scene unload",
         ),
         (
-            "SceneCountAsyncUnloadCallback",
+            "AsyncUnloadCallbackSceneCount",
             "1",
             "Scene count in AsyncOperation callback for unload",
         ),
         (
-            "LoadedSceneCountAsyncUnloadCallback",
+            "AsyncUnloadCallbackLoadedSceneCount",
             "1",
             "Loaded scene count in AsyncOperation callback for unload",
+        ),
+        (
+            "AsyncLoadCallbackFrame",
+            "3",
+            "Callback time of the Async Load is wrong",
+        ),
+        (
+            "AsyncUnloadCallbackFrame",
+            "4",
+            "Callback time of the Async Unload is wrong",
+        ),
+        (
+            "AsyncLoadCallback2Frame",
+            "7",
+            "Callback time of Async Load is wrong, there should be a frame delay, then load happens",
+        ),
+        (
+            "AsyncLoadCallback3Frame",
+            "10",
+            "Callback time of Async Load is wrong, stalling the scene load during the frame delay would not redo the frame delay"
+        ),
+        (
+            "AsyncLoadCallback4Frame",
+            "15",
+            "Callback time of Async Load is wrong, frame delay should be done a while ago"
         ),
     ];
 

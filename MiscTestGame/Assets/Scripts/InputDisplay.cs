@@ -117,9 +117,6 @@ public class InputDisplay : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.L))
         {
-            // Debug.Log(
-            //     $"allow scene at frame: {Time.frameCount}, {Time.captureFramerate}, {Time.renderedFrameCount}, scene count: {SceneManager.sceneCount}, {SceneManager.loadedSceneCount}");
-            // _emptyOp.allowSceneActivation = true;
             Debug.Log("Empty load non async");
             SceneManager.LoadScene("Empty", LoadSceneMode.Additive);
             Debug.Log($"allow scene after scene count: {SceneManager.sceneCount}, {SceneManager.loadedSceneCount}");
@@ -143,6 +140,13 @@ public class InputDisplay : MonoBehaviour
             unloadOp = SceneManager.UnloadSceneAsync("Empty");
             if (unloadOp != null)
                 unloadOp.completed += op => { Debug.Log($"Empty unload async, {op.progress}, {op.isDone}"); };
+        }
+
+        if (Input.GetKeyDown(KeyCode.V))
+        {
+            Debug.Log(
+                $"allow scene at frame: {Time.frameCount}, {Time.captureFramerate}, {Time.renderedFrameCount}, scene count: {SceneManager.sceneCount}, {SceneManager.loadedSceneCount}");
+            emptyOp.allowSceneActivation = true;
         }
 
         if (_text == null) return;
