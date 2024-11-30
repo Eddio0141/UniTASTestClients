@@ -7,13 +7,19 @@ public static class Results
 {
     // just after LoadSceneAsync call
     public static int AsyncLoadSceneCount;
+
     public static int AsyncLoadLoadedSceneCount;
+
     // just after allowSceneActivation true
     public static int AsyncLoadAllowLoadSceneCount;
+
     public static int AsyncLoadAllowLoadLoadedSceneCount;
+
     // 1f after allowSceneActivation true
     public static int AsyncLoadAllowLoadNextFrameSceneCount;
+
     public static int AsyncLoadAllowLoadNextFrameLoadedSceneCount;
+
     // on event callback
     public static int AsyncLoadCallbackSceneCount;
     public static int AsyncLoadCallbackLoadedSceneCount;
@@ -31,7 +37,7 @@ public static class Results
     public static int AsyncLoadCallback2Frame;
     public static int AsyncLoadCallback3Frame;
     public static int AsyncLoadCallback4Frame;
-    
+
     public static int AsyncLoadSyncLoadCallbackFrame;
     public static int AsyncLoadSyncLoadCallback2Frame;
 
@@ -40,7 +46,7 @@ public static class Results
 
     public static int AfterLoadsSceneCount;
     public static int AfterLoadsLoadedSceneCount;
-    
+
     public static bool DoubleUnloadOperationIsNull;
     public static int AfterDoubleUnloadSceneCount;
     public static int AfterDoubleUnloadLoadedSceneCount;
@@ -52,6 +58,10 @@ public static class Results
     public static bool DoubleUnloadNameIdSecondIsNull;
 
     public static bool GeneralTestsDone;
+
+    public static string SceneNameInitial;
+    public static string SceneNameAdded;
+    public static bool SceneNameAddedLoading;
 
     public static void LogResults()
     {

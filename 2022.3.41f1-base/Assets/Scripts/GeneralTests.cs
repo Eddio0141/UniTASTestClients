@@ -7,9 +7,14 @@ public class GeneralTests : MonoBehaviour
     private IEnumerator Start()
     {
         var startFrame = Time.frameCount - 1;
+        Results.SceneNameInitial = SceneManager.GetSceneAt(0).name;
 
         // frame 1
         var loadEmpty = SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!;
+        var emptyScene = SceneManager.GetSceneAt(1);
+        Results.SceneNameAdded = emptyScene.name;
+        Results.SceneNameAddedLoading = emptyScene.isLoaded;
+
         Results.AsyncLoadSceneCount = SceneManager.sceneCount;
         Results.AsyncLoadLoadedSceneCount = SceneManager.loadedSceneCount;
         loadEmpty.allowSceneActivation = false;
@@ -186,7 +191,7 @@ public class GeneralTests : MonoBehaviour
         SceneManager.UnloadSceneAsync("Empty");
         // empty is id 3
         Results.DoubleUnloadNameIdSecondIsNull = SceneManager.UnloadSceneAsync(3) == null;
-        
+
         yield return null;
         // frame 24
 

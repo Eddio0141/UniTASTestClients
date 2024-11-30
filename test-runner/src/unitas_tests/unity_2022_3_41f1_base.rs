@@ -182,7 +182,17 @@ fn test(mut test_args: TestArgs) -> Result<bool> {
             "DoubleUnloadNameIdSecondIsNull",
             "true",
             "Two unload operations in a row with matching name and ID will still not work"
-        )
+        ),
+        (
+            "SceneNameInitial",
+            "General",
+            "Initial scene should be the general testing scene",
+        ),
+        (
+            "SceneNameAdded",
+            "Empty",
+            "Additional scene should be here as soon as the scene load is invoked",
+        ),
     ];
 
     stream.run_general_tests(&fields, &mut res)?;
