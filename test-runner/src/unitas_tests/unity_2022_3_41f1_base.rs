@@ -189,9 +189,59 @@ fn test(mut test_args: TestArgs) -> Result<bool> {
             "Initial scene should be the general testing scene",
         ),
         (
-            "SceneNameAdded",
+            "SceneAddedName",
             "Empty",
             "Additional scene should be here as soon as the scene load is invoked",
+        ),
+        (
+            "SceneAddedIsLoaded",
+            "false",
+            "Loading should be true",
+        ),
+        (
+            "SceneAddedRootCount",
+            "0",
+            "Root count is 0 during load",
+        ),
+        (
+            "SceneAddedIsSubScene",
+            "false",
+            "The scene loading isn't a sub scene",
+        ),
+        (
+            "SceneAddedPath",
+            "Assets/Scenes/Empty.unity",
+            "Asset path isn't matching",
+        ),
+        (
+            "SceneAddedBuildIndex",
+            "3",
+            "Loading scene build index isnt matching",
+        ),
+        (
+"SceneAddedIsDirty",
+"false",
+"Scene can't be dirty during load",
+        ),
+        (
+            "SceneAddedIsValid",
+            "true",
+            "Loading scene should be valid",
+        ),
+        (
+            "SceneAddedRealEqDummy",
+            "true",
+            "Dummy scene struct should match real scene struct",
+        ),
+        (
+            "SceneAddedRealEqualsDummy",
+            "true",
+            "Dummy scene struct should match real scene struct",
+        ),
+        (
+            "SceneAddedRealNeqDummy",
+            "false",
+            "Dummy scene struct should match real scene struct",
         ),
     ];
 

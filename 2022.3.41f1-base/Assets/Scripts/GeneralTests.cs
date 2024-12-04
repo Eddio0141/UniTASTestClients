@@ -12,8 +12,14 @@ public class GeneralTests : MonoBehaviour
         // frame 1
         var loadEmpty = SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!;
         var emptyScene = SceneManager.GetSceneAt(1);
-        Results.SceneNameAdded = emptyScene.name;
-        Results.SceneNameAddedLoading = emptyScene.isLoaded;
+        Results.SceneAddedName = emptyScene.name;
+        Results.SceneAddedIsLoaded = emptyScene.isLoaded;
+        Results.SceneAddedRootCount = emptyScene.rootCount;
+        Results.SceneAddedIsSubScene = emptyScene.isSubScene;
+        Results.SceneAddedPath = emptyScene.path;
+        Results.SceneAddedBuildIndex = emptyScene.buildIndex;
+        Results.SceneAddedIsDirty = emptyScene.isDirty;
+        Results.SceneAddedIsValid = emptyScene.IsValid();
 
         Results.AsyncLoadSceneCount = SceneManager.sceneCount;
         Results.AsyncLoadLoadedSceneCount = SceneManager.loadedSceneCount;
@@ -25,6 +31,11 @@ public class GeneralTests : MonoBehaviour
             Results.AsyncLoadCallbackSceneCount = SceneManager.sceneCount;
             Results.AsyncLoadCallbackLoadedSceneCount = SceneManager.loadedSceneCount;
             Results.AsyncLoadCallbackFrame = Time.frameCount - startFrame;
+            
+            var actualScene = SceneManager.GetSceneAt(1);
+            Results.SceneAddedRealEqDummy = emptyScene == actualScene;
+            Results.SceneAddedRealNeqDummy = emptyScene != actualScene;
+            Results.SceneAddedRealEqualsDummy = emptyScene.Equals(actualScene);
         };
 
         yield return null;

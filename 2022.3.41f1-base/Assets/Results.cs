@@ -60,8 +60,19 @@ public static class Results
     public static bool GeneralTestsDone;
 
     public static string SceneNameInitial;
-    public static string SceneNameAdded;
-    public static bool SceneNameAddedLoading;
+    
+    public static string SceneAddedName;
+    public static bool SceneAddedIsLoaded;
+    public static int SceneAddedRootCount;
+    public static bool SceneAddedIsSubScene;
+    public static string SceneAddedPath;
+    public static int SceneAddedBuildIndex;
+    public static bool SceneAddedIsDirty;
+    public static bool SceneAddedIsValid;
+
+    public static bool SceneAddedRealEqDummy;
+    public static bool SceneAddedRealEqualsDummy;
+    public static bool SceneAddedRealNeqDummy;
 
     public static void LogResults()
     {
