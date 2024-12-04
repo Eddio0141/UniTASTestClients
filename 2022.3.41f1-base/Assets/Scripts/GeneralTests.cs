@@ -31,11 +31,21 @@ public class GeneralTests : MonoBehaviour
             Results.AsyncLoadCallbackSceneCount = SceneManager.sceneCount;
             Results.AsyncLoadCallbackLoadedSceneCount = SceneManager.loadedSceneCount;
             Results.AsyncLoadCallbackFrame = Time.frameCount - startFrame;
-            
+
             var actualScene = SceneManager.GetSceneAt(1);
             Results.SceneAddedRealEqDummy = emptyScene == actualScene;
             Results.SceneAddedRealNeqDummy = emptyScene != actualScene;
             Results.SceneAddedRealEqualsDummy = emptyScene.Equals(actualScene);
+            Results.SceneAddedRealName = emptyScene.name;
+            Results.SceneAddedRealIsLoaded = emptyScene.isLoaded;
+            Results.SceneAddedRealRootCount = emptyScene.rootCount;
+            Results.SceneAddedRealIsSubScene = emptyScene.isSubScene;
+            Results.SceneAddedRealPath = emptyScene.path;
+            Results.SceneAddedRealBuildIndex = emptyScene.buildIndex;
+            Results.SceneAddedRealIsDirty = emptyScene.isDirty;
+            Results.SceneAddedRealIsValid = emptyScene.IsValid();
+            Results.SceneAddedRealHandleEq0 = emptyScene.handle == 0;
+            Results.SceneAddedRealHashCodeEq0 = emptyScene.GetHashCode() == 0;
         };
 
         yield return null;

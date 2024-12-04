@@ -69,10 +69,21 @@ public static class Results
     public static int SceneAddedBuildIndex;
     public static bool SceneAddedIsDirty;
     public static bool SceneAddedIsValid;
+    // TODO: when loading is proper, handle and hashcode must be checked
 
     public static bool SceneAddedRealEqDummy;
     public static bool SceneAddedRealEqualsDummy;
     public static bool SceneAddedRealNeqDummy;
+    public static string SceneAddedRealName;
+    public static bool SceneAddedRealIsLoaded;
+    public static int SceneAddedRealRootCount;
+    public static bool SceneAddedRealIsSubScene;
+    public static string SceneAddedRealPath;
+    public static int SceneAddedRealBuildIndex;
+    public static bool SceneAddedRealIsDirty;
+    public static bool SceneAddedRealIsValid;
+    public static bool SceneAddedRealHandleEq0;
+    public static bool SceneAddedRealHashCodeEq0;
 
     public static void LogResults()
     {

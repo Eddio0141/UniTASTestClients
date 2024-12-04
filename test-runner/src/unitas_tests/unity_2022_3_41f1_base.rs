@@ -33,216 +33,58 @@ fn test(mut test_args: TestArgs) -> Result<bool> {
     let mut res = true;
 
     let fields = [
-        (
-            "AsyncLoadSceneCount",
-            "2",
-            "Scene count not matching after LoadSceneAsync call",
-        ),
-        (
-            "AsyncLoadLoadedSceneCount",
-            "1",
-            "Loaded scene count not matching after LoadSceneAsync call",
-        ),
-        (
-            "AsyncLoadAllowLoadSceneCount",
-            "2",
-            "Scene count is not matching after allowSceneActivation true",
-        ),
-        (
-            "AsyncLoadAllowLoadLoadedSceneCount",
-            "1",
-            "Loaded scene count is not matching after allowSceneActivation true",
-        ),
-        (
-            "AsyncLoadAllowLoadNextFrameSceneCount",
-            "2",
-            "Scene count 1f after frame",
-        ),
-        (
-            "AsyncLoadAllowLoadNextFrameLoadedSceneCount",
-            "2",
-            "Loaded scene count 1f after frame",
-        ),
-        (
-            "AsyncLoadCallbackSceneCount",
-            "2",
-            "Scene count in AsyncOperation event callback for load",
-        ),
-        (
-            "AsyncLoadCallbackLoadedSceneCount",
-            "2",
-            "Loaded scene count in AsyncOperation event callback for load",
-        ),
-        (
-            "AsyncUnloadSceneCount",
-            "2",
-            "Scene count after AsyncSceneUnload call",
-        ),
-        (
-            "AsyncUnloadLoadedSceneCount",
-            "1",
-            "Loaded scene count after AsyncSceneUnload call",
-        ),
-        (
-            "AsyncUnloadAllowLoadNextFrameSceneCount",
-            "1",
-            "Scene count after 1f for scene unload",
-        ),
-        (
-            "AsyncUnloadAllowLoadNextFrameLoadedSceneCount",
-            "1",
-            "Loaded scene count after 1f for scene unload",
-        ),
-        (
-            "AsyncUnloadCallbackSceneCount",
-            "1",
-            "Scene count in AsyncOperation callback for unload",
-        ),
-        (
-            "AsyncUnloadCallbackLoadedSceneCount",
-            "1",
-            "Loaded scene count in AsyncOperation callback for unload",
-        ),
-        (
-            "AsyncLoadCallbackFrame",
-            "3",
-            "Callback time of the Async Load is wrong",
-        ),
-        (
-            "AsyncUnloadCallbackFrame",
-            "4",
-            "Callback time of the Async Unload is wrong",
-        ),
-        (
-            "AsyncLoadCallback2Frame",
-            "7",
-            "Callback time of Async Load is wrong, there should be a frame delay, then load happens",
-        ),
-        (
-            "AsyncLoadCallback3Frame",
-            "10",
-            "Callback time of Async Load is wrong, stalling the scene load during the frame delay would not redo the frame delay"
-        ),
-        (
-            "AsyncLoadCallback4Frame",
-            "15",
-            "Callback time of Async Load is wrong, frame delay should be done a while ago"
-        ),
-        (
-            "AsyncLoadSyncLoadCallbackFrame",
-            "16",
-            "Callback time of Async Load should have no delay, since a non-async scene load was called",
-        ),
-        (
-            "AsyncLoadSyncLoadCallback2Frame",
-            "16",
-            "Callback time of Async Load should have no delay, since a non-async scene load was called",
-        ),
-        (
-            "AsyncLoadCallback5Frame",
-            "19",
-            "UniTAS didn't restore the frame delay after doing a sync scene load",
-        ),
-        (
-            "AfterLoadsSceneCount",
-            "8",
-            "Total scene count doesn't match",
-        ),
-        (
-            "AfterLoadsLoadedSceneCount",
-            "8",
-            "Total loaded scene count doesn't match",
-        ),
-        (
-            "AfterDoubleUnloadSceneCount",
-            "7",
-            "Scene count for double async unload should just decrease scene count by 1",
-        ),
-        (
-            "AfterDoubleUnloadLoadedSceneCount",
-            "7",
-            "Loaded scene count for double async unload should just decrease scene count by 1",
-        ),
-        (
-            "DoubleUnloadOperationIsNull",
-            "true",
-            "The double unload operation's second call isn't null"
-        ),
-        (
-            "DoubleUnloadDiffNameSuccess",
-            "true",
-            "Somehow failed to unload two scenes under different names at the same time",
-        ),
-        (
-            "DoubleUnloadDiffNameBefore2",
-            "true",
-            "Order of double unload is wrong",
-        ),
-        (
-            "DoubleUnloadNameIdSecondIsNull",
-            "true",
-            "Two unload operations in a row with matching name and ID will still not work"
-        ),
-        (
-            "SceneNameInitial",
-            "General",
-            "Initial scene should be the general testing scene",
-        ),
-        (
-            "SceneAddedName",
-            "Empty",
-            "Additional scene should be here as soon as the scene load is invoked",
-        ),
-        (
-            "SceneAddedIsLoaded",
-            "false",
-            "Loading should be true",
-        ),
-        (
-            "SceneAddedRootCount",
-            "0",
-            "Root count is 0 during load",
-        ),
-        (
-            "SceneAddedIsSubScene",
-            "false",
-            "The scene loading isn't a sub scene",
-        ),
-        (
-            "SceneAddedPath",
-            "Assets/Scenes/Empty.unity",
-            "Asset path isn't matching",
-        ),
-        (
-            "SceneAddedBuildIndex",
-            "3",
-            "Loading scene build index isnt matching",
-        ),
-        (
-"SceneAddedIsDirty",
-"false",
-"Scene can't be dirty during load",
-        ),
-        (
-            "SceneAddedIsValid",
-            "true",
-            "Loading scene should be valid",
-        ),
-        (
-            "SceneAddedRealEqDummy",
-            "true",
-            "Dummy scene struct should match real scene struct",
-        ),
-        (
-            "SceneAddedRealEqualsDummy",
-            "true",
-            "Dummy scene struct should match real scene struct",
-        ),
-        (
-            "SceneAddedRealNeqDummy",
-            "false",
-            "Dummy scene struct should match real scene struct",
-        ),
+        ( "AsyncLoadSceneCount", "2", "Scene count not matching after LoadSceneAsync call"),
+        ( "AsyncLoadLoadedSceneCount", "1", "Loaded scene count not matching after LoadSceneAsync call"),
+        ( "AsyncLoadAllowLoadSceneCount", "2", "Scene count is not matching after allowSceneActivation true"),
+        ( "AsyncLoadAllowLoadLoadedSceneCount", "1", "Loaded scene count is not matching after allowSceneActivation true"),
+        ( "AsyncLoadAllowLoadNextFrameSceneCount", "2", "Scene count 1f after frame"),
+        ( "AsyncLoadAllowLoadNextFrameLoadedSceneCount", "2", "Loaded scene count 1f after frame"),
+        ( "AsyncLoadCallbackSceneCount", "2", "Scene count in AsyncOperation event callback for load"),
+        ( "AsyncLoadCallbackLoadedSceneCount", "2", "Loaded scene count in AsyncOperation event callback for load"),
+        ( "AsyncUnloadSceneCount", "2", "Scene count after AsyncSceneUnload call"),
+        ( "AsyncUnloadLoadedSceneCount", "1", "Loaded scene count after AsyncSceneUnload call"),
+        ( "AsyncUnloadAllowLoadNextFrameSceneCount", "1", "Scene count after 1f for scene unload"),
+        ( "AsyncUnloadAllowLoadNextFrameLoadedSceneCount", "1", "Loaded scene count after 1f for scene unload"),
+        ( "AsyncUnloadCallbackSceneCount", "1", "Scene count in AsyncOperation callback for unload"),
+        ( "AsyncUnloadCallbackLoadedSceneCount", "1", "Loaded scene count in AsyncOperation callback for unload"),
+        ( "AsyncLoadCallbackFrame", "3", "Callback time of the Async Load is wrong"),
+        ( "AsyncUnloadCallbackFrame", "4", "Callback time of the Async Unload is wrong"),
+        ( "AsyncLoadCallback2Frame", "7", "Callback time of Async Load is wrong, there should be a frame delay, then load happens"),
+        ( "AsyncLoadCallback3Frame", "10", "Callback time of Async Load is wrong, stalling the scene load during the frame delay would not redo the frame delay"),
+        ( "AsyncLoadCallback4Frame", "15", "Callback time of Async Load is wrong, frame delay should be done a while ago"),
+        ( "AsyncLoadSyncLoadCallbackFrame", "16", "Callback time of Async Load should have no delay, since a non-async scene load was called"),
+        ( "AsyncLoadSyncLoadCallback2Frame", "16", "Callback time of Async Load should have no delay, since a non-async scene load was called"),
+        ( "AsyncLoadCallback5Frame", "19", "UniTAS didn't restore the frame delay after doing a sync scene load"),
+        ( "AfterLoadsSceneCount", "8", "Total scene count doesn't match"),
+        ( "AfterLoadsLoadedSceneCount", "8", "Total loaded scene count doesn't match"),
+        ( "AfterDoubleUnloadSceneCount", "7", "Scene count for double async unload should just decrease scene count by 1"),
+        ( "AfterDoubleUnloadLoadedSceneCount", "7", "Loaded scene count for double async unload should just decrease scene count by 1"),
+        ( "DoubleUnloadOperationIsNull", "true", "The double unload operation's second call isn't null"),
+        ( "DoubleUnloadDiffNameSuccess", "true", "Somehow failed to unload two scenes under different names at the same time"),
+        ( "DoubleUnloadDiffNameBefore2", "true", "Order of double unload is wrong"),
+        ( "DoubleUnloadNameIdSecondIsNull", "true", "Two unload operations in a row with matching name and ID will still not work"),
+        ( "SceneNameInitial", "General", "Initial scene should be the general testing scene"),
+        ( "SceneAddedName", "Empty", "Additional scene should be here as soon as the scene load is invoked"),
+        ( "SceneAddedIsLoaded", "false", "Loading should be true"),
+        ( "SceneAddedRootCount", "0", "Root count is 0 during load"),
+        ( "SceneAddedIsSubScene", "false", "The scene loading isn't a sub scene"),
+        ( "SceneAddedPath", "Assets/Scenes/Empty.unity", "Asset path isn't matching"),
+        ( "SceneAddedBuildIndex", "3", "Loading scene build index isnt matching"),
+        ( "SceneAddedIsDirty", "false", "Scene can't be dirty during load"),
+        ( "SceneAddedIsValid", "true", "Loading scene should be valid"),
+        ( "SceneAddedRealEqDummy", "true", "Dummy scene struct should match real scene struct"),
+        ( "SceneAddedRealEqualsDummy", "true", "Dummy scene struct should match real scene struct"),
+        ( "SceneAddedRealNeqDummy", "false", "Dummy scene struct should match real scene struct"),
+        ( "SceneAddedRealName", "Empty", "Dummy scene struct redirecting to real scene struct has failed"),
+        ( "SceneAddedRealIsLoaded", "true", "Dummy scene struct redirecting to real scene struct has failed"),
+        ( "SceneAddedRealRootCount", "1", "Dummy scene struct redirecting to real scene struct has failed"),
+        ( "SceneAddedRealIsSubScene", "false", "Dummy scene struct redirecting to real scene struct has failed"),
+        ( "SceneAddedRealPath", "Assets/Scenes/Empty.unity", "Dummy scene struct redirecting to real scene struct has failed"),
+        ( "SceneAddedRealBuildIndex", "3", "Dummy scene struct redirecting to real scene struct has failed"),
+        ( "SceneAddedRealIsDirty", "false", "Dummy scene struct redirecting to real scene struct has failed"),
+        ( "SceneAddedRealIsValid", "true", "Dummy scene struct redirecting to real scene struct has failed"),
+        ( "SceneAddedRealHandleEq0", "false", "Dummy scene struct redirecting to real scene struct has failed"),
+        ( "SceneAddedRealHashCodeEq0", "false", "Dummy scene struct redirecting to real scene struct has failed"),
     ];
 
     stream.run_general_tests(&fields, &mut res)?;
