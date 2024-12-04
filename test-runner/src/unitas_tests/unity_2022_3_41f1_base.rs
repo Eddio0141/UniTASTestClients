@@ -369,7 +369,7 @@ end, "method")
     // FrameAdvanceAnimator.cs
     stream.send(
         r#"event_coroutine(function()
-    service("ISceneWrapper").load_scene("FrameAdvancing")
+    service("ISceneManagerWrapper").load_scene("FrameAdvancing")
     service('ITimeWrapper').capture_frame_time = 0.01
     local y = coroutine.yield
 

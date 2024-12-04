@@ -233,11 +233,11 @@ impl UniTasStream {
     }
 
     fn run_general_tests(&mut self, fields: &[(&str, &str, &str)], res: &mut bool) -> Result<()> {
-        self.send("service('ISceneWrapper').load_scene('General')")?;
+        self.send("service('ISceneManagerWrapper').load_scene('General')")?;
 
         let mut setup_fail = true;
         for _ in 0..30 {
-            self.send("print(service('ISceneWrapper').ActiveSceneName)")?;
+            self.send("print(service('ISceneManagerWrapper').ActiveSceneName)")?;
             if self.receive()? == "General" {
                 setup_fail = false;
                 break;
