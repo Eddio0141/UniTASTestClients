@@ -15,6 +15,7 @@ use std::{
 use crate::{cli::Args, fs_utils::copy_dir_all_blocking, symbols, Os, WIN_UNITY_EXE_NAME};
 
 use anyhow::{bail, Context, Result};
+use colored::Colorize;
 use log::{debug, trace};
 use thiserror::Error;
 
@@ -41,9 +42,9 @@ struct TestCtx {
 impl TestCtx {
     fn assert(&mut self, condition: bool, name: &str, message: &str) {
         if condition {
-            println!("{} {name}", symbols::SUCCESS);
+            println!("{} {name}", symbols::SUCCESS.green());
         } else {
-            println!("!!! {} {name}", symbols::FAIL);
+            println!("{} {name}", symbols::FAIL.red());
         }
         let result = if condition {
             TestResult::Success
@@ -103,7 +104,7 @@ impl TestCtx {
         if setup_fail {
             println!(
                 "{} failed to complete general tests, something went wrong",
-                symbols::FAIL
+                symbols::FAIL.red()
             );
         } else {
             let mut send_msg = String::from("local results = traverse('Results')");
@@ -454,20 +455,24 @@ impl Test {
         let mut fail_count = 0usize;
         for fail in fails.clone() {
             println!("failed test `{}`", fail.name);
-            println!("{}", fail.message);
+            println!("{}\n", fail.message);
             fail_count += 1;
         }
 
         if fail_count > 0 {
-            println!("\n\nfailures:");
+            println!("\nfailures:");
 
             for fail in fails {
                 println!("    {}", fail.name);
             }
         }
 
-        let success = if fail_count == 0 { "SUCCESS" } else { "FAILED" };
-        println!("\n\ntest result: {success}. {success_count} passed; {fail_count} failed\n\n");
+        let success = if fail_count == 0 {
+            "SUCCESS".green()
+        } else {
+            "FAILED".red()
+        };
+        println!("\ntest result: {success}. {success_count} passed; {fail_count} failed\n\n");
 
         if fail_count > 0 {
             let signal: Option<i32>;
@@ -503,7 +508,7 @@ impl Test {
         if let Err(err) = fs::copy(&log_src, &log_dst) {
             eprintln!(
                 "{} failed to copy stdout log file from `{}` to `{}`: {err}",
-                symbols::WARN,
+                symbols::WARN.yellow(),
                 log_src.display(),
                 log_dst.display()
             );
@@ -517,7 +522,7 @@ impl Test {
         if let Err(err) = fs::copy(&log_src, &log_dst) {
             eprintln!(
                 "{} failed to copy log file from `{}` to `{}`: {err}",
-                symbols::WARN,
+                symbols::WARN.yellow(),
                 log_src.display(),
                 log_dst.display()
             );
