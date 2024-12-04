@@ -60,7 +60,7 @@ public static class Results
     public static bool GeneralTestsDone;
 
     public static string SceneNameInitial;
-    
+
     public static string SceneAddedName;
     public static bool SceneAddedIsLoaded;
     public static int SceneAddedRootCount;
@@ -69,6 +69,8 @@ public static class Results
     public static int SceneAddedBuildIndex;
     public static bool SceneAddedIsDirty;
     public static bool SceneAddedIsValid;
+    public static string SceneAddedNameChangeInvalidOp;
+
     // TODO: when loading is proper, handle and hashcode must be checked
 
     public static bool SceneAddedRealEqDummy;

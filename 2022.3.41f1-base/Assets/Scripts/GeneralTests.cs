@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -20,6 +21,15 @@ public class GeneralTests : MonoBehaviour
         Results.SceneAddedBuildIndex = emptyScene.buildIndex;
         Results.SceneAddedIsDirty = emptyScene.isDirty;
         Results.SceneAddedIsValid = emptyScene.IsValid();
+
+        try
+        {
+            emptyScene.name = "foo";
+        }
+        catch (InvalidOperationException e)
+        {
+            Results.SceneAddedNameChangeInvalidOp = e.Message;
+        }
 
         Results.AsyncLoadSceneCount = SceneManager.sceneCount;
         Results.AsyncLoadLoadedSceneCount = SceneManager.loadedSceneCount;

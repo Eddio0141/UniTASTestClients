@@ -72,6 +72,7 @@ fn test(mut test_args: TestArgs) -> Result<bool> {
         ( "SceneAddedBuildIndex", "3", "Loading scene build index isnt matching"),
         ( "SceneAddedIsDirty", "false", "Scene can't be dirty during load"),
         ( "SceneAddedIsValid", "true", "Loading scene should be valid"),
+        ( "SceneAddedNameChangeInvalidOp", "Setting a name on a saved scene is not allowed (the filename is used as name). Scene: 'Assets/Scenes/Empty.unity'", "Attempted change to name should be invalid" ),
         ( "SceneAddedRealEqDummy", "true", "Dummy scene struct should match real scene struct"),
         ( "SceneAddedRealEqualsDummy", "true", "Dummy scene struct should match real scene struct"),
         ( "SceneAddedRealNeqDummy", "false", "Dummy scene struct should match real scene struct"),
