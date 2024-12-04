@@ -1,8 +1,8 @@
 use std::fs;
 
-use crate::{assert_eq, Os};
+use crate::Os;
 
-use super::{Test, TestArgs};
+use super::{Test, TestArgs, TestCtx};
 
 use anyhow::{Context, Result};
 
@@ -16,8 +16,8 @@ pub fn get() -> Test {
     }
 }
 
-fn test(mut test_args: TestArgs) -> Result<bool> {
-    let movie_path = test_args.game_dir.join("movie.lua");
+fn test(ctx: &mut TestCtx, mut args: TestArgs) -> Result<()> {
+    let movie_path = args.game_dir.join("movie.lua");
     fs::write(&movie_path, MOVIE).with_context(|| {
         format!(
             "failed to write movie file to path `{}`",
@@ -25,12 +25,10 @@ fn test(mut test_args: TestArgs) -> Result<bool> {
         )
     })?;
 
-    let stream = &mut test_args.stream;
+    let stream = &mut args.stream;
 
     stream.send("full_access(true)")?;
     stream.receive()?;
-
-    let mut res = true;
 
     let fields = [
         ( "AsyncLoadSceneCount", "2", "Scene count not matching after LoadSceneAsync call"),
@@ -88,7 +86,7 @@ fn test(mut test_args: TestArgs) -> Result<bool> {
         ( "SceneAddedRealHashCodeEq0", "false", "Dummy scene struct redirecting to real scene struct has failed"),
     ];
 
-    stream.run_general_tests(&fields, &mut res)?;
+    ctx.run_general_tests(stream, &fields)?;
 
     stream.send("play('movie.lua')")?;
     stream.wait_for_movie_end()?;
@@ -109,61 +107,66 @@ fn test(mut test_args: TestArgs) -> Result<bool> {
         stream.send(&format!(
             "print(legacy_input_system_test.field('{field}').get_value())"
         ))?;
-        assert_eq!(
-            format!("jump button count field {field}"),
+        ctx.assert_eq(
             "5",
-            stream.receive()?,
-            format!("checking LegacyInputSystemTest.{field} field to be 5"),
-            res
+            &stream.receive()?,
+            &format!("jump button count field {field}"),
+            &format!("checking LegacyInputSystemTest.{field} field to be 5"),
         );
     }
 
     stream.send("print(legacy_input_system_test.field('_horizontalAxisMoveCount').get_value())")?;
-    assert_eq!(
-        "horizontal axis move count", "6",
-        stream.receive()?,
-        "checking LegacyInputSystemTest._horizontalAxisMoveCount field", res
+    ctx.assert_eq(
+        "6",
+        &stream.receive()?,
+        "horizontal axis move count",
+        "checking LegacyInputSystemTest._horizontalAxisMoveCount field",
     );
 
     // SceneTest.cs
     stream.send("scene_test = traverse('SceneTest')")?;
 
     stream.send("print(scene_test.field('_asyncOpCallbackProgress').get_value())")?;
-    assert_eq!(
-        "async op callback progress", "1",
-        stream.receive()?,
-        "async operation progress in callback isn't 1.0", res
+    ctx.assert_eq(
+        "1",
+        &stream.receive()?,
+        "async op callback progress",
+        "async operation progress in callback isn't 1.0",
     );
 
     stream.send("print(scene_test.field('_asyncOpCallbackAllowSceneActivation').get_value())")?;
-    assert_eq!(
-        "async operation callback allowSceneActivation", "true",
-        stream.receive()?,
-        "allowSceneActivation is false", res
+    ctx.assert_eq(
+        "true",
+        &stream.receive()?,
+        "async operation callback allowSceneActivation",
+        "allowSceneActivation is false",
     );
 
     stream.send("print(scene_test.field('_asyncOpCallbackIsDone').get_value())")?;
-    assert_eq!(
-        "async operation callback isDone", "true",
-        stream.receive()?,
-        "isDone isn't true", res
+    ctx.assert_eq(
+        "true",
+        &stream.receive()?,
+        "async operation callback isDone",
+        "isDone isn't true",
     );
 
     stream.send("print(scene_test.field('_asyncOpDoneFrame').get_value())")?;
-    assert_eq!(
-        "SceneTest async op done frame", "19",
-        stream.receive()?,
-        "checking SceneTest callback done timing frame", res
+    ctx.assert_eq(
+        "19",
+        &stream.receive()?,
+        "SceneTest async op done frame",
+        "checking SceneTest callback done timing frame",
     );
 
     // UGuiTest.cs
     stream.send("ugui_test = traverse('UGuiTest')")?;
 
     stream.send("print(ugui_test.field('_clickCount').get_value())")?;
-    assert_eq!(
-        "UGuiTest click count", "5",
-        stream.receive()?,
-        "didn't match click count of 5", res
+    ctx.assert_eq(
+        "5",
+        &stream.receive()?,
+        "UGuiTest click count",
+        "didn't match click count of 5",
     );
 
     // multiple fixed updates in a row
@@ -228,18 +231,18 @@ end, "method")
         stream.receive()?;
     }
 
-    assert_eq!(
+    ctx.assert_eq(
+        &max_fixed_update_count.to_string(),
+        &stream.receive()?,
         "multiple fixed update: fixed update count",
-        max_fixed_update_count.to_string(),
-        stream.receive()?,
         "mismatch in FixedUpdate count",
-        res
     );
 
-    assert_eq!(
-        "multiple fixed update: update count", "2",
-        stream.receive()?,
-        "mismatch in Update count", res
+    ctx.assert_eq(
+        "2",
+        &stream.receive()?,
+        "multiple fixed update: update count",
+        "mismatch in Update count",
     );
 
     stream.send("full_access(true)")?;
@@ -253,10 +256,11 @@ end, "method")
         "#,
     )?;
 
-    assert_eq!(
-        "StructTest: constrained opcode test", "StructTest._constrainedTestSuccess: true",
-        stream.receive()?,
-        "UniTAS failed to properly handle the constrained opcode", res
+    ctx.assert_eq(
+        "StructTest._constrainedTestSuccess: true",
+        &stream.receive()?,
+        "StructTest: constrained opcode test",
+        "UniTAS failed to properly handle the constrained opcode",
     );
 
     // FrameAdvanceAnimator.cs
@@ -320,5 +324,5 @@ end)"#,
     //     res
     // );
 
-    Ok(res)
+    Ok(())
 }

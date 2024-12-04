@@ -2,6 +2,7 @@
 use std::os::unix::process::ExitStatusExt;
 use std::{
     collections::VecDeque,
+    fmt::Debug,
     fs,
     io::{self, Read, Write},
     net::{IpAddr, Ipv4Addr, SocketAddr, TcpStream},
@@ -18,7 +19,6 @@ use log::{debug, trace};
 use thiserror::Error;
 
 mod unity_2022_3_41f1_base;
-mod utils;
 
 pub fn get_linux_tests() -> Vec<Test> {
     vec![unity_2022_3_41f1_base::get()]
@@ -31,7 +31,109 @@ pub fn get_win_tests() -> Vec<Test> {
 pub struct Test {
     name: &'static str,
     os: Os,
-    test: fn(test_args: TestArgs) -> Result<bool>,
+    test: fn(ctx: &mut TestCtx, args: TestArgs) -> Result<()>,
+}
+
+struct TestCtx {
+    results: Vec<TestResult>,
+}
+
+impl TestCtx {
+    fn assert(&mut self, condition: bool, name: &str, message: &str) {
+        if condition {
+            println!("{} {name}", symbols::SUCCESS);
+        } else {
+            println!("!!! {} {name}", symbols::FAIL);
+        }
+        let result = if condition {
+            TestResult::Success
+        } else {
+            TestResult::Fail(TestFailInfo {
+                name: name.to_string(),
+                message: format!("assertion failed: {message}"),
+            })
+        };
+        self.results.push(result);
+    }
+
+    fn assert_eq<T: PartialEq + Debug>(&mut self, left: T, right: T, name: &str, message: &str) {
+        let result = left == right;
+        self.assert(
+            result,
+            name,
+            &format!(
+                "`left == right`: {message}\n  left: `{:?}`\n right: `{:?}`",
+                left, right
+            ),
+        );
+    }
+
+    fn run_general_tests(
+        &mut self,
+        stream: &mut UniTasStream,
+        fields: &[(&str, &str, &str)],
+    ) -> Result<()> {
+        stream.send("service('ISceneManagerWrapper').load_scene('General')")?;
+
+        let mut setup_fail = true;
+        for _ in 0..30 {
+            stream.send("print(service('ISceneManagerWrapper').ActiveSceneName)")?;
+            if stream.receive()? == "General" {
+                setup_fail = false;
+                break;
+            }
+            thread::sleep(Duration::from_secs(1));
+        }
+
+        if setup_fail {
+            panic!("failed to load scene `General`");
+        }
+
+        // wait for general tests to finish
+        let mut setup_fail = true;
+        for _ in 0..30 {
+            stream.send("print(traverse('Results').field('GeneralTestsDone').GetValue())")?;
+            if stream.receive()? == "true" {
+                setup_fail = false;
+                break;
+            }
+            thread::sleep(Duration::from_secs(1));
+        }
+
+        if setup_fail {
+            println!(
+                "{} failed to complete general tests, something went wrong",
+                symbols::FAIL
+            );
+        } else {
+            let mut send_msg = String::from("local results = traverse('Results')");
+
+            for (name, _, _) in fields {
+                send_msg.push_str(&format!(" print(results.field('{name}').GetValue())"));
+            }
+
+            stream.send(&send_msg)?;
+
+            for (name, expected, fail_msg) in fields {
+                let actual = stream.receive()?;
+                self.assert_eq(*expected, &actual, name, fail_msg);
+            }
+        }
+
+        thread::sleep(Duration::from_millis(500));
+
+        Ok(())
+    }
+}
+
+enum TestResult {
+    Success,
+    Fail(TestFailInfo),
+}
+
+struct TestFailInfo {
+    name: String,
+    message: String,
 }
 
 struct TestArgs<'a> {
@@ -231,70 +333,6 @@ impl UniTasStream {
             thread::sleep(Duration::from_secs(1));
         }
     }
-
-    fn run_general_tests(&mut self, fields: &[(&str, &str, &str)], res: &mut bool) -> Result<()> {
-        self.send("service('ISceneManagerWrapper').load_scene('General')")?;
-
-        let mut setup_fail = true;
-        for _ in 0..30 {
-            self.send("print(service('ISceneManagerWrapper').ActiveSceneName)")?;
-            if self.receive()? == "General" {
-                setup_fail = false;
-                break;
-            }
-            thread::sleep(Duration::from_secs(1));
-        }
-
-        if setup_fail {
-            panic!("failed to load scene `General`");
-        }
-
-        // wait for general tests to finish
-        let mut setup_fail = true;
-        for _ in 0..30 {
-            self.send("print(traverse('Results').field('GeneralTestsDone').GetValue())")?;
-            if self.receive()? == "true" {
-                setup_fail = false;
-                break;
-            }
-            thread::sleep(Duration::from_secs(1));
-        }
-
-        if setup_fail {
-            println!(
-                "{} failed to complete general tests, something went wrong",
-                symbols::ERROR
-            );
-        } else {
-            let mut send_msg = String::from("local results = traverse('Results')");
-
-            for (name, _, _) in fields {
-                send_msg.push_str(&format!(" print(results.field('{name}').GetValue())"));
-            }
-
-            self.send(&send_msg)?;
-
-            let mut res_inner = true;
-            for (name, expected, fail_msg) in fields {
-                let actual = self.receive()?;
-                crate::assert_eq!(
-                    format!("Field check `{name}`"),
-                    *expected,
-                    actual,
-                    fail_msg,
-                    res_inner
-                );
-            }
-
-            if *res != res_inner {
-                *res = res_inner;
-            }
-        }
-
-        thread::sleep(Duration::from_millis(500));
-
-        Ok(())
-    }
 }
 
 impl Test {
@@ -385,11 +423,14 @@ impl Test {
             game_dir: &game_dir,
             stream,
         };
+        let mut test_ctx = TestCtx {
+            results: Vec::new(),
+        };
 
         println!("[{}]", self.name);
 
         // run tests
-        let success = (self.test)(test_args);
+        let result = (self.test)(&mut test_ctx, test_args);
 
         println!();
         process.kill().context("failed to stop running game")?;
@@ -397,12 +438,38 @@ impl Test {
         let status = process.wait().unwrap();
         self.move_log(&game_dir, logs_dir);
 
-        let success = success?;
-        println!("test completed");
+        result?;
+        println!("test completed\n\n");
 
-        if success {
-            Ok(())
-        } else {
+        let success_count = test_ctx
+            .results
+            .iter()
+            .filter(|r| matches!(r, TestResult::Success))
+            .count();
+        let fails = test_ctx.results.iter().filter_map(|r| match r {
+            TestResult::Success => None,
+            TestResult::Fail(info) => Some(info),
+        });
+
+        let mut fail_count = 0usize;
+        for fail in fails.clone() {
+            println!("failed test `{}`", fail.name);
+            println!("{}", fail.message);
+            fail_count += 1;
+        }
+
+        if fail_count > 0 {
+            println!("\n\nfailures:");
+
+            for fail in fails {
+                println!("    {}", fail.name);
+            }
+        }
+
+        let success = if fail_count == 0 { "SUCCESS" } else { "FAILED" };
+        println!("\n\ntest result: {success}. {success_count} passed; {fail_count} failed\n\n");
+
+        if fail_count > 0 {
             let signal: Option<i32>;
 
             #[cfg(target_family = "unix")]
@@ -425,6 +492,8 @@ impl Test {
             };
 
             Err(err)
+        } else {
+            Ok(())
         }
     }
 

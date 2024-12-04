@@ -60,7 +60,7 @@
           };
 
           devShells.default = pkgs.mkShell {
-            RUST_BACKTRACE = "1";
+            # RUST_BACKTRACE = "1";
             packages = with pkgs; [
               (rust.override {
                 extensions = [
