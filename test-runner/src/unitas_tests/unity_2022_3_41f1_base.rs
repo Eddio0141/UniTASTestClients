@@ -84,6 +84,15 @@ fn test(ctx: &mut TestCtx, mut args: TestArgs) -> Result<()> {
         ( "SceneAddedRealIsValid", "true", "Dummy scene struct redirecting to real scene struct has failed"),
         ( "SceneAddedRealHandleEq0", "false", "Dummy scene struct redirecting to real scene struct has failed"),
         ( "SceneAddedRealHashCodeEq0", "false", "Dummy scene struct redirecting to real scene struct has failed"),
+        ( "SceneNonExistentUnloadEx", "Scene to unload is invalid", "Exception message not matching" ),
+        ( "SceneNonExistentAsyncLoadMsg", "Scene 'InvalidScene' couldn't be loaded because it has not been added to the build settings or the AssetBundle has not been loaded.\nTo add a scene to the build settings use the menu File->Build Settings...", "Mismatch in unity error" ),
+        ( "SceneNonExistentAsyncLoadMsgType", "Error", "Expected an error log" ),
+        ( "SceneNonExistentAsyncLoadOpIsNull", "true", "Non existant load should be null" ),
+        ( "SceneNonExistentAsyncLoadSceneCountDiff", "0", "There should be no scenes loading" ),
+        ( "SceneNonExistentSyncLoadMsg", "Scene 'InvalidScene' couldn't be loaded because it has not been added to the build settings or the AssetBundle has not been loaded.\nTo add a scene to the build settings use the menu File->Build Settings...", "Mismatch in unity error" ),
+        ( "SceneNonExistentSyncLoadMsgType", "Error", "Expected an error log" ),
+        ( "SceneNonExistentSyncLoadSceneCountDiff", "0", "There should be no scenes loading" ),
+        ( "SceneNeverLoadedUnloadEx", "Scene to unload is invalid", "Wrong exception message" ),
     ];
 
     ctx.run_general_tests(stream, &fields)?;

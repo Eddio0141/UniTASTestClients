@@ -226,7 +226,54 @@ public class GeneralTests : MonoBehaviour
         yield return null;
         // frame 24
 
+        var prevSceneCount = SceneManager.sceneCount;
+
+        // try load / unload non-existent scene
+        Application.logMessageReceived += LoadFailLogCheckAsync;
+        // ReSharper disable once Unity.LoadSceneUnexistingScene
+        loadEmpty = SceneManager.LoadSceneAsync("InvalidScene", LoadSceneMode.Additive);
+        Application.logMessageReceived -= LoadFailLogCheckAsync;
+        Results.SceneNonExistentAsyncLoadOpIsNull = loadEmpty == null;
+        Results.SceneNonExistentAsyncLoadSceneCountDiff = SceneManager.sceneCount - prevSceneCount;
+
+        Application.logMessageReceived += LoadFailLogCheckSync;
+        // ReSharper disable once Unity.LoadSceneUnexistingScene
+        SceneManager.LoadScene("InvalidScene", LoadSceneMode.Additive);
+        Application.logMessageReceived -= LoadFailLogCheckSync;
+        Results.SceneNonExistentSyncLoadSceneCountDiff = SceneManager.sceneCount - prevSceneCount;
+
+        try
+        {
+            SceneManager.UnloadSceneAsync("InvalidScene");
+        }
+        catch (ArgumentException e)
+        {
+            Results.SceneNonExistentUnloadEx = e.Message;
+        }
+
+        try
+        {
+            // unload scene that was never touched
+            SceneManager.UnloadSceneAsync(1);
+        }
+        catch (ArgumentException e)
+        {
+            Results.SceneNeverLoadedUnloadEx = e.Message;
+        }
+
         Results.GeneralTestsDone = true;
         Results.LogResults();
+    }
+
+    private static void LoadFailLogCheckAsync(string condition, string _, LogType type)
+    {
+        Results.SceneNonExistentAsyncLoadMsg = condition;
+        Results.SceneNonExistentAsyncLoadMsgType = type.ToString();
+    }
+
+    private static void LoadFailLogCheckSync(string condition, string _, LogType type)
+    {
+        Results.SceneNonExistentSyncLoadMsg = condition;
+        Results.SceneNonExistentSyncLoadMsgType = type.ToString();
     }
 }

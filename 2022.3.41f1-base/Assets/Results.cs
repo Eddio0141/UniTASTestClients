@@ -87,6 +87,16 @@ public static class Results
     public static bool SceneAddedRealHandleEq0;
     public static bool SceneAddedRealHashCodeEq0;
 
+    public static string SceneNonExistentUnloadEx;
+    public static string SceneNonExistentAsyncLoadMsg;
+    public static string SceneNonExistentAsyncLoadMsgType;
+    public static bool SceneNonExistentAsyncLoadOpIsNull;
+    public static int SceneNonExistentAsyncLoadSceneCountDiff;
+    public static string SceneNonExistentSyncLoadMsg;
+    public static string SceneNonExistentSyncLoadMsgType;
+    public static int SceneNonExistentSyncLoadSceneCountDiff;
+    public static string SceneNeverLoadedUnloadEx;
+
     public static void LogResults()
     {
         var fields = typeof(Results).GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
