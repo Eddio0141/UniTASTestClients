@@ -107,13 +107,13 @@ fn test(ctx: &mut TestCtx, mut args: TestArgs) -> Result<()> {
         ( "SceneAdditiveSingleSceneCount2", "1", "Scene count mismatch" ),
         ( "SceneAdditiveSingleLoadedSceneCount2", "1", "Loaded scene count mismatch" ),
         ( "SceneAdditiveSingleLoadProgress", "0.899999976158142", "Progress mismatch" ),
-        ( "SceneAdditiveSingleLoadProgress2", "0", "Progress mismatch" ),
+        ( "SceneAdditiveSingleLoadProgress2", "0.899999976158142", "Progress mismatch" ),
         ( "SceneAdditiveSingleSceneCount3", "2", "Scene count mismatch" ),
         ( "SceneAdditiveSingleLoadedSceneCount3", "0", "Loaded scene count mismatch" ),
         ( "SceneAdditiveSingleSceneCount4", "1", "Scene count mismatch" ),
         ( "SceneAdditiveSingleLoadedSceneCount4", "1", "Loaded scene count mismatch" ),
-        ( "SceneAdditiveSingleLoadProgress3", "0", "Progress mismatch" ),
-        ( "SceneAdditiveSingleLoadProgress4", "0", "Progress mismatch" ),
+        ( "SceneAdditiveSingleLoadProgress3", "0.899999976158142", "Progress mismatch" ),
+        ( "SceneAdditiveSingleLoadProgress4", "0.899999976158142", "Progress mismatch" ),
         ( "SceneAdditiveSingleSceneCount5", "3", "Scene count mismatch" ),
         ( "SceneAdditiveSingleLoadedSceneCount5", "1", "Loaded scene count mismatch" ),
         ( "SceneAdditiveSingleSceneCount6", "2", "Scene count mismatch" ),
@@ -126,6 +126,10 @@ fn test(ctx: &mut TestCtx, mut args: TestArgs) -> Result<()> {
         ( "SceneAdditiveSingleLoadedSceneCount9", "2", "Scene count mismatch" ),
         ( "SceneAdditiveSingleLoadProgress5", "0", "Progress mismatch" ),
         ( "SceneAdditiveSingleLoadProgress6", "0", "Progress mismatch" ),
+        ( "SceneDoubleProgress", "0.899999976158142", "Should be complete" ),
+        ( "SceneDoubleProgress2", "0.899999976158142", "Should be complete" ),
+        ( "SceneDoubleProgress3", "0.899999976158142", "Should be complete" ),
+        ( "SceneDoubleProgress4", "0.899999976158142", "Should be complete" ),
     ];
 
     ctx.run_general_tests(stream, &fields)?;

@@ -270,6 +270,20 @@ public class GeneralTests : MonoBehaviour
             Results.SceneNeverLoadedUnloadEx = e.Message;
         }
 
+        loadEmpty = SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!;
+        Results.SceneDoubleProgress = loadEmpty.progress;
+        var loadEmpty2 = SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!;
+        Results.SceneDoubleProgress2 = loadEmpty2.progress;
+        
+        yield return null;
+        // frame 25
+
+        Results.SceneDoubleProgress3 = loadEmpty.progress;
+        Results.SceneDoubleProgress4 = loadEmpty2.progress;
+        
+        yield return null;
+        // frame 26
+
         prevSceneCount = SceneManager.sceneCount;
         var prevLoadedSceneCount = SceneManager.loadedSceneCount;
 

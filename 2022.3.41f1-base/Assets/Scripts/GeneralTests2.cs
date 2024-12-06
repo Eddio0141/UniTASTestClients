@@ -6,6 +6,12 @@ public class GeneralTests2 : MonoBehaviour
 {
     private IEnumerator Start()
     {
+        yield return null;
+        yield return null;
+        yield return null;
+        yield return null;
+        yield return null;
+        
         // frame 1
         Results.SceneAdditiveSingleSceneCount2 = SceneManager.sceneCount;
         Results.SceneAdditiveSingleLoadedSceneCount2 = SceneManager.loadedSceneCount;

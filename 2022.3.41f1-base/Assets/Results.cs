@@ -106,6 +106,11 @@ public static class Results
     public static int SceneNonExistentSyncLoadSceneCountDiff;
     public static string SceneNeverLoadedUnloadEx;
 
+    public static float SceneDoubleProgress;
+    public static float SceneDoubleProgress2;
+    public static float SceneDoubleProgress3;
+    public static float SceneDoubleProgress4;
+
     public static int SceneAdditiveSingleSceneCount;
     public static int SceneAdditiveSingleLoadedSceneCount;
     public static int SceneAdditiveSingleSceneCount2;
