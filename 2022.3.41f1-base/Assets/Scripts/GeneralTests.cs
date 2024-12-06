@@ -21,6 +21,8 @@ public class GeneralTests : MonoBehaviour
         Results.SceneAddedBuildIndex = emptyScene.buildIndex;
         Results.SceneAddedIsDirty = emptyScene.isDirty;
         Results.SceneAddedIsValid = emptyScene.IsValid();
+        Results.SceneAddedProgress = loadEmpty.progress;
+        Results.SceneAddedIsDone = loadEmpty.isDone;
 
         try
         {
@@ -59,6 +61,7 @@ public class GeneralTests : MonoBehaviour
         };
 
         yield return null;
+        Results.SceneAddedIsDone2 = loadEmpty.isDone;
         // frame 2
         // loadEmpty 1f delay
 
@@ -67,6 +70,8 @@ public class GeneralTests : MonoBehaviour
         Results.AsyncLoadAllowLoadLoadedSceneCount = SceneManager.loadedSceneCount;
 
         yield return null;
+        Results.SceneAddedIsDone3 = loadEmpty.isDone;
+        Results.SceneAddedProgress2 = loadEmpty.progress;
         // frame 3
 
         Results.AsyncLoadAllowLoadNextFrameSceneCount = SceneManager.sceneCount;
@@ -75,6 +80,8 @@ public class GeneralTests : MonoBehaviour
         var unloadEmpty = SceneManager.UnloadSceneAsync("Empty")!;
         Results.AsyncUnloadSceneCount = SceneManager.sceneCount;
         Results.AsyncUnloadLoadedSceneCount = SceneManager.loadedSceneCount;
+        Results.AsyncUnloadLoadedProgress = unloadEmpty.progress;
+        Results.AsyncUnloadLoadedIsDone = unloadEmpty.isDone;
         unloadEmpty.completed += _ =>
         {
             // frame 4
@@ -86,6 +93,8 @@ public class GeneralTests : MonoBehaviour
         yield return null;
         // frame 4
 
+        Results.AsyncUnloadLoadedProgress2 = unloadEmpty.progress;
+        Results.AsyncUnloadLoadedIsDone2 = unloadEmpty.isDone;
         Results.AsyncUnloadAllowLoadNextFrameSceneCount = SceneManager.sceneCount;
         Results.AsyncUnloadAllowLoadNextFrameLoadedSceneCount = SceneManager.loadedSceneCount;
 
@@ -261,8 +270,17 @@ public class GeneralTests : MonoBehaviour
             Results.SceneNeverLoadedUnloadEx = e.Message;
         }
 
-        Results.GeneralTestsDone = true;
-        Results.LogResults();
+        prevSceneCount = SceneManager.sceneCount;
+        var prevLoadedSceneCount = SceneManager.loadedSceneCount;
+
+        // scene load additive -> scene load non-additive
+        loadEmpty = SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!;
+        var loadGeneral2 = SceneManager.LoadSceneAsync("General2", LoadSceneMode.Single)!;
+
+        Results.SceneAdditiveSingleLoadProgress = loadEmpty.progress;
+        Results.SceneAdditiveSingleLoadProgress2 = loadGeneral2.progress;
+        Results.SceneAdditiveSingleSceneCount = SceneManager.sceneCount - prevSceneCount;
+        Results.SceneAdditiveSingleLoadedSceneCount = SceneManager.loadedSceneCount - prevLoadedSceneCount;
     }
 
     private static void LoadFailLogCheckAsync(string condition, string _, LogType type)

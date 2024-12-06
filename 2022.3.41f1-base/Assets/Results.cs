@@ -33,6 +33,10 @@ public static class Results
     public static int AsyncUnloadCallbackSceneCount;
     public static int AsyncUnloadCallbackLoadedSceneCount;
     public static int AsyncUnloadCallbackFrame;
+    public static float AsyncUnloadLoadedProgress;
+    public static bool AsyncUnloadLoadedIsDone;
+    public static float AsyncUnloadLoadedProgress2;
+    public static bool AsyncUnloadLoadedIsDone2;
 
     public static int AsyncLoadCallback2Frame;
     public static int AsyncLoadCallback3Frame;
@@ -70,6 +74,11 @@ public static class Results
     public static bool SceneAddedIsDirty;
     public static bool SceneAddedIsValid;
     public static string SceneAddedNameChangeInvalidOp;
+    public static float SceneAddedProgress;
+    public static bool SceneAddedIsDone;
+    public static bool SceneAddedIsDone2;
+    public static bool SceneAddedIsDone3;
+    public static float SceneAddedProgress2;
 
     // TODO: when loading is proper, handle and hashcode must be checked
 
@@ -96,6 +105,33 @@ public static class Results
     public static string SceneNonExistentSyncLoadMsgType;
     public static int SceneNonExistentSyncLoadSceneCountDiff;
     public static string SceneNeverLoadedUnloadEx;
+
+    public static int SceneAdditiveSingleSceneCount;
+    public static int SceneAdditiveSingleLoadedSceneCount;
+    public static int SceneAdditiveSingleSceneCount2;
+    public static int SceneAdditiveSingleLoadedSceneCount2;
+    public static float SceneAdditiveSingleLoadProgress;
+    public static float SceneAdditiveSingleLoadProgress2;
+
+    public static int SceneAdditiveSingleSceneCount3;
+    public static int SceneAdditiveSingleLoadedSceneCount3;
+    public static int SceneAdditiveSingleSceneCount4;
+    public static int SceneAdditiveSingleLoadedSceneCount4;
+    public static float SceneAdditiveSingleLoadProgress3;
+    public static float SceneAdditiveSingleLoadProgress4;
+
+    public static int SceneAdditiveSingleSceneCount5;
+    public static int SceneAdditiveSingleLoadedSceneCount5;
+    public static int SceneAdditiveSingleSceneCount6;
+    public static int SceneAdditiveSingleLoadedSceneCount6;
+    public static int SceneAdditiveSingleSceneCount7;
+    public static int SceneAdditiveSingleLoadedSceneCount7;
+    public static int SceneAdditiveSingleSceneCount8;
+    public static int SceneAdditiveSingleLoadedSceneCount8;
+    public static int SceneAdditiveSingleSceneCount9;
+    public static int SceneAdditiveSingleLoadedSceneCount9;
+    public static float SceneAdditiveSingleLoadProgress5;
+    public static float SceneAdditiveSingleLoadProgress6;
 
     public static void LogResults()
     {
