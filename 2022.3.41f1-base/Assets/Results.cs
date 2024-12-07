@@ -137,6 +137,21 @@ public static class Results
     public static int SceneAdditiveSingleLoadedSceneCount9;
     public static float SceneAdditiveSingleLoadProgress5;
     public static float SceneAdditiveSingleLoadProgress6;
+    public static float SceneAdditiveSingleLoadProgress7;
+    public static float SceneAdditiveSingleLoadProgress8;
+    public static float SceneAdditiveSingleLoadProgress9;
+
+    public static float SceneSingleAdditiveLoadProgress;
+    public static float SceneSingleAdditiveLoadProgress2;
+    public static int SceneSingleAdditiveSceneCount;
+    public static int SceneSingleAdditiveLoadedSceneCount;
+    public static float SceneSingleAdditiveLoadProgress3;
+    public static float SceneSingleAdditiveLoadProgress4;
+    public static float SceneSingleAdditiveLoadProgress5;
+    public static float SceneSingleAdditiveLoadProgress6;
+    public static int SceneSingleAdditiveLoadedSceneCount2;
+    public static int SceneSingleAdditiveLoadedSceneCount3;
+    public static int SceneSingleAdditiveLoadedSceneCount4;
 
     public static void LogResults()
     {
