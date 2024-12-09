@@ -106,19 +106,19 @@ impl TestCtx {
                 "{} failed to complete general tests, something went wrong",
                 symbols::FAIL.red()
             );
-        } else {
-            let mut send_msg = String::from("local results = traverse('Results')");
+        }
 
-            for (name, _, _) in fields {
-                send_msg.push_str(&format!(" print(results.field('{name}').GetValue())"));
-            }
+        let mut send_msg = String::from("local results = traverse('Results')");
 
-            stream.send(&send_msg)?;
+        for (name, _, _) in fields {
+            send_msg.push_str(&format!(" print(results.field('{name}').GetValue())"));
+        }
 
-            for (name, expected, fail_msg) in fields {
-                let actual = stream.receive()?;
-                self.assert_eq(*expected, &actual, name, fail_msg);
-            }
+        stream.send(&send_msg)?;
+
+        for (name, expected, fail_msg) in fields {
+            let actual = stream.receive()?;
+            self.assert_eq(*expected, &actual, name, fail_msg);
         }
 
         thread::sleep(Duration::from_millis(500));
