@@ -6,7 +6,7 @@ description = "Tool to automatically execute unity games with UniTAS and BepInEx
 
 [dependencies]
 anyhow = "1.0.94"
-clap = { version = "4.5.21", features = ["derive"] }
+clap = { version = "4.5.23", features = ["derive"] }
 colored = "2.1.0"
 const_format = "0.2.33"
 env_logger = "0.11.5"
