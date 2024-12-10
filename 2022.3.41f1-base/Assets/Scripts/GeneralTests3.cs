@@ -9,19 +9,23 @@ public class GeneralTests3 : MonoBehaviour
 
     private IEnumerator Start()
     {
-        // frame 1
-        Results.SceneAdditiveSingleSceneCount4 = SceneManager.sceneCount;
-        Results.SceneAdditiveSingleLoadedSceneCount4 = SceneManager.loadedSceneCount;
+        yield return null;
+        yield return null;
+        yield return null;
+        yield return null;
+        yield return null;
+        yield return null;
+
+        Assert.Equal("scene.sceneCount", 2, SceneManager.sceneCount);
+        Assert.Equal("scene.loadedSceneCount", 2, SceneManager.loadedSceneCount);
 
         yield return null;
 
         // scene non-additive -> 1f -> scene load additive
         LoadGeneral4 = SceneManager.LoadSceneAsync("General4", LoadSceneMode.Single)!;
         LoadEmpty = SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!;
-        Results.SceneAdditiveSingleLoadProgress5 = LoadGeneral4.progress;
-        Results.SceneAdditiveSingleLoadProgress6 = LoadEmpty.progress;
 
-        Results.SceneAdditiveSingleSceneCount5 = SceneManager.sceneCount;
-        Results.SceneAdditiveSingleLoadedSceneCount5 = SceneManager.loadedSceneCount;
+        Assert.Equal("scene.sceneCount", 3, SceneManager.sceneCount);
+        Assert.Equal("scene.loadedSceneCount", 1, SceneManager.loadedSceneCount);
     }
 }

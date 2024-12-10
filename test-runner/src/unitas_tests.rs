@@ -69,11 +69,7 @@ impl TestCtx {
         );
     }
 
-    fn run_general_tests(
-        &mut self,
-        stream: &mut UniTasStream,
-        fields: &[(&str, &str, &str)],
-    ) -> Result<()> {
+    fn run_general_tests(&mut self, stream: &mut UniTasStream) -> Result<()> {
         stream.send("service('ISceneManagerWrapper').load_scene('General')")?;
 
         let mut setup_fail = true;
@@ -93,7 +89,7 @@ impl TestCtx {
         // wait for general tests to finish
         let mut setup_fail = true;
         for _ in 0..30 {
-            stream.send("print(traverse('Results').field('GeneralTestsDone').GetValue())")?;
+            stream.send("print(traverse('Results').field('_generalTestsDone').GetValue())")?;
             if stream.receive()? == "true" {
                 setup_fail = false;
                 break;
@@ -108,17 +104,34 @@ impl TestCtx {
             );
         }
 
-        let mut send_msg = String::from("local results = traverse('Results')");
+        stream
+            .send("print(traverse('Results').field('TestResults').property('Count').GetValue())")?;
+        let count = stream
+            .receive()?
+            .parse::<usize>()
+            .expect("count of test results should be a number");
 
-        for (name, _, _) in fields {
-            send_msg.push_str(&format!(" print(results.field('{name}').GetValue())"));
-        }
+        stream.send(
+            "local results = traverse('Results').field('TestResults').GetValue() \
+            for _, res in ipairs(results) do print(res.Name) print(res.Success) print(res.Message) end",
+        )?;
 
-        stream.send(&send_msg)?;
+        for _ in 0..count {
+            let name = stream.receive()?;
+            let success = stream.receive()? == "true";
+            let message = stream.receive()?;
 
-        for (name, expected, fail_msg) in fields {
-            let actual = stream.receive()?;
-            self.assert_eq(*expected, &actual, name, fail_msg);
+            if success {
+                println!("{} {name}", symbols::SUCCESS.green());
+            } else {
+                println!("{} {name}", symbols::FAIL.red());
+            }
+            let result = if success {
+                TestResult::Success
+            } else {
+                TestResult::Fail(TestFailInfo { name, message })
+            };
+            self.results.push(result);
         }
 
         thread::sleep(Duration::from_millis(500));

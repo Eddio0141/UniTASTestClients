@@ -5,107 +5,107 @@ using UnityEngine.SceneManagement;
 
 public class GeneralTests : MonoBehaviour
 {
+    public static AsyncOperation LoadEmpty2;
+
     private IEnumerator Start()
     {
-        var startFrame = Time.frameCount - 1;
-        Results.SceneNameInitial = SceneManager.GetSceneAt(0).name;
+        var startFrame = Time.frameCount;
+        Assert.Equal("scene.initial", "General", SceneManager.GetSceneAt(0).name);
 
         // frame 1
         var loadEmpty = SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!;
         var emptyScene = SceneManager.GetSceneAt(1);
-        Results.SceneAddedName = emptyScene.name;
-        Results.SceneAddedIsLoaded = emptyScene.isLoaded;
-        Results.SceneAddedRootCount = emptyScene.rootCount;
-        Results.SceneAddedIsSubScene = emptyScene.isSubScene;
-        Results.SceneAddedPath = emptyScene.path;
-        Results.SceneAddedBuildIndex = emptyScene.buildIndex;
-        Results.SceneAddedIsDirty = emptyScene.isDirty;
-        Results.SceneAddedIsValid = emptyScene.IsValid();
-        Results.SceneAddedProgress = loadEmpty.progress;
-        Results.SceneAddedIsDone = loadEmpty.isDone;
+        Assert.Equal("scene.get_scene_at.name", "Empty", emptyScene.name);
+        Assert.Equal("scene.get_scene_at.isLoaded", false, emptyScene.isLoaded);
+        Assert.Equal("scene.get_scene_at.rootCount", 0, emptyScene.rootCount);
+        Assert.Equal("scene.get_scene_at.isSubScene", false, emptyScene.isSubScene);
+        Assert.Equal("scene.get_scene_at.path", "Assets/Scenes/Empty.unity", emptyScene.path);
+        Assert.Equal("scene.get_scene_at.buildIndex", 3, emptyScene.buildIndex);
+        Assert.Equal("scene.get_scene_at.isDirty", false, emptyScene.isDirty);
+        Assert.Equal("scene.get_scene_at.IsValid", true, emptyScene.IsValid());
+        Assert.Equal("scene.op.progress", 0.9f, loadEmpty.progress, 0.0001f);
+        Assert.Equal("scene.op.isDone", false, loadEmpty.isDone);
 
-        try
-        {
-            emptyScene.name = "foo";
-        }
-        catch (InvalidOperationException e)
-        {
-            Results.SceneAddedNameChangeInvalidOp = e.Message;
-        }
+        Assert.Throws("scene.get_scene_at.set_name",
+            new InvalidOperationException(
+                "Setting a name on a saved scene is not allowed (the filename is used as name). Scene: 'Assets/Scenes/Empty.unity'"),
+            () => emptyScene.name = "foo");
 
-        Results.AsyncLoadSceneCount = SceneManager.sceneCount;
-        Results.AsyncLoadLoadedSceneCount = SceneManager.loadedSceneCount;
+        Assert.Equal("scene.sceneCount", 2, SceneManager.sceneCount);
+        Assert.Equal("scene.loadedSceneCount", 1, SceneManager.loadedSceneCount);
         loadEmpty.allowSceneActivation = false;
         loadEmpty.completed += _ =>
         {
             // frame 3
             // sceneCount to get count including loading / unloading
-            Results.AsyncLoadCallbackSceneCount = SceneManager.sceneCount;
-            Results.AsyncLoadCallbackLoadedSceneCount = SceneManager.loadedSceneCount;
-            Results.AsyncLoadCallbackFrame = Time.frameCount - startFrame;
+            Assert.Equal("scene.sceneCount", 2, SceneManager.sceneCount);
+            Assert.Equal("scene.loadedSceneCount", 2, SceneManager.loadedSceneCount);
+            Assert.Equal("scene.op.callback_time", 2, Time.frameCount - startFrame);
 
             var actualScene = SceneManager.GetSceneAt(1);
-            Results.SceneAddedRealEqDummy = emptyScene == actualScene;
-            Results.SceneAddedRealNeqDummy = emptyScene != actualScene;
-            Results.SceneAddedRealEqualsDummy = emptyScene.Equals(actualScene);
-            Results.SceneAddedRealName = emptyScene.name;
-            Results.SceneAddedRealIsLoaded = emptyScene.isLoaded;
-            Results.SceneAddedRealRootCount = emptyScene.rootCount;
-            Results.SceneAddedRealIsSubScene = emptyScene.isSubScene;
-            Results.SceneAddedRealPath = emptyScene.path;
-            Results.SceneAddedRealBuildIndex = emptyScene.buildIndex;
-            Results.SceneAddedRealIsDirty = emptyScene.isDirty;
-            Results.SceneAddedRealIsValid = emptyScene.IsValid();
-            Results.SceneAddedRealHandleEq0 = emptyScene.handle == 0;
-            Results.SceneAddedRealHashCodeEq0 = emptyScene.GetHashCode() == 0;
+            Assert.True("scene.dummy_scene_struct.eq", emptyScene == actualScene);
+            Assert.False("scene.dummy_scene_struct.neq", emptyScene != actualScene);
+            Assert.True("scene.dummy_scene_struct.Equals", emptyScene.Equals(actualScene));
+            Assert.Equal("scene.dummy_scene_struct.name", "Empty", emptyScene.name);
+            Assert.Equal("scene.dummy_scene_struct.isLoaded", true, emptyScene.isLoaded);
+            Assert.Equal("scene.dummy_scene_struct.rootCount", 1, emptyScene.rootCount);
+            Assert.Equal("scene.dummy_scene_struct.isSubScene", false, emptyScene.isSubScene);
+            Assert.Equal("scene.dummy_scene_struct.path", "Assets/Scenes/Empty.unity", emptyScene.path);
+            Assert.Equal("scene.dummy_scene_struct.buildIndex", 3, emptyScene.buildIndex);
+            Assert.Equal("scene.dummy_scene_struct.isDirty", false, emptyScene.isDirty);
+            Assert.Equal("scene.dummy_scene_struct.IsValid", true, emptyScene.IsValid());
+            Assert.NotEqual("scene.dummy_scene_struct.handle", 0, emptyScene.handle);
+            Assert.NotEqual("scene.dummy_scene_struct.hash_code", 0, emptyScene.GetHashCode());
         };
 
         yield return null;
-        Results.SceneAddedIsDone2 = loadEmpty.isDone;
+        Assert.Equal("scene.op.isDone", false, loadEmpty.isDone);
         // frame 2
         // loadEmpty 1f delay
 
         loadEmpty.allowSceneActivation = true;
-        Results.AsyncLoadAllowLoadSceneCount = SceneManager.sceneCount;
-        Results.AsyncLoadAllowLoadLoadedSceneCount = SceneManager.loadedSceneCount;
+        Assert.Equal("scene.sceneCount", 2, SceneManager.sceneCount);
+        Assert.Equal("scene.loadedSceneCount", 1, SceneManager.loadedSceneCount);
 
         yield return null;
-        Results.SceneAddedIsDone3 = loadEmpty.isDone;
-        Results.SceneAddedProgress2 = loadEmpty.progress;
+        Assert.Equal("scene.op.isDone", true, loadEmpty.isDone);
+        Assert.Equal("scene.op.progress", 1f, loadEmpty.progress, 0.0001f);
         // frame 3
 
-        Results.AsyncLoadAllowLoadNextFrameSceneCount = SceneManager.sceneCount;
-        Results.AsyncLoadAllowLoadNextFrameLoadedSceneCount = SceneManager.loadedSceneCount;
+        Assert.Equal("scene.sceneCount", 2, SceneManager.sceneCount);
+        Assert.Equal("scene.loadedSceneCount", 2, SceneManager.loadedSceneCount);
 
         var unloadEmpty = SceneManager.UnloadSceneAsync("Empty")!;
-        Results.AsyncUnloadSceneCount = SceneManager.sceneCount;
-        Results.AsyncUnloadLoadedSceneCount = SceneManager.loadedSceneCount;
-        Results.AsyncUnloadLoadedProgress = unloadEmpty.progress;
-        Results.AsyncUnloadLoadedIsDone = unloadEmpty.isDone;
+        Assert.Equal("scene.sceneCount", 2, SceneManager.sceneCount);
+        Assert.Equal("scene.loadedSceneCount", 1, SceneManager.loadedSceneCount);
+        Assert.Equal("scene.unload_op.progress", 0f, unloadEmpty.progress, 0.0001f);
+        Assert.Equal("scene.unload_op.isDone", false, unloadEmpty.isDone);
+        var startFrame3 = Time.frameCount;
         unloadEmpty.completed += _ =>
         {
             // frame 4
-            Results.AsyncUnloadCallbackSceneCount = SceneManager.sceneCount;
-            Results.AsyncUnloadCallbackLoadedSceneCount = SceneManager.loadedSceneCount;
-            Results.AsyncUnloadCallbackFrame = Time.frameCount - startFrame;
+            Assert.Equal("scene.sceneCount", 1, SceneManager.sceneCount);
+            Assert.Equal("scene.loadedSceneCount", 1, SceneManager.loadedSceneCount);
+            Assert.Equal("scene.unload.frame", 1, Time.frameCount - startFrame3);
         };
 
         yield return null;
         // frame 4
 
-        Results.AsyncUnloadLoadedProgress2 = unloadEmpty.progress;
-        Results.AsyncUnloadLoadedIsDone2 = unloadEmpty.isDone;
-        Results.AsyncUnloadAllowLoadNextFrameSceneCount = SceneManager.sceneCount;
-        Results.AsyncUnloadAllowLoadNextFrameLoadedSceneCount = SceneManager.loadedSceneCount;
+        Assert.Equal("scene.unload_op.progress", 1f, unloadEmpty.progress, 0.0001f);
+        Assert.Equal("scene.unload_op.isDone", true, unloadEmpty.isDone);
+        Assert.Equal("scene.sceneCount", 1, SceneManager.sceneCount);
+        Assert.Equal("scene.loadedSceneCount", 1, SceneManager.loadedSceneCount);
 
         yield return null;
         // frame 5
 
         loadEmpty = SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!;
+        var startFrame4 = Time.frameCount;
         loadEmpty.completed += _ =>
         {
             // frame 7
-            Results.AsyncLoadCallback2Frame = Time.frameCount - startFrame;
+            Assert.Equal("scene.load.frame", 2, Time.frameCount - startFrame4);
         };
 
         yield return null;
@@ -115,10 +115,11 @@ public class GeneralTests : MonoBehaviour
         // frame 7
 
         loadEmpty = SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!;
+        var startFrame5 = Time.frameCount;
         loadEmpty.completed += _ =>
         {
             // frame 10
-            Results.AsyncLoadCallback3Frame = Time.frameCount - startFrame;
+            Assert.Equal("scene.load.frame", 3, Time.frameCount - startFrame5);
         };
 
         yield return null;
@@ -135,10 +136,11 @@ public class GeneralTests : MonoBehaviour
 
         loadEmpty = SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!;
         loadEmpty.allowSceneActivation = false;
+        var startFrame6 = Time.frameCount;
         loadEmpty.completed += _ =>
         {
             // frame 15
-            Results.AsyncLoadCallback4Frame = Time.frameCount - startFrame;
+            Assert.Equal("scene.load.frame", 5, Time.frameCount - startFrame6);
         };
 
         yield return null;
@@ -156,10 +158,11 @@ public class GeneralTests : MonoBehaviour
 
         loadEmpty = SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!;
         loadEmpty.allowSceneActivation = false;
+        var startFrame7 = Time.frameCount;
         loadEmpty.completed += _ =>
         {
             // frame 16
-            Results.AsyncLoadSyncLoadCallbackFrame = Time.frameCount - startFrame;
+            Assert.Equal("scene.load.frame", 1, Time.frameCount - startFrame7);
         };
         SceneManager.LoadScene("Empty", LoadSceneMode.Additive);
         loadEmpty = SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!;
@@ -167,7 +170,7 @@ public class GeneralTests : MonoBehaviour
         loadEmpty.completed += _ =>
         {
             // frame 16
-            Results.AsyncLoadSyncLoadCallback2Frame = Time.frameCount - startFrame;
+            Assert.Equal("scene.load.frame", 1, Time.frameCount - startFrame7);
         };
 
         yield return null;
@@ -177,10 +180,11 @@ public class GeneralTests : MonoBehaviour
         // frame 17
 
         loadEmpty = SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!;
+        var startFrame8 = Time.frameCount;
         loadEmpty.completed += _ =>
         {
             // frame 19
-            Results.AsyncLoadCallback5Frame = Time.frameCount - startFrame;
+            Assert.Equal("scene.load.frame", 2, Time.frameCount - startFrame8);
         };
 
         yield return null;
@@ -189,18 +193,18 @@ public class GeneralTests : MonoBehaviour
         yield return null;
         // frame 19
 
-        Results.AfterLoadsSceneCount = SceneManager.sceneCount;
-        Results.AfterLoadsLoadedSceneCount = SceneManager.loadedSceneCount;
+        Assert.Equal("scene.sceneCount", 8, SceneManager.sceneCount);
+        Assert.Equal("scene.loadedSceneCount", 8, SceneManager.loadedSceneCount);
 
         // multiple unload at the same time conflicts, and only 1 unloads
         SceneManager.UnloadSceneAsync("Empty");
-        Results.DoubleUnloadOperationIsNull = SceneManager.UnloadSceneAsync("Empty") == null;
+        Assert.Null("scene.unload.missing", SceneManager.UnloadSceneAsync("Empty"));
 
         yield return null;
         // frame 20
 
-        Results.AfterDoubleUnloadSceneCount = SceneManager.sceneCount;
-        Results.AfterDoubleUnloadLoadedSceneCount = SceneManager.loadedSceneCount;
+        Assert.Equal("scene.sceneCount", 7, SceneManager.sceneCount);
+        Assert.Equal("scene.loadedSceneCount", 7, SceneManager.loadedSceneCount);
 
         SceneManager.LoadSceneAsync("Empty2", LoadSceneMode.Additive);
 
@@ -211,26 +215,31 @@ public class GeneralTests : MonoBehaviour
         // frame 22
 
         unloadEmpty = SceneManager.UnloadSceneAsync("Empty2")!;
+        var emptyUnloadFinish = false;
+        var empty2UnloadFinish = false;
         unloadEmpty.completed += _ =>
         {
             // frame 23
-            Results.DoubleUnloadDiffNameSuccess = true;
-            Results.DoubleUnloadDiffNameBefore2 = !Results.DoubleUnloadDiffNameSuccess2;
+            empty2UnloadFinish = true;
+            Assert.False("scene.op_order", emptyUnloadFinish);
         };
         unloadEmpty = SceneManager.UnloadSceneAsync("Empty")!;
         unloadEmpty.completed += _ =>
         {
+            emptyUnloadFinish = true;
             // frame 23
-            Results.DoubleUnloadDiffNameSuccess2 = true;
         };
 
         yield return null;
         // frame 23
 
+        Assert.True("scene.op.completed_callback", emptyUnloadFinish);
+        Assert.True("scene.op.completed_callback", empty2UnloadFinish);
+
         // try unload name and id
         SceneManager.UnloadSceneAsync("Empty");
         // empty is id 3
-        Results.DoubleUnloadNameIdSecondIsNull = SceneManager.UnloadSceneAsync(3) == null;
+        Assert.Null("scene.unload.missing", SceneManager.UnloadSceneAsync(3));
 
         yield return null;
         // frame 24
@@ -238,74 +247,69 @@ public class GeneralTests : MonoBehaviour
         var prevSceneCount = SceneManager.sceneCount;
 
         // try load / unload non-existent scene
-        Application.logMessageReceived += LoadFailLogCheckAsync;
+        Assert.Log("scene.load.missing", LogType.Error,
+            "Scene 'InvalidScene' couldn't be loaded because it has not been added to the build settings or the AssetBundle has not been loaded.\n" +
+            "To add a scene to the build settings use the menu File->Build Settings...");
         // ReSharper disable once Unity.LoadSceneUnexistingScene
         loadEmpty = SceneManager.LoadSceneAsync("InvalidScene", LoadSceneMode.Additive);
-        Application.logMessageReceived -= LoadFailLogCheckAsync;
-        Results.SceneNonExistentAsyncLoadOpIsNull = loadEmpty == null;
-        Results.SceneNonExistentAsyncLoadSceneCountDiff = SceneManager.sceneCount - prevSceneCount;
+        Assert.Null("scene.unload.missing", loadEmpty);
+        Assert.Equal("scene.sceneCount", 123, SceneManager.sceneCount - prevSceneCount);
 
-        Application.logMessageReceived += LoadFailLogCheckSync;
+        Assert.Log("scene.load.missing", LogType.Error, "asdf");
         // ReSharper disable once Unity.LoadSceneUnexistingScene
         SceneManager.LoadScene("InvalidScene", LoadSceneMode.Additive);
-        Application.logMessageReceived -= LoadFailLogCheckSync;
-        Results.SceneNonExistentSyncLoadSceneCountDiff = SceneManager.sceneCount - prevSceneCount;
+        Assert.Equal("scene.sceneCount", 123, SceneManager.sceneCount - prevSceneCount);
 
-        try
-        {
-            SceneManager.UnloadSceneAsync("InvalidScene");
-        }
-        catch (ArgumentException e)
-        {
-            Results.SceneNonExistentUnloadEx = e.Message;
-        }
-
-        try
-        {
-            // unload scene that was never touched
-            SceneManager.UnloadSceneAsync(1);
-        }
-        catch (ArgumentException e)
-        {
-            Results.SceneNeverLoadedUnloadEx = e.Message;
-        }
+        Assert.Throws("scene.unload.missing", new ArgumentException("asdf"),
+            () => SceneManager.UnloadSceneAsync("InvalidScene"));
+        // unload scene that was never touched
+        Assert.Throws("scene.unload.missing", new ArgumentException("asdf"), () => SceneManager.UnloadSceneAsync(1));
 
         loadEmpty = SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!;
-        Results.SceneDoubleProgress = loadEmpty.progress;
+        Assert.Equal("scene.op.progress", 0.9f, loadEmpty.progress, 0.0001f);
         var loadEmpty2 = SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!;
-        Results.SceneDoubleProgress2 = loadEmpty2.progress;
-        
+        Assert.Equal("scene.op.progress", 0.9f, loadEmpty2.progress, 0.0001f);
+
         yield return null;
         // frame 25
 
-        Results.SceneDoubleProgress3 = loadEmpty.progress;
-        Results.SceneDoubleProgress4 = loadEmpty2.progress;
-        
+        Assert.Equal("scene.op.progress", 0.9f, loadEmpty.progress, 0.0001f);
+        Assert.Equal("scene.op.progress", 0.9f, loadEmpty2.progress, 0.0001f);
+
         yield return null;
         // frame 26
+
+        Assert.Equal("scene.op.isDone", true, loadEmpty.isDone);
+        Assert.Equal("scene.op.isDone", false, loadEmpty2.isDone);
+
+        yield return null;
+        // frame 27
+
+        Assert.Equal("scene.op.isDone", true, loadEmpty2.isDone);
 
         prevSceneCount = SceneManager.sceneCount;
         var prevLoadedSceneCount = SceneManager.loadedSceneCount;
 
         // scene load additive -> scene load non-additive
         loadEmpty = SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!;
+        var startFrame2 = Time.frameCount;
+        loadEmpty.completed += _ => { Assert.Equal("scene.op.load_frame", 123, Time.frameCount - startFrame2); };
         var loadGeneral2 = SceneManager.LoadSceneAsync("General2", LoadSceneMode.Single)!;
+        loadGeneral2.completed += _ => { Assert.Equal("scene.op.load_frame", 123, Time.frameCount - startFrame2); };
+        LoadEmpty2 = SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!;
+        LoadEmpty2.completed += _ => { Assert.Equal("scene.op.load_frame", 123, Time.frameCount - startFrame2); };
 
-        Results.SceneAdditiveSingleLoadProgress = loadEmpty.progress;
-        Results.SceneAdditiveSingleLoadProgress2 = loadGeneral2.progress;
-        Results.SceneAdditiveSingleSceneCount = SceneManager.sceneCount - prevSceneCount;
-        Results.SceneAdditiveSingleLoadedSceneCount = SceneManager.loadedSceneCount - prevLoadedSceneCount;
-    }
+        Assert.Equal("scene.op.progress", 0.9f, loadEmpty.progress, 0.0001f);
+        Assert.Equal("scene.op.progress", 0.9f, loadEmpty2.progress, 0.0001f);
+        Assert.Equal("scene.op.progress", 0.9f, loadGeneral2.progress, 0.0001f);
+        Assert.Equal("scene.sceneCount", 4, SceneManager.sceneCount - prevSceneCount);
+        Assert.Equal("scene.loadedSceneCount", 0, SceneManager.loadedSceneCount - prevLoadedSceneCount);
 
-    private static void LoadFailLogCheckAsync(string condition, string _, LogType type)
-    {
-        Results.SceneNonExistentAsyncLoadMsg = condition;
-        Results.SceneNonExistentAsyncLoadMsgType = type.ToString();
-    }
+        yield return null;
+        yield return null;
+        // loadEmpty
 
-    private static void LoadFailLogCheckSync(string condition, string _, LogType type)
-    {
-        Results.SceneNonExistentSyncLoadMsg = condition;
-        Results.SceneNonExistentSyncLoadMsgType = type.ToString();
+        yield return null;
+        // General2 (this won't run)
     }
 }

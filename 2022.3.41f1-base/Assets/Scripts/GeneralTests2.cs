@@ -6,29 +6,37 @@ public class GeneralTests2 : MonoBehaviour
 {
     private IEnumerator Start()
     {
-        yield return null;
-        yield return null;
-        yield return null;
-        yield return null;
-        yield return null;
-        
-        // frame 1
-        Results.SceneAdditiveSingleSceneCount2 = SceneManager.sceneCount;
-        Results.SceneAdditiveSingleLoadedSceneCount2 = SceneManager.loadedSceneCount;
+        Assert.Equal("scene.sceneCount", 2, SceneManager.sceneCount);
+        Assert.Equal("scene.loadedSceneCount", 1, SceneManager.loadedSceneCount);
 
-        var prevSceneCount = SceneManager.sceneCount;
-        var prevLoadedSceneCount = SceneManager.loadedSceneCount;
+        var callTime = Time.frameCount;
+        var loadEmpty2 = SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!;
+        loadEmpty2.completed += _ => { Assert.Equal("scene.op.load_frame", 2, Time.frameCount - callTime); };
+        SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive);
+
+        yield return null;
+        // LoadEmpty2
+        Assert.True("scene.op.isDone", GeneralTests.LoadEmpty2.isDone);
+
+        yield return null;
+        yield return null;
+        yield return null;
+        yield return null;
+        yield return null;
 
         // scene load additive -> 1f -> scene load non-additive
         var loadEmpty = SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!;
-        Results.SceneAdditiveSingleLoadProgress3 = loadEmpty.progress;
+        Assert.Equal("scene.op.progress", 0.9f, loadEmpty.progress, 0.0001f);
         yield return null;
-        // frame 2
 
         var loadGeneral3 = SceneManager.LoadSceneAsync("General3", LoadSceneMode.Single)!;
-        Results.SceneAdditiveSingleLoadProgress4 = loadGeneral3.progress;
+        Assert.Equal("scene.op.progress", 0.9f, loadGeneral3.progress, 0.0001f);
 
-        Results.SceneAdditiveSingleSceneCount3 = SceneManager.sceneCount - prevSceneCount;
-        Results.SceneAdditiveSingleLoadedSceneCount3 = SceneManager.loadedSceneCount - prevLoadedSceneCount;
+        var callTime2 = Time.frameCount;
+        loadEmpty2 = SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!;
+        loadEmpty2.completed += _ => { Assert.Equal("scene.op.load_frame", 3, Time.frameCount - callTime2); };
+
+        Assert.Equal("scene.sceneCount", 4, SceneManager.sceneCount);
+        Assert.Equal("scene.loadedSceneCount", 2, SceneManager.loadedSceneCount);
     }
 }
