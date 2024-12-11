@@ -4,9 +4,6 @@ using UnityEngine.SceneManagement;
 
 public class GeneralTests4 : MonoBehaviour
 {
-    public static AsyncOperation LoadEmpty;
-    public static AsyncOperation LoadEmpty2;
-
     private IEnumerator Start()
     {
         // frame 1
@@ -19,10 +16,10 @@ public class GeneralTests4 : MonoBehaviour
         yield return null;
 
         SceneManager.LoadSceneAsync("General5", LoadSceneMode.Single);
-        LoadEmpty = SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!;
-        LoadEmpty2 = SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!;
+        SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive);
+        SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive);
         SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive);
 
-        Assert.Equal("scene.sceneCount", 5, SceneManager.sceneCount);
+        Assert.Equal("scene.sceneCount", 6, SceneManager.sceneCount);
     }
 }

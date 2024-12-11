@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.CompilerServices;
+using System.Text;
 using UnityEngine;
 
 public static class Assert
@@ -26,17 +27,31 @@ public static class Assert
         }
         else
         {
-            var fullMsg = AssertMsg(_logHookStore.name,
-                "assertion failed `expected_log` == `actual_log` && `expected_msg` == `actual_msg`{0}\n" +
-                $" expected_log: {_logHookStore.expectedType}\n   actual_log: {type}\n" +
-                $" expected_msg: {_logHookStore.expectedLog}\n   actual_msg: {condition}",
-                _logHookStore.message,
-                _logHookStore.file,
-                _logHookStore.line);
-            result = new(_logHookStore.name, fullMsg, false);
+            var fullMsg = new StringBuilder();
+            fullMsg.AppendLine("assertion failed `expected_log` == `actual_log` && `expected_msg` == `actual_msg`{0}");
+            if (_logHookStore.expectedType != type)
+            {
+                fullMsg.AppendLine($" expected_log: {_logHookStore.expectedType}");
+                fullMsg.AppendLine($"   actual_log: {type}");
+            }
+
+            if (_logHookStore.expectedLog != condition)
+            {
+                fullMsg.AppendLine($" expected_msg: {ShowHiddenChars(_logHookStore.expectedLog)}");
+                fullMsg.AppendLine($"   actual_msg: {ShowHiddenChars(condition)}");
+            }
+
+            var fullMsgStr = AssertMsg(_logHookStore.name, fullMsg.ToString(), _logHookStore.message,
+                _logHookStore.file, _logHookStore.line);
+            result = new(_logHookStore.name, fullMsgStr, false);
         }
 
         Results.TestResults.Add(result);
+    }
+
+    private static string ShowHiddenChars(string str)
+    {
+        return str?.Replace("\n", "\\n").Replace("\r", "\\r").Replace("\t", "\\t");
     }
 
     public static void Null<T>(string name, T actual, string message = null,
@@ -169,10 +184,23 @@ public static class Assert
         }
         else
         {
-            var fullMsg = AssertMsg(name,
-                $"assertion failed `expected` == `actual`{{0}}\n expected: {expected}\n   actual: {actual}", message,
-                file,
-                line);
+            var assertMsg = new StringBuilder();
+            assertMsg.AppendLine("assertion failed `expected` == `actual`{0}");
+            if (expected is string sExpected)
+            {
+                var sActual = actual as string;
+                sExpected = ShowHiddenChars(sExpected);
+                sActual = ShowHiddenChars(sActual);
+                assertMsg.AppendLine($" expected: {sExpected}");
+                assertMsg.AppendLine($"   actual: {sActual}");
+            }
+            else
+            {
+                assertMsg.AppendLine($" expected: {expected}");
+                assertMsg.AppendLine($"   actual: {actual}");
+            }
+
+            var fullMsg = AssertMsg(name, assertMsg.ToString(), message, file, line);
             result = new(name, fullMsg, false);
         }
 

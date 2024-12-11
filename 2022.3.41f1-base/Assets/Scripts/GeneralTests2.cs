@@ -33,10 +33,12 @@ public class GeneralTests2 : MonoBehaviour
         Assert.Equal("scene.op.progress", 0.9f, loadGeneral3.progress, 0.0001f);
 
         var callTime2 = Time.frameCount;
-        loadEmpty2 = SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!;
-        loadEmpty2.completed += _ => { Assert.Equal("scene.op.load_frame", 3, Time.frameCount - callTime2); };
+        SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!.completed += _ =>
+        {
+            Assert.Equal("scene.op.load_frame", 3, Time.frameCount - callTime2);
+        };
 
-        Assert.Equal("scene.sceneCount", 4, SceneManager.sceneCount);
-        Assert.Equal("scene.loadedSceneCount", 2, SceneManager.loadedSceneCount);
+        Assert.Equal("scene.sceneCount", 7, SceneManager.sceneCount);
+        Assert.Equal("scene.loadedSceneCount", 4, SceneManager.loadedSceneCount);
     }
 }

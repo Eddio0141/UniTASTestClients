@@ -248,22 +248,27 @@ public class GeneralTests : MonoBehaviour
 
         // try load / unload non-existent scene
         Assert.Log("scene.load.missing", LogType.Error,
-            "Scene 'InvalidScene' couldn't be loaded because it has not been added to the build settings or the AssetBundle has not been loaded.\n" +
+            "Scene 'InvalidScene' couldn't be loaded because it has not been added to the build settings or the AssetBundle has not been loaded." +
+            Environment.NewLine +
             "To add a scene to the build settings use the menu File->Build Settings...");
         // ReSharper disable once Unity.LoadSceneUnexistingScene
         loadEmpty = SceneManager.LoadSceneAsync("InvalidScene", LoadSceneMode.Additive);
         Assert.Null("scene.unload.missing", loadEmpty);
-        Assert.Equal("scene.sceneCount", 123, SceneManager.sceneCount - prevSceneCount);
+        Assert.Equal("scene.sceneCount", 0, SceneManager.sceneCount - prevSceneCount);
 
-        Assert.Log("scene.load.missing", LogType.Error, "asdf");
+        Assert.Log("scene.load.missing", LogType.Error,
+            "Scene 'InvalidScene' couldn't be loaded because it has not been added to the build settings or the AssetBundle has not been loaded." +
+            Environment.NewLine +
+            "To add a scene to the build settings use the menu File->Build Settings...");
         // ReSharper disable once Unity.LoadSceneUnexistingScene
         SceneManager.LoadScene("InvalidScene", LoadSceneMode.Additive);
-        Assert.Equal("scene.sceneCount", 123, SceneManager.sceneCount - prevSceneCount);
+        Assert.Equal("scene.sceneCount", 0, SceneManager.sceneCount - prevSceneCount);
 
-        Assert.Throws("scene.unload.missing", new ArgumentException("asdf"),
+        Assert.Throws("scene.unload.missing", new ArgumentException("Scene to unload is invalid"),
             () => SceneManager.UnloadSceneAsync("InvalidScene"));
         // unload scene that was never touched
-        Assert.Throws("scene.unload.missing", new ArgumentException("asdf"), () => SceneManager.UnloadSceneAsync(1));
+        Assert.Throws("scene.unload.missing", new ArgumentException("Scene to unload is invalid"),
+            () => SceneManager.UnloadSceneAsync(1));
 
         loadEmpty = SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!;
         Assert.Equal("scene.op.progress", 0.9f, loadEmpty.progress, 0.0001f);
@@ -293,16 +298,16 @@ public class GeneralTests : MonoBehaviour
         // scene load additive -> scene load non-additive
         loadEmpty = SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!;
         var startFrame2 = Time.frameCount;
-        loadEmpty.completed += _ => { Assert.Equal("scene.op.load_frame", 123, Time.frameCount - startFrame2); };
+        loadEmpty.completed += _ => { Assert.Equal("scene.op.load_frame", 2, Time.frameCount - startFrame2); };
         var loadGeneral2 = SceneManager.LoadSceneAsync("General2", LoadSceneMode.Single)!;
-        loadGeneral2.completed += _ => { Assert.Equal("scene.op.load_frame", 123, Time.frameCount - startFrame2); };
+        loadGeneral2.completed += _ => { Assert.Equal("scene.op.load_frame", 3, Time.frameCount - startFrame2); };
         LoadEmpty2 = SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!;
-        LoadEmpty2.completed += _ => { Assert.Equal("scene.op.load_frame", 123, Time.frameCount - startFrame2); };
+        LoadEmpty2.completed += _ => { Assert.Equal("scene.op.load_frame", 4, Time.frameCount - startFrame2); };
 
         Assert.Equal("scene.op.progress", 0.9f, loadEmpty.progress, 0.0001f);
-        Assert.Equal("scene.op.progress", 0.9f, loadEmpty2.progress, 0.0001f);
+        Assert.Equal("scene.op.progress", 0.9f, LoadEmpty2.progress, 0.0001f);
         Assert.Equal("scene.op.progress", 0.9f, loadGeneral2.progress, 0.0001f);
-        Assert.Equal("scene.sceneCount", 4, SceneManager.sceneCount - prevSceneCount);
+        Assert.Equal("scene.sceneCount", 3, SceneManager.sceneCount - prevSceneCount);
         Assert.Equal("scene.loadedSceneCount", 0, SceneManager.loadedSceneCount - prevLoadedSceneCount);
 
         yield return null;
