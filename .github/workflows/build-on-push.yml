@@ -6,13 +6,17 @@ jobs:
   buildUnityGames:
     if: (github.head_ref || github.ref_name) != 'update_flake_lock_action' && !contains(github.event.pull_request.labels.*.name, 'automation')
     name: build unity game ${{ matrix.targetGame.path }}
-    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         targetGame:
           - path: 2022.3.41f1-base
             targetPlatform: StandaloneLinux64
+            runs-on: ubuntu-latest
+          - path: 3.0.0f5-base
+            targetPlatform: StandaloneWindows
+            runs-on: windows-latest
+    runs-on: ${{ matrix.targetGame.runs-on }}
 
     # only run if not automation, dependabot only does cargo and flake upgrade only affects rust stuff, which is checked already
     steps:
