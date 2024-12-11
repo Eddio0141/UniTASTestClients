@@ -21,6 +21,6 @@ public class GeneralTests5 : MonoBehaviour
         // frame 4
         Assert.Equal("scene.loadedSceneCount", 4, SceneManager.loadedSceneCount);
 
-        Results.Finish();
+        Assert.Finish();
     }
 }

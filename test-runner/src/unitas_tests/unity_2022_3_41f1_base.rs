@@ -192,21 +192,6 @@ end, "method")
     stream.send("full_access(true)")?;
     stream.receive()?;
 
-    // struct test
-    stream.send(
-        r#"local StructTest = traverse("StructTest")
-        
-        print("StructTest._constrainedTestSuccess: " .. tostring(StructTest.field("_constrainedTestSuccess").get_value()))
-        "#,
-    )?;
-
-    ctx.assert_eq(
-        "StructTest._constrainedTestSuccess: true",
-        &stream.receive()?,
-        "StructTest: constrained opcode test",
-        "UniTAS failed to properly handle the constrained opcode",
-    );
-
     // FrameAdvanceAnimator.cs
     stream.send(
         r#"event_coroutine(function()

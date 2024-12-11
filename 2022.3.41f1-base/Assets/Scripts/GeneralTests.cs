@@ -9,6 +9,9 @@ public class GeneralTests : MonoBehaviour
 
     private IEnumerator Start()
     {
+        // StructTest
+        Assert.NotThrows("struct.constrained_opcode", () => _ = new StructTest("bar"));
+
         var startFrame = Time.frameCount;
         Assert.Equal("scene.initial", "General", SceneManager.GetSceneAt(0).name);
 
@@ -316,5 +319,26 @@ public class GeneralTests : MonoBehaviour
 
         yield return null;
         // General2 (this won't run)
+    }
+
+    private readonly struct StructTest
+    {
+        private readonly string _dummyMsg;
+
+        static StructTest()
+        {
+            // test opcode `constrained` and `callvirt` being together, this should not throw
+            _ = new StructTest("foo").ToString();
+        }
+
+        public StructTest(string dummyMsg)
+        {
+            _dummyMsg = dummyMsg;
+        }
+
+        public override string ToString()
+        {
+            return _dummyMsg;
+        }
     }
 }

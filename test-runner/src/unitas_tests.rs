@@ -89,7 +89,7 @@ impl TestCtx {
         // wait for general tests to finish
         let mut setup_fail = true;
         for _ in 0..30 {
-            stream.send("print(traverse('Results').field('_generalTestsDone').GetValue())")?;
+            stream.send("print(traverse('Assert').field('_generalTestsDone').GetValue())")?;
             if stream.receive()? == "true" {
                 setup_fail = false;
                 break;
@@ -105,14 +105,14 @@ impl TestCtx {
         }
 
         stream
-            .send("print(traverse('Results').field('TestResults').property('Count').GetValue())")?;
+            .send("print(traverse('Assert').field('TestResults').property('Count').GetValue())")?;
         let count = stream
             .receive()?
             .parse::<usize>()
             .expect("count of test results should be a number");
 
         stream.send(
-            "local results = traverse('Results').field('TestResults').GetValue() \
+            "local results = traverse('Assert').field('TestResults').GetValue() \
             for _, res in ipairs(results) do print(res.Name) print(res.Success) print(res.Message) end",
         )?;
 

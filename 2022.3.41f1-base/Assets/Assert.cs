@@ -1,6 +1,9 @@
 using System;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text;
+using JetBrains.Annotations;
 using UnityEngine;
 
 public static class Assert
@@ -20,7 +23,7 @@ public static class Assert
     {
         Application.logMessageReceived -= LogHook;
 
-        Results.Result result;
+        Result result;
         if (_logHookStore.expectedType == type && _logHookStore.expectedLog == condition)
         {
             result = new(_logHookStore.name, null, true);
@@ -46,7 +49,7 @@ public static class Assert
             result = new(_logHookStore.name, fullMsgStr, false);
         }
 
-        Results.TestResults.Add(result);
+        TestResults.Add(result);
     }
 
     private static string ShowHiddenChars(string str)
@@ -58,7 +61,7 @@ public static class Assert
         [CallerFilePath] string file = null,
         [CallerLineNumber] int line = 0)
     {
-        Results.Result result;
+        Result result;
         if (actual == null)
             result = new(name, null, true);
         else
@@ -68,14 +71,14 @@ public static class Assert
             result = new(name, fullMsg, false);
         }
 
-        Results.TestResults.Add(result);
+        TestResults.Add(result);
     }
 
     public static void True(string name, bool success, string message = null,
         [CallerFilePath] string file = null,
         [CallerLineNumber] int line = 0)
     {
-        Results.Result result;
+        Result result;
         if (success)
             result = new(name, null, true);
         else
@@ -84,14 +87,14 @@ public static class Assert
             result = new(name, fullMsg, false);
         }
 
-        Results.TestResults.Add(result);
+        TestResults.Add(result);
     }
 
     public static void False(string name, bool success, string message = null,
         [CallerFilePath] string file = null,
         [CallerLineNumber] int line = 0)
     {
-        Results.Result result;
+        Result result;
         if (success)
         {
             var fullMsg = AssertMsg(name, "assertion failed{0}", message, file, line);
@@ -100,7 +103,27 @@ public static class Assert
         else
             result = new(name, null, true);
 
-        Results.TestResults.Add(result);
+        TestResults.Add(result);
+    }
+
+    public static void NotThrows(string name, Action action, string message = null,
+        [CallerFilePath] string file = null, [CallerLineNumber] int line = 0)
+    {
+        Result result;
+        try
+        {
+            action();
+            result = new(name, null, true);
+        }
+        catch (Exception e)
+        {
+            var fullMsg = AssertMsg(name,
+                $"assertion failed `expected` no throw{{0}}\n actual: {e.GetType().FullName}: {e.Message}", message,
+                file, line);
+            result = new(name, fullMsg, false);
+        }
+
+        TestResults.Add(result);
     }
 
     public static void Throws<T>(string name, T expected, Action action, string message = null,
@@ -108,7 +131,7 @@ public static class Assert
         where
         T : Exception
     {
-        Results.Result result;
+        Result result;
         try
         {
             action();
@@ -130,7 +153,7 @@ public static class Assert
             }
         }
 
-        Results.TestResults.Add(result);
+        TestResults.Add(result);
     }
 
     public static void NotEqual<T>(string name, T expected, T actual, string message = null,
@@ -157,7 +180,7 @@ public static class Assert
     private static void NotEqualBase<T>(string name, T expected, T actual, bool success, string file, int line,
         string message = null)
     {
-        Results.Result result;
+        Result result;
         if (success)
         {
             var fullMsg = AssertMsg(name,
@@ -171,13 +194,13 @@ public static class Assert
             result = new(name, null, true);
         }
 
-        Results.TestResults.Add(result);
+        TestResults.Add(result);
     }
 
     private static void EqualBase<T>(string name, T expected, T actual, bool success, string file, int line,
         string message = null)
     {
-        Results.Result result;
+        Result result;
         if (success)
         {
             result = new(name, null, true);
@@ -204,12 +227,45 @@ public static class Assert
             result = new(name, fullMsg, false);
         }
 
-        Results.TestResults.Add(result);
+        TestResults.Add(result);
     }
 
     private static string AssertMsg(string name, string assertMsg, string userMsg, string file, int line)
     {
         userMsg = userMsg == null ? string.Empty : $": {userMsg}";
         return $"test {name} failed at {file}:{line}:\n" + string.Format(assertMsg, userMsg);
+    }
+
+    private static readonly List<Result> TestResults = new();
+    [UsedImplicitly] private static bool _generalTestsDone;
+
+    public static void Finish()
+    {
+        _generalTestsDone = true;
+        Debug.Log("tests finished");
+        foreach (var result in TestResults)
+        {
+            Debug.Log(result);
+        }
+    }
+
+    [SuppressMessage("ReSharper", "MemberCanBePrivate.Local")]
+    private readonly struct Result
+    {
+        public Result(string name, string message, bool success)
+        {
+            Name = name;
+            Message = message;
+            Success = success;
+        }
+
+        public readonly string Name;
+        public readonly string Message;
+        public readonly bool Success;
+
+        public override string ToString()
+        {
+            return Success ? $"success: {Name}" : $"failure: {Name}: {Message}";
+        }
     }
 }
