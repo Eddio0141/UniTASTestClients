@@ -1,0 +1,17 @@
+#!/bin/sh
+
+files=(
+    "UnityShared/Assert.cs"
+    "3.0.0f5-base/Assets/Scripts/Assert.cs"
+    "UnityShared/Editor/Build.cs"
+    "3.0.0f5-base/Assets/Editor/Build.cs"
+)
+
+for ((i = 0; i < ${#files[@]}; i += 2)); do
+    src="${files[$i]}"
+    dst="${files[$(($i + 1))]}"
+
+    mkdir -p "$(dirname "$dst")"
+
+    ln -f "$src" "$dst"
+done
