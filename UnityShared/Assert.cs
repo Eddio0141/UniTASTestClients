@@ -3,50 +3,49 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text;
-using JetBrains.Annotations;
 using UnityEngine;
 
+[SuppressMessage("ReSharper", "UseStringInterpolation")]
 public static class Assert
 {
     public static void Log(string name, LogType expectedType, string expectedLog, string message = null,
         [CallerFilePath] string file = null,
         [CallerLineNumber] int line = 0)
     {
-        _logHookStore = (name, expectedType, expectedLog, message, file, line);
+        _logHookStore = new LogHookStore(name, expectedType, expectedLog, message, file, line);
         Application.logMessageReceived += LogHook;
     }
 
-    private static (string name, LogType expectedType, string expectedLog, string message, string file, int line)
-        _logHookStore;
+    private static LogHookStore _logHookStore;
 
     private static void LogHook(string condition, string _, LogType type)
     {
         Application.logMessageReceived -= LogHook;
 
         Result result;
-        if (_logHookStore.expectedType == type && _logHookStore.expectedLog == condition)
+        if (_logHookStore.ExpectedType == type && _logHookStore.ExpectedLog == condition)
         {
-            result = new(_logHookStore.name, null, true);
+            result = new Result(_logHookStore.Name, null, true);
         }
         else
         {
             var fullMsg = new StringBuilder();
             fullMsg.AppendLine("assertion failed `expected_log` == `actual_log` && `expected_msg` == `actual_msg`{0}");
-            if (_logHookStore.expectedType != type)
+            if (_logHookStore.ExpectedType != type)
             {
-                fullMsg.AppendLine($" expected_log: {_logHookStore.expectedType}");
-                fullMsg.AppendLine($"   actual_log: {type}");
+                fullMsg.AppendLine(string.Format(" expected_log: {0}", _logHookStore.ExpectedType));
+                fullMsg.AppendLine(string.Format("   actual_log: {0}", type));
             }
 
-            if (_logHookStore.expectedLog != condition)
+            if (_logHookStore.ExpectedLog != condition)
             {
-                fullMsg.AppendLine($" expected_msg: {ShowHiddenChars(_logHookStore.expectedLog)}");
-                fullMsg.AppendLine($"   actual_msg: {ShowHiddenChars(condition)}");
+                fullMsg.AppendLine(string.Format(" expected_msg: {0}", ShowHiddenChars(_logHookStore.ExpectedLog)));
+                fullMsg.AppendLine(string.Format("   actual_msg: {0}", ShowHiddenChars(condition)));
             }
 
-            var fullMsgStr = AssertMsg(_logHookStore.name, fullMsg.ToString(), _logHookStore.message,
-                _logHookStore.file, _logHookStore.line);
-            result = new(_logHookStore.name, fullMsgStr, false);
+            var fullMsgStr = AssertMsg(_logHookStore.Name, fullMsg.ToString(), _logHookStore.Message,
+                _logHookStore.File, _logHookStore.Line);
+            result = new Result(_logHookStore.Name, fullMsgStr, false);
         }
 
         TestResults.Add(result);
@@ -54,7 +53,8 @@ public static class Assert
 
     private static string ShowHiddenChars(string str)
     {
-        return str?.Replace("\n", "\\n").Replace("\r", "\\r").Replace("\t", "\\t");
+        if (str == null) return null;
+        return str.Replace("\n", "\\n").Replace("\r", "\\r").Replace("\t", "\\t");
     }
 
     public static void Null<T>(string name, T actual, string message = null,
@@ -63,12 +63,12 @@ public static class Assert
     {
         Result result;
         if (actual == null)
-            result = new(name, null, true);
+            result = new Result(name, null, true);
         else
         {
-            var fullMsg = AssertMsg(name, $"assertion failed `actual` == null{{0}}\n actual: {actual}", message, file,
+            var fullMsg = AssertMsg(name, string.Format("assertion failed `actual` == null{{0}}\n actual: {0}", actual), message, file,
                 line);
-            result = new(name, fullMsg, false);
+            result = new Result(name, fullMsg, false);
         }
 
         TestResults.Add(result);
@@ -80,11 +80,11 @@ public static class Assert
     {
         Result result;
         if (success)
-            result = new(name, null, true);
+            result = new Result(name, null, true);
         else
         {
             var fullMsg = AssertMsg(name, "assertion failed{0}", message, file, line);
-            result = new(name, fullMsg, false);
+            result = new Result(name, fullMsg, false);
         }
 
         TestResults.Add(result);
@@ -98,10 +98,10 @@ public static class Assert
         if (success)
         {
             var fullMsg = AssertMsg(name, "assertion failed{0}", message, file, line);
-            result = new(name, fullMsg, false);
+            result = new Result(name, fullMsg, false);
         }
         else
-            result = new(name, null, true);
+            result = new Result(name, null, true);
 
         TestResults.Add(result);
     }
@@ -113,14 +113,15 @@ public static class Assert
         try
         {
             action();
-            result = new(name, null, true);
+            result = new Result(name, null, true);
         }
         catch (Exception e)
         {
             var fullMsg = AssertMsg(name,
-                $"assertion failed `expected` no throw{{0}}\n actual: {e.GetType().FullName}: {e.Message}", message,
+                string.Format("assertion failed `expected` no throw{{0}}\n actual: {0}: {1}", e.GetType().FullName,
+                    e.Message), message,
                 file, line);
-            result = new(name, fullMsg, false);
+            result = new Result(name, fullMsg, false);
         }
 
         TestResults.Add(result);
@@ -136,20 +137,22 @@ public static class Assert
         {
             action();
             var fullMsg = AssertMsg(name,
-                $"assertion failed `expected` throws{{0}}\n expected: {expected.GetType().FullName}: {expected.Message}",
+                string.Format("assertion failed `expected` throws{{0}}\n expected: {0}: {1}",
+                    expected.GetType().FullName, expected.Message),
                 message, file, line);
-            result = new(name, fullMsg, false);
+            result = new Result(name, fullMsg, false);
         }
         catch (Exception e)
         {
             if (e.GetType() == expected.GetType() && e.Message == expected.Message)
-                result = new(name, null, true);
+                result = new Result(name, null, true);
             else
             {
                 var fullMsg = AssertMsg(name,
-                    $"assertion failed `expected` throws{{0}}\n expected: {expected.GetType().FullName}: {expected.Message}\n   actual: {e.GetType().FullName}: {e.Message}",
+                    string.Format("assertion failed `expected` throws{{0}}\n expected: {0}: {1}\n   actual: {2}: {3}",
+                        expected.GetType().FullName, expected.Message, e.GetType().FullName, e.Message),
                     message, file, line);
-                result = new(name, fullMsg, false);
+                result = new Result(name, fullMsg, false);
             }
         }
 
@@ -184,14 +187,15 @@ public static class Assert
         if (success)
         {
             var fullMsg = AssertMsg(name,
-                $"assertion failed `expected` != `actual`{{0}}\n expected: {expected}\n   actual: {actual}", message,
+                string.Format("assertion failed `expected` != `actual`{{0}}\n expected: {0}\n   actual: {1}", expected,
+                    actual), message,
                 file,
                 line);
-            result = new(name, fullMsg, false);
+            result = new Result(name, fullMsg, false);
         }
         else
         {
-            result = new(name, null, true);
+            result = new Result(name, null, true);
         }
 
         TestResults.Add(result);
@@ -203,28 +207,29 @@ public static class Assert
         Result result;
         if (success)
         {
-            result = new(name, null, true);
+            result = new Result(name, null, true);
         }
         else
         {
             var assertMsg = new StringBuilder();
             assertMsg.AppendLine("assertion failed `expected` == `actual`{0}");
-            if (expected is string sExpected)
+            if (typeof(T) == typeof(string) && expected != null && actual != null)
             {
-                var sActual = actual as string;
+                var sExpected = (string)(object)expected;
+                var sActual = (string)(object)actual;
                 sExpected = ShowHiddenChars(sExpected);
                 sActual = ShowHiddenChars(sActual);
-                assertMsg.AppendLine($" expected: {sExpected}");
-                assertMsg.AppendLine($"   actual: {sActual}");
+                assertMsg.AppendLine(string.Format(" expected: {0}", sExpected));
+                assertMsg.AppendLine(string.Format("   actual: {0}", sActual));
             }
             else
             {
-                assertMsg.AppendLine($" expected: {expected}");
-                assertMsg.AppendLine($"   actual: {actual}");
+                assertMsg.AppendLine(string.Format(" expected: {0}", expected));
+                assertMsg.AppendLine(string.Format("   actual: {0}", actual));
             }
 
             var fullMsg = AssertMsg(name, assertMsg.ToString(), message, file, line);
-            result = new(name, fullMsg, false);
+            result = new Result(name, fullMsg, false);
         }
 
         TestResults.Add(result);
@@ -232,12 +237,14 @@ public static class Assert
 
     private static string AssertMsg(string name, string assertMsg, string userMsg, string file, int line)
     {
-        userMsg = userMsg == null ? string.Empty : $": {userMsg}";
-        return $"test {name} failed at {file}:{line}:\n" + string.Format(assertMsg, userMsg);
+        userMsg = userMsg == null ? string.Empty : string.Format(": {0}", userMsg);
+        return string.Format("test {0} failed at {1}:{2}:\n", name, file, line) + string.Format(assertMsg, userMsg);
     }
 
-    private static readonly List<Result> TestResults = new();
-    [UsedImplicitly] private static bool _generalTestsDone;
+    private static readonly List<Result> TestResults = new List<Result>();
+#pragma warning disable CS1691 CS1692 CS0414 // Field is assigned but its value is never used
+    private static bool _generalTestsDone;
+#pragma warning restore CS1691 CS1692 CS0414 // Field is assigned but its value is never used
 
     public static void Finish()
     {
@@ -250,7 +257,8 @@ public static class Assert
     }
 
     [SuppressMessage("ReSharper", "MemberCanBePrivate.Local")]
-    private readonly struct Result
+    [SuppressMessage("ReSharper", "StructCanBeMadeReadOnly")]
+    private struct Result
     {
         public Result(string name, string message, bool success)
         {
@@ -265,7 +273,29 @@ public static class Assert
 
         public override string ToString()
         {
-            return Success ? $"success: {Name}" : $"failure: {Name}: {Message}";
+            return Success ? string.Format("success: {0}", Name) : string.Format("failure: {0}: {1}", Name, Message);
+        }
+    }
+
+    [SuppressMessage("ReSharper", "StructCanBeMadeReadOnly")]
+    private struct LogHookStore
+    {
+        public readonly string Name;
+        public readonly LogType ExpectedType;
+        public readonly string ExpectedLog;
+        public readonly string Message;
+        public readonly string File;
+        public readonly int Line;
+
+        public LogHookStore(string name, LogType expectedType, string expectedLog, string message, string file,
+            int line)
+        {
+            Name = name;
+            ExpectedType = expectedType;
+            ExpectedLog = expectedLog;
+            Message = message;
+            File = file;
+            Line = line;
         }
     }
 }
