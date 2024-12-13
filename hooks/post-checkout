@@ -1,7 +1,7 @@
 #!/bin/sh
 
 files=(
-    "UnityShared/Assert.cs"
+    "UnityShared/Scripts/Assert.cs"
     "3.0.0f5-base/Assets/Scripts/Assert.cs"
     "UnityShared/Editor/Build.cs"
     "3.0.0f5-base/Assets/Editor/Build.cs"
