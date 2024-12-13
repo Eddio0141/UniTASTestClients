@@ -30,6 +30,10 @@ EXCLUDE_TEST_CLIENTS_REPO_DIRS=(
     "MiscTestGame"
     "nix"
     "test-runner"
+    "hooks"
+    "3.0.0f5-base"
+    "3.4.0f5-base"
+    "UnityShared"
 )
 
 GAME_ARGS=""
