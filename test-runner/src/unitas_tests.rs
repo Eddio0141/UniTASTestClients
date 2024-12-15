@@ -102,6 +102,7 @@ impl TestCtx {
                 "{} failed to complete general tests, something went wrong",
                 symbols::FAIL.red()
             );
+            self.assert(false, "general-tests", "failed to complete general tests");
         }
 
         stream
