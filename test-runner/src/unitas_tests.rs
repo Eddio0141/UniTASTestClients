@@ -98,11 +98,7 @@ impl TestCtx {
         }
 
         if setup_fail {
-            println!(
-                "{} failed to complete general tests, something went wrong",
-                symbols::FAIL.red()
-            );
-            self.assert(false, "general-tests", "failed to complete general tests");
+            self.assert(false, "general_tests", "failed to complete general tests");
         }
 
         stream
