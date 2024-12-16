@@ -15,6 +15,10 @@ public class GeneralTests : MonoBehaviour
         var startFrame = Time.frameCount;
         Assert.Equal("scene.initial", "General", SceneManager.GetSceneAt(0).name);
 
+        // Empty has yet to be loaded
+        Assert.Throws("scene.unload.missing", new ArgumentException("Scene to unload is invalid"),
+            () => SceneManager.UnloadSceneAsync("Empty"));
+
         // frame 1
         var loadEmpty = SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!;
         var emptyScene = SceneManager.GetSceneAt(1);
@@ -61,6 +65,25 @@ public class GeneralTests : MonoBehaviour
             Assert.NotEqual("scene.dummy_scene_struct.hash_code", 0, emptyScene.GetHashCode());
         };
 
+        Assert.Throws("scene.dummy_scene_struct.set_active",
+            new ArgumentException(
+                "SceneManager.SetActiveScene failed; scene 'Empty' is not loaded and therefore cannot be set active"),
+            () => SceneManager.SetActiveScene(emptyScene));
+
+        var emptyScene2 = SceneManager.GetSceneByName("Empty");
+
+        Assert.Throws("scene.dummy_scene_struct.set_active",
+            new ArgumentException(
+                "SceneManager.SetActiveScene failed; scene 'Empty' is not loaded and therefore cannot be set active"),
+            () => SceneManager.SetActiveScene(emptyScene2));
+
+        var emptyScene3 = SceneManager.GetSceneByPath("Assets/Scenes/Empty.unity");
+
+        Assert.Throws("scene.dummy_scene_struct.set_active",
+            new ArgumentException(
+                "SceneManager.SetActiveScene failed; scene 'Empty' is not loaded and therefore cannot be set active"),
+            () => SceneManager.SetActiveScene(emptyScene3));
+
         yield return null;
         Assert.Equal("scene.op.isDone", false, loadEmpty.isDone);
         // frame 2
@@ -73,6 +96,14 @@ public class GeneralTests : MonoBehaviour
         yield return null;
         Assert.Equal("scene.op.isDone", true, loadEmpty.isDone);
         Assert.Equal("scene.op.progress", 1f, loadEmpty.progress, 0.0001f);
+
+        var general = SceneManager.GetActiveScene();
+        Assert.True("scene.dummy_scene_struct.set_active", SceneManager.SetActiveScene(emptyScene));
+        SceneManager.SetActiveScene(general);
+        Assert.True("scene.dummy_scene_struct.set_active", SceneManager.SetActiveScene(emptyScene2));
+        SceneManager.SetActiveScene(general);
+        Assert.True("scene.dummy_scene_struct.set_active", SceneManager.SetActiveScene(emptyScene3));
+
         // frame 3
 
         Assert.Equal("scene.sceneCount", 2, SceneManager.sceneCount);
