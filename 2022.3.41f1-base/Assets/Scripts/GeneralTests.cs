@@ -15,6 +15,11 @@ public class GeneralTests : MonoBehaviour
         var startFrame = Time.frameCount;
         Assert.Equal("scene.initial", "General", SceneManager.GetSceneAt(0).name);
 
+        // TODO: general scene isn't loaded by normal means, so this test fails
+        // either: isolate general test as its own unity game, make general test default scene, use reflection on test runner to add this scene
+        
+        // Assert.Null("scene.unload.current_only_scene", SceneManager.UnloadSceneAsync(SceneManager.GetActiveScene()));
+
         // Empty has yet to be loaded
         Assert.Throws("scene.unload.missing", new ArgumentException("Scene to unload is invalid"),
             () => SceneManager.UnloadSceneAsync("Empty"));
