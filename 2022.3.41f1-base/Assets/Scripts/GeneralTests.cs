@@ -17,7 +17,7 @@ public class GeneralTests : MonoBehaviour
 
         // TODO: general scene isn't loaded by normal means, so this test fails
         // either: isolate general test as its own unity game, make general test default scene, use reflection on test runner to add this scene
-        
+
         // Assert.Null("scene.unload.current_only_scene", SceneManager.UnloadSceneAsync(SceneManager.GetActiveScene()));
 
         // Empty has yet to be loaded
@@ -313,23 +313,32 @@ public class GeneralTests : MonoBehaviour
         Assert.Equal("scene.op.progress", 0.9f, loadEmpty.progress, 0.0001f);
         var loadEmpty2 = SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!;
         Assert.Equal("scene.op.progress", 0.9f, loadEmpty2.progress, 0.0001f);
+        unloadEmpty = SceneManager.UnloadSceneAsync("Empty")!;
 
         yield return null;
         // frame 25
 
         Assert.Equal("scene.op.progress", 0.9f, loadEmpty.progress, 0.0001f);
         Assert.Equal("scene.op.progress", 0.9f, loadEmpty2.progress, 0.0001f);
+        Assert.False("scene.op.isDone", unloadEmpty.isDone);
 
         yield return null;
         // frame 26
 
         Assert.Equal("scene.op.isDone", true, loadEmpty.isDone);
         Assert.Equal("scene.op.isDone", false, loadEmpty2.isDone);
+        Assert.False("scene.op.isDone", unloadEmpty.isDone);
 
         yield return null;
         // frame 27
 
         Assert.Equal("scene.op.isDone", true, loadEmpty2.isDone);
+        Assert.False("scene.op.isDone", unloadEmpty.isDone);
+
+        yield return null;
+        // frame 28
+        
+        Assert.True("scene.op.isDone", unloadEmpty.isDone);
 
         prevSceneCount = SceneManager.sceneCount;
         var prevLoadedSceneCount = SceneManager.loadedSceneCount;
