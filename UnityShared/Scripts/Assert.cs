@@ -22,10 +22,14 @@ public static class Assert
     {
         Application.logMessageReceived -= LogHook;
 
+        var name = _logHookStore.Name;
+        var file = _logHookStore.File;
+        var line = _logHookStore.Line;
+        LogAssert(name, file, line);
         Result result;
         if (_logHookStore.ExpectedType == type && _logHookStore.ExpectedLog == condition)
         {
-            result = new Result(_logHookStore.Name, null, true);
+            result = new Result(name, null, true);
         }
         else
         {
@@ -43,9 +47,8 @@ public static class Assert
                 fullMsg.AppendLine(string.Format("   actual_msg: {0}", ShowHiddenChars(condition)));
             }
 
-            var fullMsgStr = AssertMsg(_logHookStore.Name, fullMsg.ToString(), _logHookStore.Message,
-                _logHookStore.File, _logHookStore.Line);
-            result = new Result(_logHookStore.Name, fullMsgStr, false);
+            var fullMsgStr = AssertMsg(name, fullMsg.ToString(), _logHookStore.Message, file, line);
+            result = new Result(name, fullMsgStr, false);
         }
 
         TestResults.Add(result);
@@ -61,6 +64,7 @@ public static class Assert
         [CallerFilePath] string file = null,
         [CallerLineNumber] int line = 0)
     {
+        LogAssert(name, file, line);
         Result result;
         if (actual == null)
             result = new Result(name, null, true);
@@ -78,6 +82,7 @@ public static class Assert
         [CallerFilePath] string file = null,
         [CallerLineNumber] int line = 0)
     {
+        LogAssert(name, file, line);
         Result result;
         if (success)
             result = new Result(name, null, true);
@@ -94,6 +99,7 @@ public static class Assert
         [CallerFilePath] string file = null,
         [CallerLineNumber] int line = 0)
     {
+        LogAssert(name, file, line);
         Result result;
         if (success)
         {
@@ -109,6 +115,7 @@ public static class Assert
     public static void NotThrows(string name, Action action, string message = null,
         [CallerFilePath] string file = null, [CallerLineNumber] int line = 0)
     {
+        LogAssert(name, file, line);
         Result result;
         try
         {
@@ -132,6 +139,7 @@ public static class Assert
         where
         T : Exception
     {
+        LogAssert(name, file, line);
         Result result;
         try
         {
@@ -183,6 +191,7 @@ public static class Assert
     private static void NotEqualBase<T>(string name, T expected, T actual, bool success, string file, int line,
         string message = null)
     {
+        LogAssert(name, file, line);
         Result result;
         if (success)
         {
@@ -204,6 +213,7 @@ public static class Assert
     private static void EqualBase<T>(string name, T expected, T actual, bool success, string file, int line,
         string message = null)
     {
+        LogAssert(name, file, line);
         Result result;
         if (success)
         {
@@ -239,6 +249,11 @@ public static class Assert
     {
         userMsg = userMsg == null ? string.Empty : string.Format(": {0}", userMsg);
         return string.Format("test {0} failed at {1}:{2}:\n", name, file, line) + string.Format(assertMsg, userMsg);
+    }
+
+    private static void LogAssert(string name, string file, int line)
+    {
+        Debug.Log(string.Format("Assertion `{0}` at {1}:{2}", name, file, line));
     }
 
     private static readonly List<Result> TestResults = new List<Result>();
