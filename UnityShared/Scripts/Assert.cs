@@ -70,10 +70,28 @@ public static class Assert
             result = new Result(name, null, true);
         else
         {
-            var fullMsg = AssertMsg(name, string.Format("assertion failed `actual` == null{{0}}\n actual: {0}", actual), message, file,
+            var fullMsg = AssertMsg(name, string.Format("assertion failed `actual` == null{{0}}\n actual: {0}", actual),
+                message, file,
                 line);
             result = new Result(name, fullMsg, false);
         }
+
+        TestResults.Add(result);
+    }
+
+    public static void NotNull<T>(string name, T actual, string message = null,
+        [CallerFilePath] string file = null,
+        [CallerLineNumber] int line = 0)
+    {
+        LogAssert(name, file, line);
+        Result result;
+        if (actual == null)
+        {
+            var fullMsg = AssertMsg(name, "assertion failed `actual` != null{0}", message, file, line);
+            result = new Result(name, fullMsg, false);
+        }
+        else
+            result = new Result(name, null, true);
 
         TestResults.Add(result);
     }
