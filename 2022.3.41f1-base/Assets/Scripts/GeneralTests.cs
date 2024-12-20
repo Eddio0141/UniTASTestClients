@@ -35,6 +35,8 @@ public class GeneralTests : MonoBehaviour
         Assert.Equal("scene.get_scene_at.buildIndex", 3, emptyScene.buildIndex);
         Assert.False("scene.get_scene_at.isDirty", emptyScene.isDirty);
         Assert.True("scene.get_scene_at.IsValid", emptyScene.IsValid());
+        emptyScene.isSubScene = true;
+        Assert.True("scene.get_scene_at.isSubScene", emptyScene.isSubScene);
         Assert.Equal("scene.op.progress", 0.9f, loadEmpty.progress, 0.0001f);
         Assert.False("scene.op.isDone", loadEmpty.isDone);
 
@@ -61,7 +63,7 @@ public class GeneralTests : MonoBehaviour
             Assert.Equal("scene.dummy_scene_struct.name", "Empty", emptyScene.name);
             Assert.True("scene.dummy_scene_struct.isLoaded", emptyScene.isLoaded);
             Assert.Equal("scene.dummy_scene_struct.rootCount", 1, emptyScene.rootCount);
-            Assert.False("scene.dummy_scene_struct.isSubScene", emptyScene.isSubScene);
+            Assert.True("scene.dummy_scene_struct.isSubScene", emptyScene.isSubScene);
             Assert.Equal("scene.dummy_scene_struct.path", "Assets/Scenes/Empty.unity", emptyScene.path);
             Assert.Equal("scene.dummy_scene_struct.buildIndex", 3, emptyScene.buildIndex);
             Assert.False("scene.dummy_scene_struct.isDirty", emptyScene.isDirty);
@@ -77,6 +79,7 @@ public class GeneralTests : MonoBehaviour
 
         var emptyScene2 = SceneManager.GetSceneByName("Empty");
 
+        Assert.Equal("scene.dummy_scene_struct.eq", emptyScene, emptyScene2);
         Assert.Throws("scene.dummy_scene_struct.set_active",
             new ArgumentException(
                 "SceneManager.SetActiveScene failed; scene 'Empty' is not loaded and therefore cannot be set active"),
@@ -101,6 +104,9 @@ public class GeneralTests : MonoBehaviour
         yield return null;
         Assert.True("scene.op.isDone", loadEmpty.isDone);
         Assert.Equal("scene.op.progress", 1f, loadEmpty.progress, 0.0001f);
+
+        var emptyScene4 = SceneManager.GetSceneAt(1);
+        Assert.Equal("scene.dummy_scene_struct.eq_real", emptyScene, emptyScene4);
 
         var general = SceneManager.GetActiveScene();
         Assert.True("scene.dummy_scene_struct.set_active", SceneManager.SetActiveScene(emptyScene));
