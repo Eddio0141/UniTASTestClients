@@ -26,6 +26,7 @@ public class GeneralTests : MonoBehaviour
 
         // frame 1
         var loadEmpty = SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!;
+        var bundleLoad = AssetBundle.LoadFromFileAsync("Assets/AssetBundles/test");
         var emptyScene = SceneManager.GetSceneAt(1);
         Assert.Equal("scene.get_scene_at.name", "Empty", emptyScene.name);
         Assert.False("scene.get_scene_at.isLoaded", emptyScene.isLoaded);
@@ -94,6 +95,9 @@ public class GeneralTests : MonoBehaviour
 
         yield return null;
         Assert.False("scene.op.isDone", loadEmpty.isDone);
+        Assert.False("asset_bundle.op.isDone", bundleLoad.isDone);
+        Assert.Equal("asset_bundle.op.progress", 0.9f, bundleLoad.progress, 0.0001f);
+        
         // frame 2
         // loadEmpty 1f delay
 
@@ -104,6 +108,8 @@ public class GeneralTests : MonoBehaviour
         yield return null;
         Assert.True("scene.op.isDone", loadEmpty.isDone);
         Assert.Equal("scene.op.progress", 1f, loadEmpty.progress, 0.0001f);
+        Assert.True("asset_bundle.op.isDone", bundleLoad.isDone);
+        bundleLoad.assetBundle.Unload(true);
 
         var emptyScene4 = SceneManager.GetSceneAt(1);
         Assert.Equal("scene.dummy_scene_struct.eq_real", emptyScene, emptyScene4);
@@ -180,6 +186,7 @@ public class GeneralTests : MonoBehaviour
         // frame 10
 
         loadEmpty = SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!;
+        bundleLoad = AssetBundle.LoadFromFileAsync("Assets/AssetBundles/test");
         loadEmpty.allowSceneActivation = false;
         var startFrame6 = Time.frameCount;
         loadEmpty.completed += _ =>
@@ -190,16 +197,24 @@ public class GeneralTests : MonoBehaviour
 
         yield return null;
         // frame 11
+        
+        Assert.False("asset_bundle.op.isDone", bundleLoad.isDone);
         yield return null;
         // frame 12
+        Assert.False("asset_bundle.op.isDone", bundleLoad.isDone);
         yield return null;
         // frame 13
+        Assert.False("asset_bundle.op.isDone", bundleLoad.isDone);
         yield return null;
         // frame 14
         loadEmpty.allowSceneActivation = true;
+        Assert.False("asset_bundle.op.isDone", bundleLoad.isDone);
 
         yield return null;
         // frame 15
+        
+        Assert.True("asset_bundle.op.isDone", bundleLoad.isDone);
+        bundleLoad.assetBundle.Unload(true);
 
         loadEmpty = SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!;
         loadEmpty.allowSceneActivation = false;
@@ -356,6 +371,7 @@ public class GeneralTests : MonoBehaviour
         var loadEmpty2 = SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!;
         Assert.Equal("scene.op.progress", 0.9f, loadEmpty2.progress, 0.0001f);
         unloadEmpty = SceneManager.UnloadSceneAsync("Empty")!;
+        bundleLoad = AssetBundle.LoadFromFileAsync("Assets/AssetBundles/test");
 
         yield return null;
         // frame 25
@@ -363,6 +379,7 @@ public class GeneralTests : MonoBehaviour
         Assert.Equal("scene.op.progress", 0.9f, loadEmpty.progress, 0.0001f);
         Assert.Equal("scene.op.progress", 0.9f, loadEmpty2.progress, 0.0001f);
         Assert.False("scene.op.isDone", unloadEmpty.isDone);
+        Assert.False("asset_bundle.op.isDone", bundleLoad.isDone);
 
         yield return null;
         // frame 26
@@ -370,12 +387,15 @@ public class GeneralTests : MonoBehaviour
         Assert.True("scene.op.isDone", loadEmpty.isDone);
         Assert.False("scene.op.isDone", loadEmpty2.isDone);
         Assert.False("scene.op.isDone", unloadEmpty.isDone);
+        Assert.False("asset_bundle.op.isDone", bundleLoad.isDone);
 
         yield return null;
         // frame 27
 
         Assert.True("scene.op.isDone", loadEmpty2.isDone);
         Assert.True("scene.op.isDone", unloadEmpty.isDone);
+        Assert.True("asset_bundle.op.isDone", bundleLoad.isDone);
+        bundleLoad.assetBundle.Unload(true);
 
         yield return null;
         // frame 28
