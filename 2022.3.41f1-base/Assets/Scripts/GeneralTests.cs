@@ -29,6 +29,11 @@ public class GeneralTests : MonoBehaviour
         var loadEmpty = SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!;
         Assert.Equal("scene.op.priority", 0, loadEmpty.priority);
         var bundleLoad = AssetBundle.LoadFromFileAsync(Path.Combine(Application.streamingAssetsPath, "test"));
+        var bundleLoadTime = Time.frameCount;
+        bundleLoad.completed += _ =>
+        {
+            Assert.Equal("asset_bundle.op.callback_frame", 2, Time.frameCount - bundleLoadTime);
+        };
         var emptyScene = SceneManager.GetSceneAt(1);
         Assert.Equal("scene.get_scene_at.name", "Empty", emptyScene.name);
         Assert.False("scene.get_scene_at.isLoaded", emptyScene.isLoaded);
