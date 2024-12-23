@@ -116,6 +116,18 @@ public class GeneralTests : MonoBehaviour
         Assert.True("scene.op.isDone", loadEmpty.isDone);
         Assert.Equal("scene.op.progress", 1f, loadEmpty.progress, 0.0001f);
         Assert.True("asset_bundle.op.isDone", bundleLoad.isDone);
+        var bundleRequestStart = Time.frameCount;
+        var bundleRequest = bundleLoad.assetBundle.LoadAssetAsync<GameObject>("Dummy");
+        bundleRequest.completed += _ =>
+        {
+            Assert.Equal("asset_bundle_request.op.done_frame", 0, Time.frameCount - bundleRequestStart);
+        };
+
+        Assert.True("asset_bundle_request.op.isDone", bundleRequest.isDone);
+        Assert.NotNull("asset_bundle_request.asset", bundleRequest.asset as GameObject);
+        Assert.Equal("asset_bundle_request.asset", new Vector3(1, 2, 3),
+            (bundleRequest.asset as GameObject)?.transform.position);
+
         bundleLoad.assetBundle.Unload(true);
 
         var emptyScene4 = SceneManager.GetSceneAt(1);
@@ -514,6 +526,37 @@ public class GeneralTests : MonoBehaviour
 
         yield return null;
         Assert.True("asset_bundle.op.isDone", bundleLoad.isDone);
+
+        loadEmpty = SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!;
+        var bundleRequestStart2 = Time.frameCount;
+        bundleRequest = bundleLoad.assetBundle.LoadAssetAsync<GameObject>("Dummy");
+        Assert.True("asset_bundle_request.op.isDone", bundleRequest.isDone);
+        bundleRequest.completed += _ =>
+        {
+            Assert.Equal("asset_bundle_request.op.done_frame", 0, Time.frameCount - bundleRequestStart2);
+        };
+
+        loadEmpty.allowSceneActivation = false;
+
+        yield return null;
+
+        for (var i = 0; i < 5; i++)
+        {
+            var bundleRequestStart3 = Time.frameCount;
+            bundleRequest = bundleLoad.assetBundle.LoadAssetAsync<GameObject>("Dummy");
+            Assert.True("asset_bundle_request.op.isDone", bundleRequest.isDone);
+            bundleRequest.completed += _ =>
+            {
+                Assert.Equal("asset_bundle_request.op.done_frame", 0, Time.frameCount - bundleRequestStart3);
+            };
+
+            yield return null;
+        }
+
+        loadEmpty.allowSceneActivation = true;
+
+        yield return null;
+
         bundleLoad.assetBundle.Unload(true);
 
         prevSceneCount = SceneManager.sceneCount;
