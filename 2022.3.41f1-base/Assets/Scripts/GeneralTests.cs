@@ -558,6 +558,13 @@ public class GeneralTests : MonoBehaviour
         yield return null;
 
         bundleLoad.assetBundle.Unload(true);
+        
+        bundleLoad = AssetBundle.LoadFromFileAsync(Path.Combine(Application.streamingAssetsPath, "test"));
+
+        yield return bundleLoad;
+        
+        Assert.True("asset_bundle.op.isDone", bundleLoad.isDone);
+        Assert.NotNull("asset_bundle.bundle", bundleLoad.assetBundle);
 
         prevSceneCount = SceneManager.sceneCount;
         var prevLoadedSceneCount = SceneManager.loadedSceneCount;
