@@ -70,6 +70,31 @@ impl TestCtx {
     }
 
     fn run_general_tests(&mut self, stream: &mut UniTasStream) -> Result<()> {
+        self.run_general_tests_iter(stream)?;
+
+        stream.send(
+            "service('IGameRestart').SoftRestart(traverse('DateTime').property('Now').GetValue())",
+        )?;
+
+        let mut setup_fail = true;
+        for _ in 0..30 {
+            stream.send("print(service('ISceneManagerWrapper').ActiveSceneName)")?;
+            if !stream.receive()?.starts_with("General") {
+                setup_fail = false;
+                break;
+            }
+            thread::sleep(Duration::from_secs(1));
+        }
+
+        if setup_fail {
+            panic!("failed to soft restart");
+        }
+
+        self.run_general_tests_iter(stream)
+    }
+
+    // single iteration version
+    fn run_general_tests_iter(&mut self, stream: &mut UniTasStream) -> Result<()> {
         stream.send("service('ISceneManagerWrapper').load_scene('General')")?;
 
         let mut setup_fail = true;
