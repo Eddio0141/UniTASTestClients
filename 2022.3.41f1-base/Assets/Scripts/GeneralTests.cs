@@ -8,8 +8,28 @@ public class GeneralTests : MonoBehaviour
 {
     public static AsyncOperation LoadEmpty2;
 
+    private static IEnumerator TestCoroutine()
+    {
+        var bundleLoad = AssetBundle.LoadFromFileAsync(Path.Combine(Application.streamingAssetsPath, "test2"));
+        var time = Time.frameCount;
+        bundleLoad.completed += _ => { Assert.Equal("asset_bundle.load_time", 1, Time.frameCount - time); };
+        yield return bundleLoad;
+        var bundleGet = bundleLoad.assetBundle.LoadAssetAsync("test2");
+        var time2 = Time.frameCount;
+        bundleGet.completed += _ => { Assert.Equal("asset_bundle.load_asset.load_time", 1, Time.frameCount - time2); };
+        yield return bundleGet;
+    }
+
     private IEnumerator Start()
     {
+        StartCoroutine(TestCoroutine());
+
+        yield return null;
+        yield return null;
+        yield return null;
+        yield return null;
+        yield return null;
+
         // StructTest
         Assert.NotThrows("struct.constrained_opcode", () => _ = new StructTest("bar"));
 
@@ -558,13 +578,26 @@ public class GeneralTests : MonoBehaviour
         yield return null;
 
         bundleLoad.assetBundle.Unload(true);
-        
+
         bundleLoad = AssetBundle.LoadFromFileAsync(Path.Combine(Application.streamingAssetsPath, "test"));
+        var bundleRequestStart4 = Time.frameCount;
+        bundleLoad.completed += _ =>
+        {
+            Assert.Equal("asset_bundle.load_time", 1, Time.frameCount - bundleRequestStart4);
+        };
 
         yield return bundleLoad;
-        
+
         Assert.True("asset_bundle.op.isDone", bundleLoad.isDone);
         Assert.NotNull("asset_bundle.bundle", bundleLoad.assetBundle);
+
+        loadEmpty = SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!;
+        var startFrame9 = Time.frameCount;
+        loadEmpty.completed += _ => { Assert.Equal("scene.load_time", 2, Time.frameCount - startFrame9); };
+
+        yield return loadEmpty;
+
+        Assert.True("scene.op.isDone", loadEmpty.isDone);
 
         prevSceneCount = SceneManager.sceneCount;
         var prevLoadedSceneCount = SceneManager.loadedSceneCount;
