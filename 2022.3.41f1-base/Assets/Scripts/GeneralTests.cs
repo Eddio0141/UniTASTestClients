@@ -9,15 +9,16 @@ public class GeneralTests : MonoBehaviour
     public static AsyncOperation LoadEmpty2;
 
     private bool _testCoroutineBundleYield;
+    private AssetBundleCreateRequest _yieldBundleLoad;
 
     private IEnumerator TestCoroutine()
     {
-        var bundleLoad = AssetBundle.LoadFromFileAsync(Path.Combine(Application.streamingAssetsPath, "test2"));
+        _yieldBundleLoad = AssetBundle.LoadFromFileAsync(Path.Combine(Application.streamingAssetsPath, "test2"));
         var time = Time.frameCount;
-        bundleLoad.completed += _ => { Assert.Equal("asset_bundle.load_time", 1, Time.frameCount - time); };
-        yield return bundleLoad;
+        _yieldBundleLoad.completed += _ => { Assert.Equal("asset_bundle.load_time", 1, Time.frameCount - time); };
+        yield return _yieldBundleLoad;
         _testCoroutineBundleYield = true;
-        var bundleGet = bundleLoad.assetBundle.LoadAssetAsync("test2");
+        var bundleGet = _yieldBundleLoad.assetBundle.LoadAssetAsync("test2");
         var time2 = Time.frameCount;
         bundleGet.completed += _ => { Assert.Equal("asset_bundle.load_asset.load_time", 0, Time.frameCount - time2); };
         yield return bundleGet;
@@ -28,6 +29,8 @@ public class GeneralTests : MonoBehaviour
         StartCoroutine(TestCoroutine());
 
         yield return null;
+        Assert.True("asset_bundle.op.isDone", _yieldBundleLoad.isDone);
+
         yield return null;
         yield return null;
         yield return null;
@@ -598,10 +601,16 @@ public class GeneralTests : MonoBehaviour
 
         loadEmpty = SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!;
         var startFrame9 = Time.frameCount;
-        loadEmpty.completed += _ => { Assert.Equal("scene.load_time", 2, Time.frameCount - startFrame9); };
+        var loadEmptyCompleted = false;
+        loadEmpty.completed += _ =>
+        {
+            loadEmptyCompleted = true;
+            Assert.Equal("scene.load_time", 2, Time.frameCount - startFrame9);
+        };
 
         yield return loadEmpty;
 
+        Assert.False("scene.op.completed_callback", loadEmptyCompleted);
         Assert.True("scene.op.isDone", loadEmpty.isDone);
 
         prevSceneCount = SceneManager.sceneCount;
@@ -621,6 +630,9 @@ public class GeneralTests : MonoBehaviour
         Assert.Equal("scene.op.progress", 0.9f, loadGeneral2.progress, 0.0001f);
         Assert.Equal("scene.sceneCount", 3, SceneManager.sceneCount - prevSceneCount);
         Assert.Equal("scene.loadedSceneCount", 0, SceneManager.loadedSceneCount - prevLoadedSceneCount);
+
+        yield return new WaitForEndOfFrame();
+        Assert.True("scene.op.completed_callback", loadEmptyCompleted);
 
         yield return null;
         yield return null;
