@@ -8,15 +8,18 @@ public class GeneralTests : MonoBehaviour
 {
     public static AsyncOperation LoadEmpty2;
 
-    private static IEnumerator TestCoroutine()
+    private bool _testCoroutineBundleYield;
+
+    private IEnumerator TestCoroutine()
     {
         var bundleLoad = AssetBundle.LoadFromFileAsync(Path.Combine(Application.streamingAssetsPath, "test2"));
         var time = Time.frameCount;
         bundleLoad.completed += _ => { Assert.Equal("asset_bundle.load_time", 1, Time.frameCount - time); };
         yield return bundleLoad;
+        _testCoroutineBundleYield = true;
         var bundleGet = bundleLoad.assetBundle.LoadAssetAsync("test2");
         var time2 = Time.frameCount;
-        bundleGet.completed += _ => { Assert.Equal("asset_bundle.load_asset.load_time", 1, Time.frameCount - time2); };
+        bundleGet.completed += _ => { Assert.Equal("asset_bundle.load_asset.load_time", 0, Time.frameCount - time2); };
         yield return bundleGet;
     }
 
@@ -29,6 +32,8 @@ public class GeneralTests : MonoBehaviour
         yield return null;
         yield return null;
         yield return null;
+
+        Assert.True("coroutine.managed_async_op.yield", _testCoroutineBundleYield);
 
         // StructTest
         Assert.NotThrows("struct.constrained_opcode", () => _ = new StructTest("bar"));
