@@ -143,8 +143,15 @@ update_count = 0
 
 printed_results = false
 
+local reverse_invoker = service("IPatchReverseInvoker")
+local fixed_time = traverse("UnityEngine.Time").property("fixedTime")
+
 patch("UniTAS.Patcher.Implementations.UnityEvents.UnityEvents.InvokeFixedUpdate", function(this)
-    if traverse(this).field("_calledFixedUpdate").get_value() or wait_for_update then
+    reverse_invoker.invoking = true;
+    local time = fixed_time.GetValue()
+    reverse_invoker.invoking = false;
+
+    if traverse(this).field("_prevFixedTime").GetValue() != time or wait_for_update then
         return
     end
 
