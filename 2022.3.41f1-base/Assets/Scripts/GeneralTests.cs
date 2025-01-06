@@ -27,7 +27,7 @@ public class GeneralTests : MonoBehaviour
         var bundleGetAll = _yieldBundleLoad.assetBundle.LoadAllAssetsAsync();
         bundleGetAll.completed += _ => { Assert.Equal("asset_bundle.load_all_asset.load_time", 0, Time.frameCount - time3); };
         yield return bundleGetAll;
-        Assert.NotNull("asset_bundle.load_asset.assets", bundleGet.allAssets);
+        Assert.NotNull("asset_bundle.load_all_asset.assets", bundleGet.allAssets);
     }
 
     private IEnumerator Start()
