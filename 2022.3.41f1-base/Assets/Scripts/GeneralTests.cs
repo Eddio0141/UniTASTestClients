@@ -18,10 +18,16 @@ public class GeneralTests : MonoBehaviour
         _yieldBundleLoad.completed += _ => { Assert.Equal("asset_bundle.load_time", 1, Time.frameCount - time); };
         yield return _yieldBundleLoad;
         _testCoroutineBundleYield = true;
-        var bundleGet = _yieldBundleLoad.assetBundle.LoadAssetAsync("test2");
+        var bundleGet = _yieldBundleLoad.assetBundle.LoadAssetAsync("Dummy2");
         var time2 = Time.frameCount;
         bundleGet.completed += _ => { Assert.Equal("asset_bundle.load_asset.load_time", 0, Time.frameCount - time2); };
         yield return bundleGet;
+        Assert.NotNull("asset_bundle.load_asset.asset", bundleGet.asset);
+        var time3 = Time.frameCount;
+        var bundleGetAll = _yieldBundleLoad.assetBundle.LoadAllAssetsAsync();
+        bundleGetAll.completed += _ => { Assert.Equal("asset_bundle.load_all_asset.load_time", 0, Time.frameCount - time3); };
+        yield return bundleGetAll;
+        Assert.NotNull("asset_bundle.load_asset.assets", bundleGet.allAssets);
     }
 
     private IEnumerator Start()
