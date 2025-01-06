@@ -1,15 +1,15 @@
 ManifestFileVersion: 0
-CRC: 563128595
+CRC: 2026027035
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 19a4ae1da7ba26303a4b9443f8fc75d7
+    Hash: 47999f4d6769ed84c1e29eee3bd52347
   TypeTreeHash:
     serializedVersion: 2
     Hash: 767148d2cba1a92a15442f2b767884c0
   IncrementalBuildHash:
     serializedVersion: 2
-    Hash: 19a4ae1da7ba26303a4b9443f8fc75d7
+    Hash: 47999f4d6769ed84c1e29eee3bd52347
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -19,4 +19,5 @@ ClassTypes:
 SerializeReferenceClassIdentifiers: []
 Assets:
 - Assets/DummyAssets/Dummy2.prefab
+- Assets/DummyAssets/Dummy4.prefab
 Dependencies: []

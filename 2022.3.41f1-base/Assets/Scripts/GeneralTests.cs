@@ -23,11 +23,23 @@ public class GeneralTests : MonoBehaviour
         bundleGet.completed += _ => { Assert.Equal("asset_bundle.load_asset.load_time", 0, Time.frameCount - time2); };
         yield return bundleGet;
         Assert.NotNull("asset_bundle.load_asset.asset", bundleGet.asset);
+        Assert.Equal("asset_bundle.load_asset.asset", bundleGet.asset, bundleGet.allAssets[0]);
         var time3 = Time.frameCount;
         var bundleGetAll = _yieldBundleLoad.assetBundle.LoadAllAssetsAsync();
-        bundleGetAll.completed += _ => { Assert.Equal("asset_bundle.load_all_asset.load_time", 0, Time.frameCount - time3); };
+        bundleGetAll.completed += _ =>
+        {
+            Assert.Equal("asset_bundle.load_all_asset.load_time", 0, Time.frameCount - time3);
+        };
         yield return bundleGetAll;
         Assert.NotNull("asset_bundle.load_all_asset.assets", bundleGet.allAssets);
+        Assert.Equal("asset_bundle.load_all_asset.assets", 1, bundleGet.allAssets.Length);
+        Assert.NotNull("asset_bundle.load_all_asset.assets", bundleGetAll.allAssets);
+        Assert.NotNull("asset_bundle.load_asset.asset", bundleGetAll.asset);
+        Assert.Equal("asset_bundle.load_asset.asset", bundleGet.asset.name, "Dummy2");
+        var bundleGet2 = _yieldBundleLoad.assetBundle.LoadAssetAsync("Dummy4");
+        yield return bundleGet2;
+        Assert.Equal("asset_bundle.load_asset.asset", bundleGet.allAssets.Length, 1);
+        Assert.Equal("asset_bundle.load_asset.asset", bundleGet2.allAssets.Length, 1);
     }
 
     private IEnumerator Start()
