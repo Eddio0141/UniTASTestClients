@@ -13,10 +13,16 @@ public class GeneralTests : MonoBehaviour
 
     private IEnumerator TestCoroutine()
     {
+        var testLoad = AssetBundle.LoadFromFileAsync(Path.Combine(Application.streamingAssetsPath, "test"));
+        var time4 = Time.frameCount;
+        testLoad.completed += _ => { Assert.Equal("asset_bundle.load_time", 1, Time.frameCount - time4); };
         _yieldBundleLoad = AssetBundle.LoadFromFileAsync(Path.Combine(Application.streamingAssetsPath, "test2"));
         var time = Time.frameCount;
         _yieldBundleLoad.completed += _ => { Assert.Equal("asset_bundle.load_time", 1, Time.frameCount - time); };
         yield return _yieldBundleLoad;
+        Assert.True("asset_bundle.op.isDone", testLoad.isDone);
+        Assert.True("asset_bundle.op.isDone", _yieldBundleLoad.isDone);
+        testLoad.assetBundle.Unload(true);
         _testCoroutineBundleYield = true;
         var bundleGet = _yieldBundleLoad.assetBundle.LoadAssetAsync("Dummy2");
         var time2 = Time.frameCount;
@@ -42,19 +48,32 @@ public class GeneralTests : MonoBehaviour
         Assert.Equal("asset_bundle.load_asset.asset", bundleGet2.allAssets.Length, 1);
     }
 
+    private IEnumerator TestCoroutine2()
+    {
+        var testLoad = AssetBundle.LoadFromFileAsync(Path.Combine(Application.streamingAssetsPath, "test3"));
+        var time = Time.frameCount;
+        testLoad.completed += _ => { Assert.Equal("asset_bundle.load_time", 1, Time.frameCount - time); };
+        yield return testLoad;
+        Assert.True("asset_bundle.op.isDone", testLoad.isDone);
+
+        testLoad.assetBundle.Unload(true);
+    }
+
     private IEnumerator Start()
     {
-        StartCoroutine(TestCoroutine());
+        var coroutine1 = StartCoroutine(TestCoroutine());
+        var coroutine2 = StartCoroutine(TestCoroutine2());
+        yield return coroutine1;
+        yield return coroutine2;
 
-        yield return null;
+        var unscaledTime = Time.unscaledTime;
+        var scaledTime = Time.time;
+        Time.timeScale = 0f;
+
         Assert.True("asset_bundle.op.isDone", _yieldBundleLoad.isDone);
-
-        yield return null;
-        yield return null;
-        yield return null;
-        yield return null;
-
         Assert.True("coroutine.managed_async_op.yield", _testCoroutineBundleYield);
+
+        _yieldBundleLoad.assetBundle.Unload(true);
 
         // StructTest
         Assert.NotThrows("struct.constrained_opcode", () => _ = new StructTest("bar"));
@@ -147,6 +166,12 @@ public class GeneralTests : MonoBehaviour
             () => SceneManager.SetActiveScene(emptyScene3));
 
         yield return null;
+
+        // 1f passed, unitas forces 100 fps by default
+        Assert.Equal("time.unscaled_time", 0.01f, Time.unscaledTime - unscaledTime, 0.001f);
+        Assert.Equal("time.time", 0f, Time.time - scaledTime, 0.001f);
+        Time.timeScale = 1;
+
         Assert.False("scene.op.isDone", loadEmpty.isDone);
         Assert.False("asset_bundle.op.isDone", bundleLoad.isDone);
         Assert.Equal("asset_bundle.op.progress", 0.9f, bundleLoad.progress, 0.0001f);
@@ -159,6 +184,9 @@ public class GeneralTests : MonoBehaviour
         Assert.Equal("scene.loadedSceneCount", 1, SceneManager.loadedSceneCount);
 
         yield return null;
+        Assert.Equal("time.unscaled_time", 0.02f, Time.unscaledTime - unscaledTime, 0.001f);
+        Assert.Equal("time.time", 0.01f, Time.time - scaledTime, 0.001f);
+
         Assert.True("scene.op.isDone", loadEmpty.isDone);
         Assert.Equal("scene.op.progress", 1f, loadEmpty.progress, 0.0001f);
         Assert.True("asset_bundle.op.isDone", bundleLoad.isDone);
