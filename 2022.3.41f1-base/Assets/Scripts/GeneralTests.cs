@@ -66,6 +66,16 @@ public class GeneralTests : MonoBehaviour
         yield return coroutine1;
         yield return coroutine2;
 
+        var fooResource = Resources.LoadAsync("Foo");
+        var resourceTime = Time.frameCount;
+        fooResource.completed += _ =>
+        {
+            Assert.Equal("resources.LoadAsync.load_time", 1, Time.frameCount - resourceTime);
+        };
+        yield return fooResource;
+        Assert.NotNull("resources.LoadAsync.asset", fooResource.asset);
+        Assert.Equal("resources.LoadAsync.asset.name", "Foo", fooResource.asset.name);
+
         var unscaledTime = Time.unscaledTime;
         var scaledTime = Time.time;
         Time.timeScale = 0f;
