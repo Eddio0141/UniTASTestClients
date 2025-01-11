@@ -59,6 +59,31 @@ public class GeneralTests : MonoBehaviour
         testLoad.assetBundle.Unload(true);
     }
 
+    private void Awake()
+    {
+        var fooResource = Resources.LoadAsync("Foo");
+
+        var op = AssetBundle.LoadFromFileAsync(Path.Combine(Application.streamingAssetsPath, "test"));
+        var callback = false;
+        op.completed += _ => { callback = true; };
+        while (!op.isDone)
+        {
+            var asset = op.assetBundle;
+            Assert.NotNull("asset_bundle.assetBundle", asset);
+            Assert.True("asset_bundle.op.isDone", op.isDone);
+            Assert.True("asset_bundle.op.callback", callback);
+            Assert.True("resources.op.isDone", fooResource.isDone);
+        }
+
+        var op2 = AssetBundle.LoadFromFileAsync(Path.Combine(Application.streamingAssetsPath, "test2"));
+        Assert.False("asset_bundle.op.isDone", op2.isDone);
+
+        _ = op2.assetBundle;
+
+        op.assetBundle?.Unload(true);
+        op2.assetBundle?.Unload(true);
+    }
+
     private IEnumerator Start()
     {
         var unusedUnusedTime = Time.frameCount;
@@ -69,7 +94,7 @@ public class GeneralTests : MonoBehaviour
         };
 
         yield return unloadUnused;
-        
+
         var coroutine1 = StartCoroutine(TestCoroutine());
         var coroutine2 = StartCoroutine(TestCoroutine2());
         yield return coroutine1;
@@ -213,13 +238,23 @@ public class GeneralTests : MonoBehaviour
         var bundleRequest = bundleLoad.assetBundle.LoadAssetAsync<GameObject>("Dummy");
         bundleRequest.completed += _ =>
         {
-            Assert.Equal("asset_bundle_request.op.done_frame", 0, Time.frameCount - bundleRequestStart);
+            Assert.Equal("asset_bundle_request.op.done_frame", 1, Time.frameCount - bundleRequestStart);
         };
 
+        Assert.False("asset_bundle_request.op.isDone", bundleRequest.isDone);
+
+        yield return null;
+
         Assert.True("asset_bundle_request.op.isDone", bundleRequest.isDone);
-        Assert.NotNull("asset_bundle_request.asset", bundleRequest.asset as GameObject);
         Assert.Equal("asset_bundle_request.asset", new Vector3(1, 2, 3),
             (bundleRequest.asset as GameObject)?.transform.position);
+
+        bundleRequest = bundleLoad.assetBundle.LoadAllAssetsAsync();
+        Assert.False("asset_bundle_request.op.isDone", bundleRequest.isDone);
+
+        yield return null;
+
+        Assert.True("asset_bundle_request.op.isDone", bundleRequest.isDone);
 
         bundleLoad.assetBundle.Unload(true);
 
@@ -623,10 +658,10 @@ public class GeneralTests : MonoBehaviour
         loadEmpty = SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!;
         var bundleRequestStart2 = Time.frameCount;
         bundleRequest = bundleLoad.assetBundle.LoadAssetAsync<GameObject>("Dummy");
-        Assert.True("asset_bundle_request.op.isDone", bundleRequest.isDone);
+        Assert.False("asset_bundle_request.op.isDone", bundleRequest.isDone);
         bundleRequest.completed += _ =>
         {
-            Assert.Equal("asset_bundle_request.op.done_frame", 0, Time.frameCount - bundleRequestStart2);
+            Assert.Equal("asset_bundle_request.op.done_frame", 2 + 5, Time.frameCount - bundleRequestStart2);
         };
 
         loadEmpty.allowSceneActivation = false;
@@ -637,10 +672,11 @@ public class GeneralTests : MonoBehaviour
         {
             var bundleRequestStart3 = Time.frameCount;
             bundleRequest = bundleLoad.assetBundle.LoadAssetAsync<GameObject>("Dummy");
-            Assert.True("asset_bundle_request.op.isDone", bundleRequest.isDone);
+            Assert.False("asset_bundle_request.op.isDone", bundleRequest.isDone);
+            var j = i;
             bundleRequest.completed += _ =>
             {
-                Assert.Equal("asset_bundle_request.op.done_frame", 0, Time.frameCount - bundleRequestStart3);
+                Assert.Equal("asset_bundle_request.op.done_frame", 6 - j, Time.frameCount - bundleRequestStart3);
             };
 
             yield return null;
@@ -663,6 +699,7 @@ public class GeneralTests : MonoBehaviour
 
         Assert.True("asset_bundle.op.isDone", bundleLoad.isDone);
         Assert.NotNull("asset_bundle.bundle", bundleLoad.assetBundle);
+        bundleLoad.assetBundle.Unload(true);
 
         loadEmpty = SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!;
         var startFrame9 = Time.frameCount;
@@ -686,6 +723,52 @@ public class GeneralTests : MonoBehaviour
         };
 
         yield return unloadUnused;
+
+        var loadedEmpty = false;
+        loadEmpty = SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!;
+        loadEmpty.completed += _ => { loadedEmpty = true; };
+
+        yield return loadEmpty;
+
+        Assert.False("load_scene_async.op_callback_end_of_frame", loadedEmpty);
+        yield return new WaitForEndOfFrame();
+        Assert.True("load_scene_async.op_callback_end_of_frame", loadedEmpty);
+
+        loadedEmpty = false;
+        loadEmpty = SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!;
+        loadEmpty.completed += _ => { loadedEmpty = true; };
+        yield return loadEmpty;
+
+        // completes instantly
+        loadEmpty = SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!;
+        var testLoad = AssetBundle.LoadFromFileAsync(Path.Combine(Application.streamingAssetsPath, "test"));
+        // doesn't complete
+        var loadEmpty4 = SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!;
+        fooResource = Resources.LoadAsync("Foo");
+        Debug.Log(testLoad.assetBundle); // force load
+
+        Assert.True("scene.op.isDone", loadEmpty.isDone);
+        Assert.True("asset_bundle.op.isDone", testLoad.isDone);
+        Assert.False("load_scene_async.op_callback_forced", loadedEmpty);
+        Assert.False("scene.op.isDone", loadEmpty4.isDone);
+        Assert.False("resources.op.isDone", fooResource.isDone);
+
+        yield return loadEmpty4;
+        yield return fooResource;
+
+        var loadDummy = testLoad.assetBundle.LoadAssetAsync<GameObject>("Dummy");
+        _ = loadDummy.asset;
+        Assert.True("load_asset_async.get_asset_op_force", loadDummy.isDone);
+
+        loadDummy = testLoad.assetBundle.LoadAllAssetsAsync();
+        _ = loadDummy.allAssets;
+        Assert.True("load_asset_async.get_asset_op_force", loadDummy.isDone);
+
+        fooResource = Resources.LoadAsync("Foo");
+        _ = fooResource.asset;
+        Assert.False("resource_load_async.get_asset_op_force", fooResource.isDone);
+
+        testLoad.assetBundle.Unload(true);
 
         prevSceneCount = SceneManager.sceneCount;
         var prevLoadedSceneCount = SceneManager.loadedSceneCount;
