@@ -90,7 +90,7 @@ public class GeneralTests : MonoBehaviour
         var unloadUnused = Resources.UnloadUnusedAssets();
         unloadUnused.completed += _ =>
         {
-            Assert.Equal("resources.unload_unused.op.done_frame", 0, Time.frameCount - unusedUnusedTime);
+            Assert.Equal("resources.unload_unused.op.done_frame", 1, Time.frameCount - unusedUnusedTime);
         };
 
         yield return unloadUnused;
@@ -715,15 +715,6 @@ public class GeneralTests : MonoBehaviour
         Assert.False("scene.op.completed_callback", loadEmptyCompleted);
         Assert.True("scene.op.isDone", loadEmpty.isDone);
 
-        var unusedUnusedTime2 = Time.frameCount;
-        unloadUnused = Resources.UnloadUnusedAssets();
-        unloadUnused.completed += _ =>
-        {
-            Assert.Equal("resources.unload_unused.op.done_frame", 0, Time.frameCount - unusedUnusedTime2);
-        };
-
-        yield return unloadUnused;
-
         var loadedEmpty = false;
         loadEmpty = SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!;
         loadEmpty.completed += _ => { loadedEmpty = true; };
@@ -769,6 +760,18 @@ public class GeneralTests : MonoBehaviour
         Assert.False("resource_load_async.get_asset_op_force", fooResource.isDone);
 
         testLoad.assetBundle.Unload(true);
+        
+        SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive);
+        
+        var unusedUnusedTime2 = Time.frameCount;
+        unloadUnused = Resources.UnloadUnusedAssets();
+        unloadUnused.completed += _ =>
+        {
+            // scene load + op should take 2f
+            Assert.Equal("resources.unload_unused.op.done_frame", 2, Time.frameCount - unusedUnusedTime2);
+        };
+
+        yield return unloadUnused;
 
         prevSceneCount = SceneManager.sceneCount;
         var prevLoadedSceneCount = SceneManager.loadedSceneCount;
