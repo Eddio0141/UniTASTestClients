@@ -26,7 +26,7 @@ public class GeneralTests : MonoBehaviour
         _testCoroutineBundleYield = true;
         var bundleGet = _yieldBundleLoad.assetBundle.LoadAssetAsync("Dummy2");
         var time2 = Time.frameCount;
-        bundleGet.completed += _ => { Assert.Equal("asset_bundle.load_asset.load_time", 0, Time.frameCount - time2); };
+        bundleGet.completed += _ => { Assert.Equal("asset_bundle.load_asset.load_time", 1, Time.frameCount - time2); };
         yield return bundleGet;
         Assert.NotNull("asset_bundle.load_asset.asset", bundleGet.asset);
         Assert.Equal("asset_bundle.load_asset.asset", bundleGet.asset, bundleGet.allAssets[0]);
@@ -34,7 +34,7 @@ public class GeneralTests : MonoBehaviour
         var bundleGetAll = _yieldBundleLoad.assetBundle.LoadAllAssetsAsync();
         bundleGetAll.completed += _ =>
         {
-            Assert.Equal("asset_bundle.load_all_asset.load_time", 0, Time.frameCount - time3);
+            Assert.Equal("asset_bundle.load_all_asset.load_time", 1, Time.frameCount - time3);
         };
         yield return bundleGetAll;
         Assert.NotNull("asset_bundle.load_all_asset.assets", bundleGet.allAssets);
@@ -745,7 +745,7 @@ public class GeneralTests : MonoBehaviour
         // doesn't complete
         var loadEmpty4 = SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!;
         fooResource = Resources.LoadAsync("Foo");
-        Debug.Log(testLoad.assetBundle); // force load
+        Debug.Log(testLoad.assetBundle); // force load (shouldn't work)
 
         Assert.True("scene.op.isDone", loadEmpty.isDone);
         Assert.True("asset_bundle.op.isDone", testLoad.isDone);
