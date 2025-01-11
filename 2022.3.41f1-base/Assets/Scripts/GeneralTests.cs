@@ -61,6 +61,15 @@ public class GeneralTests : MonoBehaviour
 
     private IEnumerator Start()
     {
+        var unusedUnusedTime = Time.frameCount;
+        var unloadUnused = Resources.UnloadUnusedAssets();
+        unloadUnused.completed += _ =>
+        {
+            Assert.Equal("resources.unload_unused.op.done_frame", 0, Time.frameCount - unusedUnusedTime);
+        };
+
+        yield return unloadUnused;
+        
         var coroutine1 = StartCoroutine(TestCoroutine());
         var coroutine2 = StartCoroutine(TestCoroutine2());
         yield return coroutine1;
@@ -668,6 +677,15 @@ public class GeneralTests : MonoBehaviour
 
         Assert.False("scene.op.completed_callback", loadEmptyCompleted);
         Assert.True("scene.op.isDone", loadEmpty.isDone);
+
+        var unusedUnusedTime2 = Time.frameCount;
+        unloadUnused = Resources.UnloadUnusedAssets();
+        unloadUnused.completed += _ =>
+        {
+            Assert.Equal("resources.unload_unused.op.done_frame", 0, Time.frameCount - unusedUnusedTime2);
+        };
+
+        yield return unloadUnused;
 
         prevSceneCount = SceneManager.sceneCount;
         var prevLoadedSceneCount = SceneManager.loadedSceneCount;
