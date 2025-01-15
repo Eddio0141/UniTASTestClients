@@ -779,7 +779,8 @@ public class GeneralTests : MonoBehaviour
         Assert.Equal("asset_bundle_scene.scene_partial_path", 0, SceneManager.sceneCount - prevSceneCount);
 
         // bundle load with same scene name as built in one
-        yield return AssetBundle.LoadFromFileAsync(Path.Combine(Application.streamingAssetsPath, "testscene"));
+        var testSceneBundle = AssetBundle.LoadFromFileAsync(Path.Combine(Application.streamingAssetsPath, "testscene"));
+        yield return testSceneBundle;
         yield return SceneManager.LoadSceneAsync("Dummy", LoadSceneMode.Additive);
         var sceneInfo = SceneManager.GetSceneAt(SceneManager.sceneCount - 1);
         Assert.Equal("asset_bundle_scene.duplicate_to_builtin", "Assets/DummyAssets/Foo/Dummy.unity", sceneInfo.path);
@@ -799,7 +800,7 @@ public class GeneralTests : MonoBehaviour
         sceneInfo = SceneManager.GetSceneAt(SceneManager.sceneCount - 1);
         Assert.Equal("asset_bundle_scene.scene_partial_path", 1, SceneManager.sceneCount - prevSceneCount);
         Assert.Equal("asset_bundle_scene.scene_partial_path", "Assets/DummyAssets/Foo/Dummy.unity", sceneInfo.path);
-        
+
         // partial path from asset
         prevSceneCount = SceneManager.sceneCount;
         // ReSharper disable once Unity.LoadSceneUnknownSceneName
@@ -819,7 +820,7 @@ public class GeneralTests : MonoBehaviour
         // ReSharper disable once Unity.LoadSceneUnexistingScene
         yield return SceneManager.LoadSceneAsync("Foo/Dummy", LoadSceneMode.Additive);
         Assert.Equal("asset_bundle_scene.scene_partial_path", 0, SceneManager.sceneCount - prevSceneCount);
-        
+
         prevSceneCount = SceneManager.sceneCount;
         // ReSharper disable once Unity.LoadSceneUnexistingScene
         yield return SceneManager.LoadSceneAsync("Assets/DummyAsset/Foo", LoadSceneMode.Additive);
@@ -844,6 +845,13 @@ public class GeneralTests : MonoBehaviour
         // for builtin scenes, including `Assets` is invalid as a loading path
         loadDummyScene = SceneManager.LoadSceneAsync("Assets/Scenes/Foo/Dummy", LoadSceneMode.Additive);
         Assert.Null("scene.invalid", loadDummyScene);
+
+        testSceneBundle.assetBundle.Unload(true);
+        prevSceneCount = SceneManager.sceneCount;
+        // ReSharper disable once Unity.LoadSceneUnknownSceneName
+        loadDummyScene = SceneManager.LoadSceneAsync("Assets/DummyAssets/Foo/Dummy.unity", LoadSceneMode.Additive);
+        Assert.Null("asset_bundle_scene.unloaded", loadDummyScene);
+        Assert.Equal("asset_bundle_scene.unloaded", 0, SceneManager.sceneCount - prevSceneCount);
 
         // try load invalid asset
         var dummy = AssetBundle.LoadFromFileAsync(Path.Combine(Application.streamingAssetsPath, "foobar"));
