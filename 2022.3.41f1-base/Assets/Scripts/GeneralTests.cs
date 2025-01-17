@@ -4,12 +4,24 @@ using System.IO;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-public class GeneralTests : MonoBehaviour
+public class GeneralTests : MonoBehaviour, ISerializationCallbackReceiver
 {
     public static AsyncOperation LoadEmpty2;
 
     private bool _testCoroutineBundleYield;
     private AssetBundleCreateRequest _yieldBundleLoad;
+
+    private bool _deserializeCall;
+
+    public void OnBeforeSerialize()
+    {
+    }
+
+    public void OnAfterDeserialize()
+    {
+        _deserializeCall = true;
+        throw new Exception("foo");
+    }
 
     private IEnumerator TestCoroutine()
     {
@@ -61,6 +73,8 @@ public class GeneralTests : MonoBehaviour
 
     private void Awake()
     {
+        Assert.True("OnAfterDeserialize", _deserializeCall);
+
         var fooResource = Resources.LoadAsync("Foo");
 
         var op = AssetBundle.LoadFromFileAsync(Path.Combine(Application.streamingAssetsPath, "test"));
