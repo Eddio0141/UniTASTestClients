@@ -788,11 +788,13 @@ public class GeneralTests : MonoBehaviour
         yield return SceneManager.LoadSceneAsync("Dummy", LoadSceneMode.Additive);
         var sceneInfo = SceneManager.GetSceneAt(SceneManager.sceneCount - 1);
         Assert.Equal("asset_bundle_scene.duplicate_to_builtin", "Assets/DummyAssets/Foo/Dummy.unity", sceneInfo.path);
+        Assert.Equal("asset_bundle_scene.duplicate_to_builtin", "Dummy", sceneInfo.name);
 
         // full path
         yield return SceneManager.LoadSceneAsync("Scenes/Foo/Dummy", LoadSceneMode.Additive);
         sceneInfo = SceneManager.GetSceneAt(SceneManager.sceneCount - 1);
         Assert.Equal("asset_bundle_scene.duplicate_to_builtin", "Assets/Scenes/Foo/Dummy.unity", sceneInfo.path);
+        Assert.Equal("asset_bundle_scene.duplicate_to_builtin", "Dummy", sceneInfo.name);
 
         yield return SceneManager.LoadSceneAsync("Assets/Scenes/Foo/Dummy.unity", LoadSceneMode.Additive);
         sceneInfo = SceneManager.GetSceneAt(SceneManager.sceneCount - 1);
