@@ -144,16 +144,26 @@ public class GeneralTests : MonoBehaviour
             Assert.Equal("asset_bundle.op.callback_frame", 2, Time.frameCount - bundleLoadTime);
         };
         var emptyScene = SceneManager.GetSceneAt(1);
+        var emptySceneByName = SceneManager.GetSceneByName("Empty");
         Assert.Equal("scene.get_scene_at.name", "Empty", emptyScene.name);
+        Assert.Equal("scene.get_scene_at.name", "Empty", emptySceneByName.name);
         Assert.False("scene.get_scene_at.isLoaded", emptyScene.isLoaded);
+        Assert.False("scene.get_scene_at.isLoaded", emptySceneByName.isLoaded);
         Assert.Equal("scene.get_scene_at.rootCount", 0, emptyScene.rootCount);
+        Assert.Equal("scene.get_scene_at.rootCount", 0, emptySceneByName.rootCount);
         Assert.False("scene.get_scene_at.isSubScene", emptyScene.isSubScene);
+        Assert.False("scene.get_scene_at.isSubScene", emptySceneByName.isSubScene);
         Assert.Equal("scene.get_scene_at.path", "Assets/Scenes/Empty.unity", emptyScene.path);
+        Assert.Equal("scene.get_scene_at.path", "Assets/Scenes/Empty.unity", emptySceneByName.path);
         Assert.Equal("scene.get_scene_at.buildIndex", 3, emptyScene.buildIndex);
+        Assert.Equal("scene.get_scene_at.buildIndex", 3, emptySceneByName.buildIndex);
         Assert.False("scene.get_scene_at.isDirty", emptyScene.isDirty);
+        Assert.False("scene.get_scene_at.isDirty", emptySceneByName.isDirty);
         Assert.True("scene.get_scene_at.IsValid", emptyScene.IsValid());
+        Assert.True("scene.get_scene_at.IsValid", emptySceneByName.IsValid());
         emptyScene.isSubScene = true;
         Assert.True("scene.get_scene_at.isSubScene", emptyScene.isSubScene);
+        Assert.True("scene.get_scene_at.isSubScene", emptySceneByName.isSubScene);
         Assert.Equal("scene.op.progress", 0.9f, loadEmpty.progress, 0.0001f);
         Assert.False("scene.op.isDone", loadEmpty.isDone);
 
@@ -778,32 +788,43 @@ public class GeneralTests : MonoBehaviour
         yield return SceneManager.LoadSceneAsync("Dummy", LoadSceneMode.Additive);
         var sceneInfo = SceneManager.GetSceneAt(SceneManager.sceneCount - 1);
         Assert.Equal("asset_bundle_scene.duplicate_to_builtin", "Assets/DummyAssets/Foo/Dummy.unity", sceneInfo.path);
-        
+
         // full path
         yield return SceneManager.LoadSceneAsync("Scenes/Foo/Dummy", LoadSceneMode.Additive);
         sceneInfo = SceneManager.GetSceneAt(SceneManager.sceneCount - 1);
         Assert.Equal("asset_bundle_scene.duplicate_to_builtin", "Assets/Scenes/Foo/Dummy.unity", sceneInfo.path);
-        
+
         yield return SceneManager.LoadSceneAsync("Assets/Scenes/Foo/Dummy.unity", LoadSceneMode.Additive);
         sceneInfo = SceneManager.GetSceneAt(SceneManager.sceneCount - 1);
         Assert.Equal("asset_bundle_scene.duplicate_to_builtin", "Assets/Scenes/Foo/Dummy.unity", sceneInfo.path);
-        
+        Assert.Equal("asset_bundle_scene.duplicate_to_builtin", "Dummy", sceneInfo.name);
+
         // those fail to load
-        
+
         // ReSharper disable once Unity.LoadSceneUnexistingScene
         var loadDummyScene = SceneManager.LoadSceneAsync("Foo/Dummy", LoadSceneMode.Additive);
         Assert.Null("scene.invalid", loadDummyScene);
         // for builtin scenes, including `Assets` is invalid as a loading path
         loadDummyScene = SceneManager.LoadSceneAsync("Assets/Scenes/Foo/Dummy", LoadSceneMode.Additive);
         Assert.Null("scene.invalid", loadDummyScene);
-        
+
         // try load invalid asset
         var dummy = AssetBundle.LoadFromFileAsync(Path.Combine(Application.streamingAssetsPath, "foobar"));
         Assert.Null("asset_bundle.invalid", dummy.assetBundle);
 
+        // GetSceneByName after isDone
+        loadEmpty = SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!;
+        while (!loadEmpty.isDone)
+        {
+            yield return null;
+        }
+
+        var sceneStruct = SceneManager.GetSceneByName("Empty");
+        Assert.Equal("scene_struct.name", "Empty", sceneStruct.name);
+        Assert.True("scene_struct.isLoaded", sceneStruct.isLoaded);
+
         prevSceneCount = SceneManager.sceneCount;
         var prevLoadedSceneCount = SceneManager.loadedSceneCount;
-
         // scene load additive -> scene load non-additive
         loadEmpty = SceneManager.LoadSceneAsync("Empty", LoadSceneMode.Additive)!;
         var startFrame2 = Time.frameCount;
