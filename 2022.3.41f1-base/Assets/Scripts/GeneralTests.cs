@@ -71,8 +71,19 @@ public class GeneralTests : MonoBehaviour, ISerializationCallbackReceiver
         testLoad.assetBundle.Unload(true);
     }
 
+    private IEnumerator EndOfFrame()
+    {
+        while (true)
+        {
+            yield return new WaitForEndOfFrame();
+        }
+        // ReSharper disable once IteratorNeverReturns
+    }
+
     private void Awake()
     {
+        StartCoroutine(EndOfFrame());
+
         Assert.True("OnAfterDeserialize", _deserializeCall);
 
         var fooResource = Resources.LoadAsync("Foo");
