@@ -203,9 +203,13 @@ patch("UniTAS.Patcher.Implementations.UnityEvents.UnityEvents.InvokeEndOfFrame",
 
     end_of_frame_count = end_of_frame_count + 1
 end, "method")
-patch("UniTAS.Patcher.Implementations.UnityEvents.UnityEvents.InvokeLastUpdate", function()
+patch("UniTAS.Patcher.Implementations.UnityEvents.UnityEvents.InvokeLastUpdate", function(this)
     if wait_for_fixed_update or update_count >= {frame_count} then
         return
+    end
+
+    if traverse(this).field("_calledLastUpdate").GetValue() then
+        print("last update was called twice in a single update, this is absolutely invalid")
     end
 
     last_update_count = last_update_count + 1
