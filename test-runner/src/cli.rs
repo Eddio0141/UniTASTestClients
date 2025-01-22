@@ -23,6 +23,10 @@ pub struct Args {
     /// Replace games to download with local games by name. Example: `2022.3.41f1-base=/home/yuu/local-game`
     /// You can specify multiple --replace-game for different games
     pub replace_game: Vec<ReplaceGame>,
+
+    #[arg(long)]
+    /// If used, BepInEx isn't downloaded and this path is used to replace the download
+    pub bepinex_path: Option<PathBuf>,
 }
 
 impl Args {

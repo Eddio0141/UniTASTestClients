@@ -3,6 +3,7 @@
 # config
 UNITAS_REPO="" # NOTE: fill this in to wherever you cloned UniTAS
 PROFILE=debug
+BEPINEX_DIR="" # NOTE: fill this in to wherever you downloaded and extracted BepInEx
 
 # setup stuff
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
@@ -52,7 +53,13 @@ for GAME_DIR in "$SCRIPT_DIR"/*; do
     GAME_ARGS="-r ${GAME_NAME}=\"${GAME_DIR}/build\" ${GAME_ARGS}"
 done
 
+if [ -d "$BEPINEX_DIR" ]; then
+    BEPINEX_DIR="--bepinex-path $BEPINEX_DIR"
+else
+    BEPINEX_DIR=""
+fi
+
 cp "$UNITAS_BUILD" "${TEST_DIR}/UniTAS" -r
 
 # shellcheck disable=SC2090,SC2086
-exec $TEST_DIR/test-runner --github-token "$(gh auth token)" $GAME_ARGS
+exec $TEST_DIR/test-runner --github-token "$(gh auth token)" $GAME_ARGS $BEPINEX_DIR

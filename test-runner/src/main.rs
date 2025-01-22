@@ -101,8 +101,9 @@ async fn main() -> Result<ExitCode> {
         let bepinex_dir = bepinex_dir.clone();
         let arch = arch.clone();
         let pb = pb.clone();
+        let path = args.bepinex_path.clone();
         task::spawn(async move {
-            dl_bepinex(&bepinex_dir, &os, &arch, pb).await;
+            dl_bepinex(&bepinex_dir, &os, &arch, pb, path).await;
         })
     };
     let dl_unitas_task = {

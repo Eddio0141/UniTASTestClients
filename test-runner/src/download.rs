@@ -1,5 +1,6 @@
 #[cfg(target_family = "unix")]
 use std::os::unix::fs::PermissionsExt;
+use std::path::PathBuf;
 use std::{fmt::Write, io::Cursor, path::Path};
 
 use anyhow::Context;
@@ -101,7 +102,20 @@ pub async fn dl_unitas(
     Ok(())
 }
 
-pub async fn dl_bepinex(dl_dir: &Path, os: &Os, arch: &Arch, pb: MultiProgress) {
+pub async fn dl_bepinex(
+    dl_dir: &Path,
+    os: &Os,
+    arch: &Arch,
+    pb: MultiProgress,
+    bepinex_path: Option<PathBuf>,
+) {
+    if let Some(bepinex_path) = bepinex_path {
+        fs_utils::copy_dir_all(bepinex_path, dl_dir)
+            .await
+            .expect("failed to copy BepInEx directory to destination");
+        return;
+    }
+
     let url = "https://api.github.com/repos/BepInEx/BepInEx/releases/latest";
 
     // github requires us to have User-Agent header
