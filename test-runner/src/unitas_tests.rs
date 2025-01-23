@@ -69,6 +69,9 @@ impl TestCtx {
         );
     }
 
+    /// Runs game behaviour checks without a movie running
+    /// ## Note
+    /// - You **MUST** call this on the initial scene
     fn run_general_tests(&mut self, stream: &mut UniTasStream) -> Result<()> {
         self.run_general_tests_iter(stream)?;
 
@@ -95,9 +98,25 @@ impl TestCtx {
 
     // single iteration version
     fn run_general_tests_iter(&mut self, stream: &mut UniTasStream) -> Result<()> {
+        let mut setup_fail = true;
+        for _ in 0..30 {
+            stream.send("print(traverse('Assert').field('_generalTestsDone').GetValue())")?;
+            if stream.receive()? == "true" {
+                setup_fail = false;
+                break;
+            }
+            thread::sleep(Duration::from_secs(1));
+        }
+
+        if setup_fail {
+            self.assert(false, "initial_tests", "failed to complete tests");
+        }
+
+        self.get_assert_results(stream)?;
+
         stream.send("service('ISceneManagerWrapper').load_scene('General')")?;
 
-        let mut setup_fail = true;
+        setup_fail = true;
         for _ in 0..30 {
             stream.send("print(service('ISceneManagerWrapper').ActiveSceneName)")?;
             if stream.receive()? == "General" {
@@ -112,7 +131,7 @@ impl TestCtx {
         }
 
         // wait for general tests to finish
-        let mut setup_fail = true;
+        setup_fail = true;
         for _ in 0..30 {
             stream.send("print(traverse('Assert').field('_generalTestsDone').GetValue())")?;
             if stream.receive()? == "true" {
@@ -123,9 +142,15 @@ impl TestCtx {
         }
 
         if setup_fail {
-            self.assert(false, "general_tests", "failed to complete general tests");
+            self.assert(false, "general_tests", "failed to complete tests");
         }
 
+        self.get_assert_results(stream)?;
+
+        Ok(())
+    }
+
+    fn get_assert_results(&mut self, stream: &mut UniTasStream) -> Result<()> {
         stream
             .send("print(traverse('Assert').field('TestResults').property('Count').GetValue())")?;
         let count = stream
@@ -155,8 +180,6 @@ impl TestCtx {
             };
             self.results.push(result);
         }
-
-        thread::sleep(Duration::from_millis(500));
 
         Ok(())
     }

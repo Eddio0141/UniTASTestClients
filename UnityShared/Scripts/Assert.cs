@@ -279,6 +279,12 @@ public static class Assert
     private static bool _generalTestsDone;
 #pragma warning restore CS1691 CS1692 CS0414 // Field is assigned but its value is never used
 
+    public static void Reset()
+    {
+        _generalTestsDone = false;
+        TestResults.Clear();
+    }
+
     public static void Finish()
     {
         _generalTestsDone = true;
