@@ -28,8 +28,18 @@ pub async fn dl_unitas(
     unitas_dir: &Path,
     download_unitas: bool,
     pb: MultiProgress,
-    gh_token: String,
+    gh_token: Option<String>,
 ) -> Result<()> {
+    let Some(gh_token) = gh_token else {
+        if !unitas_dir.is_dir() {
+            panic!(
+                "failed to find UniTAS directory at {}",
+                unitas_dir.display()
+            );
+        }
+        return Ok(());
+    };
+
     if unitas_dir.is_dir() {
         if !download_unitas {
             return Ok(());
@@ -240,9 +250,39 @@ pub async fn dl_bepinex(
 pub async fn dl_test_games(
     exe_dir: &Path,
     pb: MultiProgress,
-    gh_token: String,
+    gh_token: Option<String>,
     replace_games: Vec<ReplaceGame>,
 ) -> Result<()> {
+    let Some(gh_token) = gh_token else {
+        // offline mode
+
+        let mut copy_tasks: JoinSet<std::result::Result<(), anyhow::Error>> = JoinSet::new();
+        for game in replace_games {
+            let name = game.name.to_owned();
+            let use_local_file = game.game_path.to_owned();
+            let exe_dir = exe_dir.to_path_buf();
+            copy_tasks.spawn(async move {
+                let dl_dir = exe_dir.join(&name);
+
+                fs_utils::copy_dir_all(&use_local_file, &dl_dir)
+                    .await
+                    .with_context(|| {
+                        format!(
+                            "failed to copy game folder from `{}` to `{}`",
+                            use_local_file.display(),
+                            dl_dir.display()
+                        )
+                    })
+            });
+        }
+
+        while let Some(res) = copy_tasks.join_next().await {
+            res.unwrap()?;
+        }
+
+        return Ok(());
+    };
+
     let artifacts = gh_api::latest_artifacts(
         "Eddio0141",
         "UniTASTestClients",

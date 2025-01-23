@@ -10,14 +10,15 @@ pub struct Args {
     /// Port to use for the TCP connection between this tool and UniTAS
     pub port: u16,
 
-    #[arg(long)]
+    #[arg(long, requires = "github_token")]
     /// Force downloads nightly UniTAS instead of using locally available one
     pub download_unitas: bool,
 
-    #[arg(long)]
+    #[arg(long, requires_all = ["replace_game", "bepinex_path"], conflicts_with = "download_unitas")]
     /// Github token to use Github APIs to download nightly builds
     /// If you have `gh` cli tool, `gh auth token` would easily give you a token
-    pub github_token: String,
+    /// If not set, will try to process in offline mode
+    pub github_token: Option<String>,
 
     #[arg(short, long, value_parser = parse_replace_games)]
     /// Replace games to download with local games by name. Example: `2022.3.41f1-base=/home/yuu/local-game`
