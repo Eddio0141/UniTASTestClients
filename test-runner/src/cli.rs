@@ -14,18 +14,18 @@ pub struct Args {
     /// Force downloads nightly UniTAS instead of using locally available one
     pub download_unitas: bool,
 
-    #[arg(long, requires_all = ["replace_game", "bepinex_path"], conflicts_with = "download_unitas")]
+    #[arg(long)]
     /// Github token to use Github APIs to download nightly builds
     /// If you have `gh` cli tool, `gh auth token` would easily give you a token
     /// If not set, will try to process in offline mode
     pub github_token: Option<String>,
 
-    #[arg(short, long, value_parser = parse_replace_games)]
+    #[arg(short, long, value_parser = parse_replace_games, required_if_eq("github_token", ""))]
     /// Replace games to download with local games by name. Example: `2022.3.41f1-base=/home/yuu/local-game`
     /// You can specify multiple --replace-game for different games
     pub replace_game: Vec<ReplaceGame>,
 
-    #[arg(long)]
+    #[arg(long, required_if_eq("github_token", ""))]
     /// If used, BepInEx isn't downloaded and this path is used to replace the download
     pub bepinex_path: Option<PathBuf>,
 }

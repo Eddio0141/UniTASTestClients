@@ -18,13 +18,13 @@ pub enum ArtifactFilter<'a> {
     ExcludeNamePattern(Regex),
 }
 
-pub async fn latest_artifacts<'a>(
+pub async fn latest_artifacts(
     owner: &str,
     repo: &str,
     token: &str,
     workflow_name: &str,
     branch: &str,
-    filter: Option<ArtifactFilter<'a>>,
+    filter: Option<ArtifactFilter<'_>>,
 ) -> Result<Vec<Artifact>> {
     let workflow_id = get(
         owner,
