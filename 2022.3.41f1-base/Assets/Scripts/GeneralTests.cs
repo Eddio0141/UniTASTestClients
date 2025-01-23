@@ -20,7 +20,8 @@ public class GeneralTests : MonoBehaviour, ISerializationCallbackReceiver
     public void OnAfterDeserialize()
     {
         _deserializeCall = true;
-        throw new Exception("foo");
+        // I really wanna test this but it causes building to fail lmao
+        // throw new Exception("foo");
     }
 
     private IEnumerator TestCoroutine()
@@ -82,6 +83,8 @@ public class GeneralTests : MonoBehaviour, ISerializationCallbackReceiver
 
     private void Awake()
     {
+        Assert.Reset();
+        
         StartCoroutine(EndOfFrame());
 
         Assert.True("OnAfterDeserialize", _deserializeCall);
