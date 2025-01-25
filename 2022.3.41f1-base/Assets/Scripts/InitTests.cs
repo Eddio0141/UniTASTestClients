@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class InitTests : MonoBehaviour
 {
@@ -79,6 +80,9 @@ public class InitTests : MonoBehaviour
         Assert.Equal("init.frame_count", 2, Time.frameCount);
         Assert.Equal("init.rendered_frame_count", 2, Time.renderedFrameCount);
         yield return null;
+
+        Assert.Null("scene.unload.current_only_scene", SceneManager.UnloadSceneAsync(SceneManager.GetActiveScene()));
+
         yield return null;
         yield return null;
 
