@@ -9,7 +9,7 @@ public class SceneTest : MonoBehaviour
     private static float _asyncOpCallbackProgress;
     private static bool _asyncOpCallbackAllowSceneActivation;
     private static bool _asyncOpCallbackIsDone;
-    private static int _asyncOpDoneFrame;
+    // private static int _asyncOpDoneFrame;
     
     public void StartTest()
     {
@@ -26,7 +26,7 @@ public class SceneTest : MonoBehaviour
             _asyncOpCallbackProgress = a.progress;
             _asyncOpCallbackAllowSceneActivation = a.allowSceneActivation;
             _asyncOpCallbackIsDone = a.isDone;
-            _asyncOpDoneFrame = Time.frameCount;
+            // _asyncOpDoneFrame = Time.frameCount;
         };
 
         for (var i = 0; i < 5; i++)

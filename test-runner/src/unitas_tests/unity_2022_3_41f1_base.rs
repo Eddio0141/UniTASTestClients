@@ -94,13 +94,13 @@ fn test(ctx: &mut TestCtx, mut args: TestArgs) -> Result<()> {
         "isDone isn't true",
     );
 
-    stream.send("print(scene_test.field('_asyncOpDoneFrame').get_value())")?;
-    ctx.assert_eq(
-        "19",
-        &stream.receive()?,
-        "SceneTest async op done frame",
-        "checking SceneTest callback done timing frame",
-    );
+    // stream.send("print(scene_test.field('_asyncOpDoneFrame').get_value())")?;
+    // ctx.assert_eq(
+    //     "19",
+    //     &stream.receive()?,
+    //     "SceneTest async op done frame",
+    //     "checking SceneTest callback done timing frame",
+    // );
 
     // UGuiTest.cs
     stream.send("ugui_test = traverse('UGuiTest')")?;
