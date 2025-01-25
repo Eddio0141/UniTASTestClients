@@ -113,6 +113,7 @@ impl TestCtx {
         }
 
         self.get_assert_results(stream)?;
+        self.reset_assert_results(stream)?;
 
         stream.send("service('ISceneManagerWrapper').load_scene('General')")?;
 
@@ -146,8 +147,29 @@ impl TestCtx {
         }
 
         self.get_assert_results(stream)?;
+        self.reset_assert_results(stream)?;
 
         Ok(())
+    }
+
+    fn reset_assert_results(&self, stream: &mut UniTasStream) -> Result<()> {
+        stream.send("traverse('Assert').method('Reset').GetValue()")?;
+
+        for _ in 0..30 {
+            stream.send(
+                "print(traverse('Assert').field('TestResults').property('Count').GetValue())",
+            )?;
+            let count = stream
+                .receive()?
+                .parse::<usize>()
+                .expect("count of test results should be a number");
+            if count == 0 {
+                return Ok(());
+            }
+            thread::sleep(Duration::from_secs(1));
+        }
+
+        panic!("failed to reset assert tests")
     }
 
     fn get_assert_results(&mut self, stream: &mut UniTasStream) -> Result<()> {

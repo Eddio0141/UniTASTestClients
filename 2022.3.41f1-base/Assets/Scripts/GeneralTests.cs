@@ -83,8 +83,6 @@ public class GeneralTests : MonoBehaviour, ISerializationCallbackReceiver
 
     private void Awake()
     {
-        Assert.Reset();
-        
         StartCoroutine(EndOfFrame());
 
         Assert.True("OnAfterDeserialize", _deserializeCall);
