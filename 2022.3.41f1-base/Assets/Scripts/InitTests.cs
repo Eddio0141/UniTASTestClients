@@ -13,6 +13,8 @@ public class InitTests : MonoBehaviour
         if (_calledFixedUpdate) return;
         _calledFixedUpdate = true;
         Assert.False("before Update call", _calledUpdate);
+        Assert.Equal("init.frame_count", 1, Time.frameCount);
+        Assert.Equal("init.rendered_frame_count", 1, Time.renderedFrameCount);
         // Assert.False("before OnGUI call", _calledOnGUI);
     }
 
@@ -21,6 +23,8 @@ public class InitTests : MonoBehaviour
         if (_calledUpdate) return;
         _calledUpdate = true;
         Assert.True("after FixedUpdate call", _calledFixedUpdate);
+        Assert.Equal("init.frame_count", 1, Time.frameCount);
+        Assert.Equal("init.rendered_frame_count", 1, Time.renderedFrameCount);
         // Assert.False("before OnGUI call", _calledOnGUI);
     }
 
@@ -45,17 +49,35 @@ public class InitTests : MonoBehaviour
         Assert.True("runtime init method: BeforeSplashScreen", _beforeSplashScreenCalled);
         Assert.True("runtime init method: BeforeSceneLoad", _beforeSceneLoadCalled);
         Assert.False("runtime init method, AfterSceneLoad", _afterSceneLoadCalled);
+        Assert.Equal("init.frame_count", 0, Time.frameCount);
+        Assert.Equal("init.rendered_frame_count", 0, Time.renderedFrameCount);
+        StartCoroutine(AwakeCoroutine());
+    }
+
+    private IEnumerator AwakeCoroutine()
+    {
+        Assert.Equal("init.frame_count", 0, Time.frameCount);
+        Assert.Equal("init.rendered_frame_count", 0, Time.renderedFrameCount);
+        yield return null;
+        Assert.Equal("init.frame_count", 1, Time.frameCount);
+        Assert.Equal("init.rendered_frame_count", 1, Time.renderedFrameCount);
     }
 
     private IEnumerator Start()
     {
         Assert.True("runtime init method, AfterSceneLoad", _afterSceneLoadCalled);
+        Assert.Equal("init.frame_count", 1, Time.frameCount);
+        Assert.Equal("init.rendered_frame_count", 1, Time.renderedFrameCount);
 
         yield return new WaitForEndOfFrame();
+        Assert.Equal("init.frame_count", 1, Time.frameCount);
+        Assert.Equal("init.rendered_frame_count", 1, Time.renderedFrameCount);
         Assert.True("after FixedUpdate call", _calledFixedUpdate);
         Assert.True("after Update call", _calledUpdate);
         // Assert.True("after OnGUI call", _calledOnGUI);
         yield return null;
+        Assert.Equal("init.frame_count", 2, Time.frameCount);
+        Assert.Equal("init.rendered_frame_count", 2, Time.renderedFrameCount);
         yield return null;
         yield return null;
         yield return null;
