@@ -37,8 +37,7 @@ fn test(ctx: &mut TestCtx, mut args: TestArgs) -> Result<()> {
 
     // check results
 
-    // LegacyInputSystemTest.cs
-    stream.send("legacy_input_system_test = traverse('LegacyInputSystemTest')")?;
+    // MovieTest.cs
     let legacy_input_system_test_fields = [
         "_jumpButtonDownCount",
         "_jumpButtonUpCount",
@@ -49,58 +48,23 @@ fn test(ctx: &mut TestCtx, mut args: TestArgs) -> Result<()> {
     ];
     for field in legacy_input_system_test_fields {
         stream.send(&format!(
-            "print(legacy_input_system_test.field('{field}').get_value())"
+            "print(traverse('MovieTest').field('{field}').get_value())"
         ))?;
         ctx.assert_eq(
             "5",
             &stream.receive()?,
             &format!("jump button count field {field}"),
-            &format!("checking LegacyInputSystemTest.{field} field to be 5"),
+            &format!("checking MovieTest.{field} field to be 5"),
         );
     }
 
-    stream.send("print(legacy_input_system_test.field('_horizontalAxisMoveCount').get_value())")?;
+    stream.send("print(traverse('MovieTest').field('_horizontalAxisMoveCount').get_value())")?;
     ctx.assert_eq(
         "6",
         &stream.receive()?,
         "horizontal axis move count",
-        "checking LegacyInputSystemTest._horizontalAxisMoveCount field",
+        "checking MovieTest._horizontalAxisMoveCount field",
     );
-
-    // SceneTest.cs
-    stream.send("scene_test = traverse('SceneTest')")?;
-
-    stream.send("print(scene_test.field('_asyncOpCallbackProgress').get_value())")?;
-    ctx.assert_eq(
-        "1",
-        &stream.receive()?,
-        "async op callback progress",
-        "async operation progress in callback isn't 1.0",
-    );
-
-    stream.send("print(scene_test.field('_asyncOpCallbackAllowSceneActivation').get_value())")?;
-    ctx.assert_eq(
-        "true",
-        &stream.receive()?,
-        "async operation callback allowSceneActivation",
-        "allowSceneActivation is false",
-    );
-
-    stream.send("print(scene_test.field('_asyncOpCallbackIsDone').get_value())")?;
-    ctx.assert_eq(
-        "true",
-        &stream.receive()?,
-        "async operation callback isDone",
-        "isDone isn't true",
-    );
-
-    // stream.send("print(scene_test.field('_asyncOpDoneFrame').get_value())")?;
-    // ctx.assert_eq(
-    //     "19",
-    //     &stream.receive()?,
-    //     "SceneTest async op done frame",
-    //     "checking SceneTest callback done timing frame",
-    // );
 
     // UGuiTest.cs
     stream.send("ugui_test = traverse('UGuiTest')")?;

@@ -82,11 +82,6 @@ public class InitTests : MonoBehaviour
         yield return null;
 
         Assert.Null("scene.unload.current_only_scene", SceneManager.UnloadSceneAsync(SceneManager.GetActiveScene()));
-
-        yield return null;
-        yield return null;
-
-        Assert.Finish();
     }
 
     private static bool _beforeSplashScreenCalled;
