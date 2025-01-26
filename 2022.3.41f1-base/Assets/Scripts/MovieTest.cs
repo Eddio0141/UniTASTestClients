@@ -19,7 +19,6 @@ public class MovieTest : MonoBehaviour
 
     private void Awake()
     {
-        Time.captureFramerate = 100;
         StartCoroutine(AwakeCoroutine());
         StartCoroutine(InputTest());
     }
