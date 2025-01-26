@@ -26,14 +26,16 @@ public class MovieTest : MonoBehaviour
     private static IEnumerator AwakeCoroutine()
     {
         // these are here since movie fps is guaranteed to be locked
-        yield return new WaitForSeconds(1f);
-        Assert.Equal("yield.wait_for_seconds.elapsed_frames", 101, Time.frameCount);
+        Assert.Equal("awake_coroutine.frame_count", 0, Time.frameCount);
+        yield return new WaitForSeconds(0f);
+        Assert.Equal("yield.wait_for_seconds.elapsed_frames", 1, Time.frameCount);
     }
 
     private IEnumerator Start()
     {
-        yield return new WaitForSeconds(1f);
-        Assert.Equal("yield.wait_for_seconds.elapsed_frames", 102, Time.frameCount);
+        Assert.Equal("start_coroutine.frame_count", 1, Time.frameCount);
+        yield return new WaitForSeconds(0f);
+        Assert.Equal("yield.wait_for_seconds.elapsed_frames", 2, Time.frameCount);
 
         yield return null;
 
@@ -62,6 +64,10 @@ public class MovieTest : MonoBehaviour
         startWaitForSeconds = Time.frameCount;
         yield return new WaitForSeconds(0.105f);
         Assert.Equal("yield.wait_for_seconds.elapsed_frames", 11, Time.frameCount - startWaitForSeconds);
+        
+        startWaitForSeconds = Time.frameCount;
+        yield return new WaitForSeconds(0f);
+        Assert.Equal("yield.wait_for_seconds.elapsed_frames", 1, Time.frameCount - startWaitForSeconds);
 
         yield return null;
         Assert.Finish(); // init tests end
