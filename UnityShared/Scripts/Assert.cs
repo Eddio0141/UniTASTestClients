@@ -277,19 +277,19 @@ public static class Assert
 
     private static readonly List<Result> TestResults = new List<Result>();
 #pragma warning disable CS1691 CS1692 CS0414 // Field is assigned but its value is never used
-    private static bool _generalTestsDone;
+    private static bool _testsDone;
 #pragma warning restore CS1691 CS1692 CS0414 // Field is assigned but its value is never used
 
     [SuppressMessage("ReSharper", "UnusedMember.Local")]
     private static void Reset()
     {
-        _generalTestsDone = false;
+        _testsDone = false;
         TestResults.Clear();
     }
 
     public static void Finish()
     {
-        _generalTestsDone = true;
+        _testsDone = true;
         Debug.Log("tests finished");
         foreach (var result in TestResults)
         {

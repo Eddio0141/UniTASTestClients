@@ -35,47 +35,9 @@ fn test(ctx: &mut TestCtx, mut args: TestArgs) -> Result<()> {
     stream.send("play('movie.lua')")?;
     stream.wait_for_movie_end()?;
 
-    // check results
-
-    // MovieTest.cs
-    let legacy_input_system_test_fields = [
-        "_jumpButtonDownCount",
-        "_jumpButtonUpCount",
-        "_spaceDownKeyCodeCount",
-        "_spaceUpKeyCodeCount",
-        "_spaceDownStringCount",
-        "_spaceUpStringCount",
-    ];
-    for field in legacy_input_system_test_fields {
-        stream.send(&format!(
-            "print(traverse('MovieTest').field('{field}').get_value())"
-        ))?;
-        ctx.assert_eq(
-            "5",
-            &stream.receive()?,
-            &format!("jump button count field {field}"),
-            &format!("checking MovieTest.{field} field to be 5"),
-        );
-    }
-
-    stream.send("print(traverse('MovieTest').field('_horizontalAxisMoveCount').get_value())")?;
-    ctx.assert_eq(
-        "6",
-        &stream.receive()?,
-        "horizontal axis move count",
-        "checking MovieTest._horizontalAxisMoveCount field",
-    );
-
-    // UGuiTest.cs
-    stream.send("ugui_test = traverse('UGuiTest')")?;
-
-    stream.send("print(ugui_test.field('_clickCount').get_value())")?;
-    ctx.assert_eq(
-        "5",
-        &stream.receive()?,
-        "UGuiTest click count",
-        "didn't match click count of 5",
-    );
+    // for movie results
+    ctx.get_assert_results(stream)?;
+    ctx.reset_assert_results(stream)?;
 
     let frame_count = 100u8;
 

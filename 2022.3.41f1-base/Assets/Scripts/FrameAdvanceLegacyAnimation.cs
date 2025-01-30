@@ -16,7 +16,7 @@ public class FrameAdvanceLegacyAnimation : MonoBehaviour
 
     private void Awake()
     {
-        Time.captureDeltaTime = 0.01f;
+        // Time.captureDeltaTime = 0.01f;
         // TODO: ^
         // SceneManager.sceneLoaded += (_, _) => { _loadFrameCount = Time.frameCount; };
         SceneManager.sceneLoaded += (_, _) => { _loadFrameTime = Time.time; };

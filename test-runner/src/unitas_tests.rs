@@ -98,26 +98,12 @@ impl TestCtx {
 
     // single iteration version
     fn run_general_tests_iter(&mut self, stream: &mut UniTasStream) -> Result<()> {
-        let mut setup_fail = true;
-        for _ in 0..30 {
-            stream.send("print(traverse('Assert').field('_generalTestsDone').GetValue())")?;
-            if stream.receive()? == "true" {
-                setup_fail = false;
-                break;
-            }
-            thread::sleep(Duration::from_secs(1));
-        }
-
-        if setup_fail {
-            self.assert(false, "initial_tests", "failed to complete tests");
-        }
-
         self.get_assert_results(stream)?;
         self.reset_assert_results(stream)?;
 
         stream.send("service('ISceneManagerWrapper').load_scene('General')")?;
 
-        setup_fail = true;
+        let mut setup_fail = true;
         for _ in 0..30 {
             stream.send("print(service('ISceneManagerWrapper').ActiveSceneName)")?;
             if stream.receive()? == "General" {
@@ -129,21 +115,6 @@ impl TestCtx {
 
         if setup_fail {
             panic!("failed to load scene `General`");
-        }
-
-        // wait for general tests to finish
-        setup_fail = true;
-        for _ in 0..30 {
-            stream.send("print(traverse('Assert').field('_generalTestsDone').GetValue())")?;
-            if stream.receive()? == "true" {
-                setup_fail = false;
-                break;
-            }
-            thread::sleep(Duration::from_secs(1));
-        }
-
-        if setup_fail {
-            self.assert(false, "general_tests", "failed to complete tests");
         }
 
         self.get_assert_results(stream)?;
@@ -173,6 +144,20 @@ impl TestCtx {
     }
 
     fn get_assert_results(&mut self, stream: &mut UniTasStream) -> Result<()> {
+        let mut setup_fail = true;
+        for _ in 0..30 {
+            stream.send("print(traverse('Assert').field('_testsDone').GetValue())")?;
+            if stream.receive()? == "true" {
+                setup_fail = false;
+                break;
+            }
+            thread::sleep(Duration::from_secs(1));
+        }
+
+        if setup_fail {
+            self.assert(false, "assertion", "failed to complete tests");
+        }
+
         stream
             .send("print(traverse('Assert').field('TestResults').property('Count').GetValue())")?;
         let count = stream

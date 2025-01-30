@@ -5,35 +5,6 @@ using UnityEngine.SceneManagement;
 
 public class InitTests : MonoBehaviour
 {
-    private bool _calledFixedUpdate;
-    private bool _calledUpdate;
-    // private bool _calledOnGUI;
-
-    private void FixedUpdate()
-    {
-        if (_calledFixedUpdate) return;
-        _calledFixedUpdate = true;
-        Assert.False("before Update call", _calledUpdate);
-        Assert.Equal("init.frame_count", 1, Time.frameCount);
-        Assert.Equal("init.rendered_frame_count", 1, Time.renderedFrameCount);
-        // Assert.False("before OnGUI call", _calledOnGUI);
-    }
-
-    private void Update()
-    {
-        if (_calledUpdate) return;
-        _calledUpdate = true;
-        Assert.True("after FixedUpdate call", _calledFixedUpdate);
-        Assert.Equal("init.frame_count", 1, Time.frameCount);
-        Assert.Equal("init.rendered_frame_count", 1, Time.renderedFrameCount);
-        // Assert.False("before OnGUI call", _calledOnGUI);
-    }
-
-    // private void OnGUI()
-    // {
-    //     _calledOnGUI = true;
-    // }
-
     static InitTests()
     {
         Assert.False("runtime init method: SubsystemRegistration", _subsystemRegistrationCalled);
@@ -73,8 +44,6 @@ public class InitTests : MonoBehaviour
         yield return new WaitForEndOfFrame();
         Assert.Equal("init.frame_count", 1, Time.frameCount);
         Assert.Equal("init.rendered_frame_count", 1, Time.renderedFrameCount);
-        Assert.True("after FixedUpdate call", _calledFixedUpdate);
-        Assert.True("after Update call", _calledUpdate);
         // Assert.True("after OnGUI call", _calledOnGUI);
         yield return null;
         Assert.Equal("init.frame_count", 2, Time.frameCount);
