@@ -23,6 +23,11 @@ public class InitTests : MonoBehaviour
         Assert.False("runtime init method, AfterSceneLoad", _afterSceneLoadCalled);
         Assert.Equal("init.frame_count", 0, Time.frameCount);
         Assert.Equal("init.rendered_frame_count", 0, Time.renderedFrameCount);
+        Assert.Equal("init.time", 0f, Time.time);
+        Assert.Equal("init.time", 0f, Time.timeSinceLevelLoad);
+        Assert.Equal("init.time", 0f, Time.fixedTime);
+        Assert.Equal("init.time", 0f, Time.unscaledTime);
+        Assert.Equal("init.time", 0f, Time.realtimeSinceStartup);
         StartCoroutine(AwakeCoroutine());
     }
 
@@ -37,6 +42,12 @@ public class InitTests : MonoBehaviour
 
     private IEnumerator Start()
     {
+        Assert.Equal("init.time", 0f, Time.time);
+        Assert.Equal("init.time", 0f, Time.timeSinceLevelLoad);
+        Assert.Equal("init.time", 0f, Time.fixedTime);
+        Assert.Equal("init.time", 0f, Time.unscaledTime);
+        Assert.Equal("init.time", 0f, Time.realtimeSinceStartup);
+        
         Assert.True("runtime init method, AfterSceneLoad", _afterSceneLoadCalled);
         Assert.Equal("init.frame_count", 1, Time.frameCount);
         Assert.Equal("init.rendered_frame_count", 1, Time.renderedFrameCount);

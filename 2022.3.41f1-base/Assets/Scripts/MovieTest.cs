@@ -15,7 +15,79 @@ public class MovieTest : MonoBehaviour
 
     private const int ButtonCountTest = 5;
 
-    private readonly List<(UpdateType updateType, int frameCount, int renderedFrameCount)> _updates = new();
+    private readonly struct UpdateInfo
+    {
+        private bool Equals(UpdateInfo other)
+        {
+            return _updateType == other._updateType && _frameCount == other._frameCount &&
+                   _renderedFrameCount == other._renderedFrameCount && _time.Equals(other._time) &&
+                   _timeSinceLevelLoad.Equals(other._timeSinceLevelLoad) && _fixedTime.Equals(other._fixedTime) &&
+                   _unscaledTime.Equals(other._unscaledTime) &&
+                   _realtimeSinceStartup.Equals(other._realtimeSinceStartup);
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is UpdateInfo other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hashCode = (int)_updateType;
+                hashCode = (hashCode * 397) ^ _frameCount;
+                hashCode = (hashCode * 397) ^ _renderedFrameCount;
+                hashCode = (hashCode * 397) ^ _time.GetHashCode();
+                hashCode = (hashCode * 397) ^ _timeSinceLevelLoad.GetHashCode();
+                hashCode = (hashCode * 397) ^ _fixedTime.GetHashCode();
+                hashCode = (hashCode * 397) ^ _unscaledTime.GetHashCode();
+                hashCode = (hashCode * 397) ^ _realtimeSinceStartup.GetHashCode();
+                return hashCode;
+            }
+        }
+
+        public static bool operator ==(UpdateInfo left, UpdateInfo right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(UpdateInfo left, UpdateInfo right)
+        {
+            return !left.Equals(right);
+        }
+
+        private readonly UpdateType _updateType;
+        private readonly int _frameCount;
+        private readonly int _renderedFrameCount;
+        private readonly float _time;
+        private readonly float _timeSinceLevelLoad;
+        private readonly float _fixedTime;
+        private readonly float _unscaledTime;
+        private readonly float _realtimeSinceStartup;
+
+        public UpdateInfo(UpdateType updateType, int frameCount, int renderedFrameCount, float time,
+            float timeSinceLevelLoad, float fixedTime, float unscaledTime, float realtimeSinceStartup)
+        {
+            _updateType = updateType;
+            _frameCount = frameCount;
+            _renderedFrameCount = renderedFrameCount;
+            _time = time;
+            _timeSinceLevelLoad = timeSinceLevelLoad;
+            _fixedTime = fixedTime;
+            _unscaledTime = unscaledTime;
+            _realtimeSinceStartup = realtimeSinceStartup;
+        }
+
+        public override string ToString()
+        {
+            return $"updateType: {_updateType}, frameCount: {_frameCount}, renderedFrameCount: {_renderedFrameCount}" +
+                   $", time: {_time}, timeSinceLevelLoad: {_timeSinceLevelLoad}, fixedTime: {_fixedTime}" +
+                   $", unscaledTime: {_unscaledTime}, realtimeSinceStartup: {_realtimeSinceStartup}";
+        }
+    }
+
+    private readonly List<UpdateInfo> _updates = new();
 
     private enum UpdateType
     {
@@ -27,17 +99,21 @@ public class MovieTest : MonoBehaviour
 
     private void FixedUpdate()
     {
-        _updates.Add((UpdateType.FixedUpdate, Time.frameCount, Time.renderedFrameCount));
+        _updates.Add(new(UpdateType.FixedUpdate, Time.frameCount, Time.renderedFrameCount, Time.time,
+            Time.timeSinceLevelLoad, Time.fixedTime, Time.unscaledTime, Time.realtimeSinceStartup));
     }
 
     private void Update()
     {
-        _updates.Add((UpdateType.Update, Time.frameCount, Time.renderedFrameCount));
+        _updates.Add(new(UpdateType.Update, Time.frameCount, Time.renderedFrameCount, Time.time,
+            Time.timeSinceLevelLoad, Time.fixedTime, Time.unscaledTime, Time.realtimeSinceStartup));
     }
 
     private void Awake()
     {
-        _updates.Add((UpdateType.Awake, Time.frameCount, Time.renderedFrameCount));
+        Time.captureFramerate = 100;
+        _updates.Add(new(UpdateType.Awake, Time.frameCount, Time.renderedFrameCount, Time.time,
+            Time.timeSinceLevelLoad, Time.fixedTime, Time.unscaledTime, Time.realtimeSinceStartup));
 
         Assert.Equal("init.frame_count", 0, Time.frameCount);
         Assert.Equal("init.rendered_frame_count", 0, Time.renderedFrameCount);
@@ -56,7 +132,8 @@ public class MovieTest : MonoBehaviour
 
     private IEnumerator Start()
     {
-        _updates.Add((UpdateType.Start, Time.frameCount, Time.renderedFrameCount));
+        _updates.Add(new(UpdateType.Start, Time.frameCount, Time.renderedFrameCount, Time.time,
+            Time.timeSinceLevelLoad, Time.fixedTime, Time.unscaledTime, Time.realtimeSinceStartup));
 
         Assert.Equal("start_coroutine.frame_count", 1, Time.frameCount);
         yield return new WaitForSeconds(0f);
@@ -75,12 +152,16 @@ public class MovieTest : MonoBehaviour
 
         startWaitForSeconds = Time.frameCount;
         yield return new WaitForSecondsRealtime(1f);
-        Assert.Equal("yield.wait_for_seconds_realtime.elapsed_frames", 101, Time.frameCount - startWaitForSeconds);
+        Assert.Equal("yield.wait_for_seconds_realtime.elapsed_frames", 100, Time.frameCount - startWaitForSeconds);
+
+        startWaitForSeconds = Time.frameCount;
+        yield return new WaitForSecondsRealtime(0f);
+        Assert.Equal("yield.wait_for_seconds_realtime.elapsed_frames", 1, Time.frameCount - startWaitForSeconds);
 
         Time.timeScale = 1f;
         startWaitForSeconds = Time.frameCount;
         yield return new WaitForSecondsRealtime(1f);
-        Assert.Equal("yield.wait_for_seconds_realtime.elapsed_frames", 101, Time.frameCount - startWaitForSeconds);
+        Assert.Equal("yield.wait_for_seconds_realtime.elapsed_frames", 100, Time.frameCount - startWaitForSeconds);
 
         startWaitForSeconds = Time.frameCount;
         yield return new WaitForSeconds(0.005f);
@@ -147,18 +228,18 @@ public class MovieTest : MonoBehaviour
 
         var expectedUpdates = new[]
         {
-            (UpdateType.Awake, 0, 0), // 0
-            (UpdateType.Start, 1, 1),
+            new UpdateInfo(UpdateType.Awake, 0, 0, 0f, 0f, 0f, 0f, 0f), // 0
+            new UpdateInfo(UpdateType.Start, 1, 1, 0.01f, 0.01f, 0f, 0.01f, 0.01f),
 
-            (UpdateType.FixedUpdate, 1, 1), // 2
-            (UpdateType.Update, 1, 1),
+            new UpdateInfo(UpdateType.FixedUpdate, 1, 1, 0f, 0f, 0f, 0f, 0f), // 2
+            new UpdateInfo(UpdateType.Update, 1, 1, 0.01f, 0.01f, 0f, 0.01f, 0.01f),
 
-            (UpdateType.FixedUpdate, 2, 2), // 4
-            (UpdateType.Update, 2, 2),
-            (UpdateType.Update, 3, 3),
-            (UpdateType.FixedUpdate, 4, 4), // 7
-            (UpdateType.Update, 4, 4),
-            (UpdateType.Update, 5, 5)
+            new UpdateInfo(UpdateType.FixedUpdate, 2, 2, 0.02f, 0.02f, 0.02f, 0.02f, 0.02f), // 4
+            new UpdateInfo(UpdateType.Update, 2, 2, 0.02f, 0.02f, 0.02f, 0.02f, 0.02f),
+            new UpdateInfo(UpdateType.Update, 3, 3, 0.03f, 0.03f, 0.02f, 0.03f, 0.03f),
+            new UpdateInfo(UpdateType.FixedUpdate, 4, 4, 0.04f, 0.04f, 0.04f, 0.04f, 0.04f), // 7
+            new UpdateInfo(UpdateType.Update, 4, 4, 0.04f, 0.04f, 0.04f, 0.04f, 0.04f),
+            new UpdateInfo(UpdateType.Update, 5, 5, 0.05f, 0.05f, 0.04f, 0.05f, 0.05f)
         };
 
         for (var i = 0; i < expectedUpdates.Length; i++)
