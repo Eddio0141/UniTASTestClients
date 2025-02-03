@@ -111,7 +111,6 @@ public class MovieTest : MonoBehaviour
 
     private void Awake()
     {
-        Time.captureFramerate = 100;
         _updates.Add(new(UpdateType.Awake, Time.frameCount, Time.renderedFrameCount, Time.time,
             Time.timeSinceLevelLoad, Time.fixedTime, Time.unscaledTime, Time.realtimeSinceStartup));
 
