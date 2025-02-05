@@ -146,21 +146,47 @@ public class MovieTest : MonoBehaviour
 
         Time.timeScale = 0.5f;
         startWaitForSeconds = Time.frameCount;
-        yield return new WaitForSeconds(1f);
+        yield return new WaitForSeconds(1f); 
         Assert.Equal("yield.wait_for_seconds.timeScaleHalf.elapsed_frames", 201, Time.frameCount - startWaitForSeconds);
+        
+        startWaitForSeconds = Time.frameCount;
+        yield return new WaitForSecondsRealtime(0.05f);
+        Assert.Equal("yield.wait_for_seconds_realtime.elapsed_frames", 5, Time.frameCount - startWaitForSeconds);
 
         startWaitForSeconds = Time.frameCount;
         yield return new WaitForSecondsRealtime(1f);
         Assert.Equal("yield.wait_for_seconds_realtime.elapsed_frames", 100, Time.frameCount - startWaitForSeconds);
-
+        
         startWaitForSeconds = Time.frameCount;
         yield return new WaitForSecondsRealtime(0f);
         Assert.Equal("yield.wait_for_seconds_realtime.elapsed_frames", 1, Time.frameCount - startWaitForSeconds);
 
+        yield return new WaitForEndOfFrame();
         Time.timeScale = 1f;
+        var time = Time.time;
+        yield return null;
+        Assert.Equal("time after timeScale to 1 from 0.5", 0.01f, Time.time - time, 0.0001f);
+        
+        yield return new WaitForEndOfFrame();
+        Time.timeScale = 0.5f;
+        time = Time.time;
+        yield return null;
+        Assert.Equal("time after timeScale to 0.5 from 1", 0.005f, Time.time - time, 0.0001f);
+        
+        Time.timeScale = 1f;
+        yield return null;
+        
+        startWaitForSeconds = Time.frameCount;
+        yield return new WaitForSecondsRealtime(0.05f);
+        Assert.Equal("yield.wait_for_seconds_realtime.elapsed_frames", 5, Time.frameCount - startWaitForSeconds);
+        
         startWaitForSeconds = Time.frameCount;
         yield return new WaitForSecondsRealtime(1f);
         Assert.Equal("yield.wait_for_seconds_realtime.elapsed_frames", 100, Time.frameCount - startWaitForSeconds);
+        
+        startWaitForSeconds = Time.frameCount;
+        yield return new WaitForSecondsRealtime(0f);
+        Assert.Equal("yield.wait_for_seconds_realtime.elapsed_frames", 1, Time.frameCount - startWaitForSeconds);
 
         startWaitForSeconds = Time.frameCount;
         yield return new WaitForSeconds(0.005f);
