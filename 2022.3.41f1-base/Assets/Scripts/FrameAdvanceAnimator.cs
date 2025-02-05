@@ -2,18 +2,20 @@ using UnityEngine;
 
 public class FrameAdvanceAnimator : MonoBehaviour
 {
-    private static int _timeTrigger = -1;
+    // manually reset those in OnEnable
+    private bool _timeTrigger;
     private int _loadFrameCount;
 
     private void OnEnable()
     {
+        _timeTrigger = false;
         _loadFrameCount = Time.frameCount;
     }
 
     public void TimeTrigger()
     {
-        if (_timeTrigger != -1) return;
-        _timeTrigger = Time.frameCount - _loadFrameCount;
-        Debug.Log($"reached trigger at {_timeTrigger}");
+        if (_timeTrigger) return;
+        _timeTrigger = true;
+        Assert.Equal("frame_advance.animator.trigger_time", 100, Time.frameCount - _loadFrameCount);
     }
 }

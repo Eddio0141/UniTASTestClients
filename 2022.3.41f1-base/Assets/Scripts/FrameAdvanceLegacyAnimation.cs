@@ -2,15 +2,17 @@ using UnityEngine;
 
 public class FrameAdvanceLegacyAnimation : MonoBehaviour
 {
-    private static int _timeTrigger = -1;
-    private static int _timeTriggerBlend = -1;
-
+    // manually reset those in OnEnable
+    private bool _timeTrigger;
+    private bool _timeTriggerBlend;
     private int _loadFrameCount;
 
     [SerializeField] private Animation anim;
 
     private void OnEnable()
     {
+        _timeTrigger = false;
+        _timeTriggerBlend = false;
         _loadFrameCount = Time.frameCount;
 
         foreach (AnimationState state in anim)
@@ -28,15 +30,15 @@ public class FrameAdvanceLegacyAnimation : MonoBehaviour
 
     public void TimeTrigger()
     {
-        if (_timeTrigger != -1) return;
-        _timeTrigger = Time.frameCount - _loadFrameCount;
-        Debug.Log($"reached trigger at {_timeTrigger}");
+        if (_timeTrigger) return;
+        _timeTrigger = true;
+        Assert.Equal("frame_advance.legacy_animator.trigger_time", 101, Time.frameCount - _loadFrameCount);
     }
 
     public void TimeTriggerBlend()
     {
-        if (_timeTriggerBlend != -1) return;
-        _timeTriggerBlend = Time.frameCount - _loadFrameCount;
-        Debug.Log($"reached blend trigger at {_timeTriggerBlend}");
+        if (_timeTriggerBlend) return;
+        _timeTriggerBlend = true;
+        Assert.Equal("frame_advance.legacy_animator_blend.trigger_time", 112, Time.frameCount - _loadFrameCount);
     }
 }

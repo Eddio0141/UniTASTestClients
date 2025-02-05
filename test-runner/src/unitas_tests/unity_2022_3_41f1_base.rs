@@ -39,6 +39,72 @@ fn test(ctx: &mut TestCtx, mut args: TestArgs) -> Result<()> {
     ctx.get_assert_results(stream)?;
     ctx.reset_assert_results(stream)?;
 
+    // frame advancing test
+
+    // sanity check
+    stream.send("service('ITimeWrapper').capture_frame_time = 0.01 service('ISceneManagerWrapper').load_scene('FrameAdvancing')")?;
+    ctx.get_assert_results(stream)?;
+    ctx.reset_assert_results(stream)?;
+
+    // actual test
+    stream.send(
+        r#"event_coroutine(function()
+    local y = coroutine.yield
+
+    local fa = service("IFrameAdvancing")
+    local fa_update_mode = traverse("FrameAdvanceMode").field("Update").get_value()
+    fa.FrameAdvance(1, fa_update_mode)
+
+    local frameAdvancing_YieldNull = traverse("FrameAdvancing").field("_yieldNull");
+
+    service("ISceneManagerWrapper").load_scene("FrameAdvancing")
+    y("UpdateUnconditional")
+
+    for _ = 1, 250 do
+        y("UpdateUnconditional")
+    end
+
+    print(frameAdvancing_YieldNull.GetValue())
+
+    for _ = 1, 5 do
+        fa.FrameAdvance(1, fa_update_mode)
+        y("UpdateActual")
+        print(frameAdvancing_YieldNull.GetValue())
+        y("UpdateUnconditional")
+        y("UpdateUnconditional")
+        y("UpdateUnconditional")
+        y("UpdateUnconditional")
+        y("UpdateUnconditional")
+    end
+
+    fa.TogglePause() -- resume
+
+    for _ = 1, 150 do
+        y("UpdateActual")
+    end
+end)"#,
+    )?;
+
+    // frame advancing checks
+    ctx.assert_eq(
+        &0.to_string(),
+        &stream.receive()?,
+        "Frame advancing: yield null check",
+        "Mismatch in reach stage",
+    );
+    for i in 0..5u8 {
+        ctx.assert_eq(
+            &i.to_string(),
+            &stream.receive()?,
+            &format!("Frame advancing: yield null check {i}"),
+            "Mismatch in reach stage",
+        );
+    }
+
+    // final check
+    ctx.get_assert_results(stream)?;
+    ctx.reset_assert_results(stream)?;
+
     let frame_count = 100u8;
 
     // unitas updates
@@ -220,90 +286,6 @@ end, "method")
         "unitas updates: last update count",
         "mismatch in update count",
     );
-
-    stream.send("full_access(true)")?;
-    stream.receive()?;
-
-    // FrameAdvanceAnimator.cs
-    stream.send(
-        r#"event_coroutine(function()
-    service('ITimeWrapper').capture_frame_time = 0.01
-    local y = coroutine.yield
-
-    service("ISceneManagerWrapper").load_scene("FrameAdvancing")
-    y("UpdateUnconditional")
-
-    for _ = 1, 150 do
-        y("UpdateUnconditional")
-    end
-
-    local timeTriggerFrame = traverse("FrameAdvanceAnimator").field("_timeTrigger");
-    local timeTriggerLegacyFrame = traverse("FrameAdvanceLegacyAnimation").field("_timeTrigger");
-    local timeTriggerLegacyBlendFrame = traverse("FrameAdvanceLegacyAnimation").field("_timeTriggerBlend");
-
-    print(timeTriggerFrame.GetValue())
-    print(timeTriggerLegacyFrame.GetValue())
-    print(timeTriggerLegacyBlendFrame.GetValue())
-
-    service("ISceneManagerWrapper").load_scene("FrameAdvancing")
-    y("UpdateUnconditional")
-
-    local fa = service("IFrameAdvancing")
-    local fa_update_mode = traverse("FrameAdvanceMode").field("Update").get_value()
-
-    fa.FrameAdvance(1, fa_update_mode)
-    for _ = 1, 250 do
-        y("UpdateUnconditional")
-    end
-
-    print(timeTriggerFrame.GetValue())
-    print(timeTriggerLegacyFrame.GetValue())
-    print(timeTriggerLegacyBlendFrame.GetValue())
-
-    fa.FrameAdvance(1, fa_update_mode)
-
-    print(timeTriggerFrame.GetValue())
-    print(timeTriggerLegacyFrame.GetValue())
-    print(timeTriggerLegacyBlendFrame.GetValue())
-
-    fa.TogglePause() -- resume
-
-    for _ = 1, 150 do
-        y("UpdateUnconditional")
-    end
-
-    print(timeTriggerFrame.GetValue())
-    print(timeTriggerLegacyFrame.GetValue())
-    print(timeTriggerLegacyBlendFrame.GetValue())
-end)"#,
-    )?;
-
-    let anim_frame_count = "100";
-    let legacy_anim_frame_count = "101";
-    let legacy_blend_anim_frame_count = "112";
-
-    for _ in 0..4 {
-        ctx.assert_eq(
-            anim_frame_count,
-            &stream.receive()?,
-            "frame advancing: Animator",
-            "mismatch in animation frame count",
-        );
-
-        ctx.assert_eq(
-            legacy_anim_frame_count,
-            &stream.receive()?,
-            "frame advancing: Legacy animator",
-            "mismatch in animation frame count",
-        );
-
-        ctx.assert_eq(
-            legacy_blend_anim_frame_count,
-            &stream.receive()?,
-            "frame advancing: Legacy blend",
-            "mismatch in animation frame count",
-        );
-    }
 
     Ok(())
 }
