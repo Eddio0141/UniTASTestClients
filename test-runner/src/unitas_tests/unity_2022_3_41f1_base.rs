@@ -227,10 +227,25 @@ end, "method")
     // FrameAdvanceAnimator.cs
     stream.send(
         r#"event_coroutine(function()
-    service("ISceneManagerWrapper").load_scene("FrameAdvancing")
     service('ITimeWrapper').capture_frame_time = 0.01
     local y = coroutine.yield
 
+    service("ISceneManagerWrapper").load_scene("FrameAdvancing")
+    y("UpdateUnconditional")
+
+    for _ = 1, 150 do
+        y("UpdateUnconditional")
+    end
+
+    local timeTriggerFrame = traverse("FrameAdvanceAnimator").field("_timeTrigger");
+    local timeTriggerLegacyFrame = traverse("FrameAdvanceLegacyAnimation").field("_timeTrigger");
+    local timeTriggerLegacyBlendFrame = traverse("FrameAdvanceLegacyAnimation").field("_timeTriggerBlend");
+
+    print(timeTriggerFrame.GetValue())
+    print(timeTriggerLegacyFrame.GetValue())
+    print(timeTriggerLegacyBlendFrame.GetValue())
+
+    service("ISceneManagerWrapper").load_scene("FrameAdvancing")
     y("UpdateUnconditional")
 
     local fa = service("IFrameAdvancing")
@@ -241,14 +256,15 @@ end, "method")
         y("UpdateUnconditional")
     end
 
-    local timeTriggerFrame = traverse("FrameAdvanceAnimator").field("_timeTriggerTime");
-    -- local timeTriggerFrame = traverse("FrameAdvanceAnimator").field("_timeTriggerFrame"); -- TODO: once frame advancing fixes time env inaccuracies
-    -- https://github.com/Eddio0141/UniTAS/issues/238
-    local timeTriggerLegacyFrame = traverse("FrameAdvanceLegacyAnimation").field("_timeTriggerTime");
-    local timeTriggerLegacyBlendFrame = traverse("FrameAdvanceLegacyAnimation").field("_timeTriggerTimeBlend");
-    print("f1 Animator: " .. timeTriggerFrame.get_value())
-    print("f1 legacy Animation: " .. timeTriggerLegacyFrame.get_value())
-    print("f1 legacy Animation blend: " .. timeTriggerLegacyBlendFrame.get_value())
+    print(timeTriggerFrame.GetValue())
+    print(timeTriggerLegacyFrame.GetValue())
+    print(timeTriggerLegacyBlendFrame.GetValue())
+
+    fa.FrameAdvance(1, fa_update_mode)
+
+    print(timeTriggerFrame.GetValue())
+    print(timeTriggerLegacyFrame.GetValue())
+    print(timeTriggerLegacyBlendFrame.GetValue())
 
     fa.TogglePause() -- resume
 
@@ -256,34 +272,38 @@ end, "method")
         y("UpdateUnconditional")
     end
 
-    print("f2 Animator: " .. timeTriggerFrame.get_value())
-    print("f2 legacy Animation: " .. timeTriggerLegacyFrame.get_value())
-    print("f2 legacy Animation blend: " .. timeTriggerLegacyBlendFrame.get_value())
+    print(timeTriggerFrame.GetValue())
+    print(timeTriggerLegacyFrame.GetValue())
+    print(timeTriggerLegacyBlendFrame.GetValue())
 end)"#,
     )?;
 
-    // assert_eq!(
-    //     "frame advancing: paused Animator",
-    //     stream.receive()?,
-    //     "f1: -1",
-    //     "mismatch in initial value of Animator trigger tracker value",
-    //     res
-    // );
+    let anim_frame_count = "100";
+    let legacy_anim_frame_count = "101";
+    let legacy_blend_anim_frame_count = "112";
 
-    println!("{}", stream.receive()?);
-    println!("{}", stream.receive()?);
-    println!("{}", stream.receive()?);
-    println!("{}", stream.receive()?);
-    println!("{}", stream.receive()?);
-    println!("{}", stream.receive()?);
+    for _ in 0..4 {
+        ctx.assert_eq(
+            anim_frame_count,
+            &stream.receive()?,
+            "frame advancing: Animator",
+            "mismatch in animation frame count",
+        );
 
-    // assert_eq!(
-    //     "frame advancing: Animator trigger reach check",
-    //     stream.receive()?,
-    //     "94",
-    //     "mismatch in animation completion frame",
-    //     res
-    // );
+        ctx.assert_eq(
+            legacy_anim_frame_count,
+            &stream.receive()?,
+            "frame advancing: Legacy animator",
+            "mismatch in animation frame count",
+        );
+
+        ctx.assert_eq(
+            legacy_blend_anim_frame_count,
+            &stream.receive()?,
+            "frame advancing: Legacy blend",
+            "mismatch in animation frame count",
+        );
+    }
 
     Ok(())
 }
