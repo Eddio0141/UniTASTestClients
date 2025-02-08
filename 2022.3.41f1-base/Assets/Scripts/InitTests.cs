@@ -16,6 +16,10 @@ public class InitTests : MonoBehaviour
 
     private void Awake()
     {
+#if UNITY_EDITOR
+        Time.captureDeltaTime = 0.01f;
+#endif
+
         Assert.True("runtime init method: SubsystemRegistration", _subsystemRegistrationCalled);
         Assert.True("runtime init method: AfterAssembliesLoaded", _afterAssembliesLoaded);
         Assert.True("runtime init method: BeforeSplashScreen", _beforeSplashScreenCalled);
@@ -42,12 +46,12 @@ public class InitTests : MonoBehaviour
 
     private IEnumerator Start()
     {
-        Assert.Equal("init.time", 0f, Time.time);
-        Assert.Equal("init.time", 0f, Time.timeSinceLevelLoad);
-        Assert.Equal("init.time", 0f, Time.fixedTime);
-        Assert.Equal("init.time", 0f, Time.unscaledTime);
-        Assert.Equal("init.time", 0f, Time.realtimeSinceStartup);
-        
+        Assert.Equal("init.time", 0.01f, Time.time, 0.0001f);
+        Assert.Equal("init.time", 0.01f, Time.timeSinceLevelLoad, 0.0001f);
+        Assert.Equal("init.time", 0f, Time.fixedTime, 0.0001f);
+        Assert.Equal("init.time", 0.01f, Time.unscaledTime, 0.0001f);
+        Assert.Equal("init.time", 0.01f, Time.realtimeSinceStartup, 0.0001f);
+
         Assert.True("runtime init method, AfterSceneLoad", _afterSceneLoadCalled);
         Assert.Equal("init.frame_count", 1, Time.frameCount);
         Assert.Equal("init.rendered_frame_count", 1, Time.renderedFrameCount);

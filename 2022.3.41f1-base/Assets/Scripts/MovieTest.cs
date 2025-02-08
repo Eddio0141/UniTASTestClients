@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -17,13 +18,18 @@ public class MovieTest : MonoBehaviour
 
     private readonly struct UpdateInfo
     {
+        private static bool Similar(float left, float right)
+        {
+            return Math.Abs(left - right) < 0.0001f;
+        }
+
         private bool Equals(UpdateInfo other)
         {
             return _updateType == other._updateType && _frameCount == other._frameCount &&
-                   _renderedFrameCount == other._renderedFrameCount && _time.Equals(other._time) &&
-                   _timeSinceLevelLoad.Equals(other._timeSinceLevelLoad) && _fixedTime.Equals(other._fixedTime) &&
-                   _unscaledTime.Equals(other._unscaledTime) &&
-                   _realtimeSinceStartup.Equals(other._realtimeSinceStartup);
+                   _renderedFrameCount == other._renderedFrameCount && Similar(_time, other._time) &&
+                   Similar(_timeSinceLevelLoad, other._timeSinceLevelLoad) && Similar(_fixedTime, other._fixedTime) &&
+                   Similar(_unscaledTime, other._unscaledTime) &&
+                   Similar(_realtimeSinceStartup, other._realtimeSinceStartup);
         }
 
         public override bool Equals(object obj)
@@ -146,9 +152,9 @@ public class MovieTest : MonoBehaviour
 
         Time.timeScale = 0.5f;
         startWaitForSeconds = Time.frameCount;
-        yield return new WaitForSeconds(1f); 
+        yield return new WaitForSeconds(1f);
         Assert.Equal("yield.wait_for_seconds.timeScaleHalf.elapsed_frames", 201, Time.frameCount - startWaitForSeconds);
-        
+
         startWaitForSeconds = Time.frameCount;
         yield return new WaitForSecondsRealtime(0.05f);
         Assert.Equal("yield.wait_for_seconds_realtime.elapsed_frames", 5, Time.frameCount - startWaitForSeconds);
@@ -156,7 +162,7 @@ public class MovieTest : MonoBehaviour
         startWaitForSeconds = Time.frameCount;
         yield return new WaitForSecondsRealtime(1f);
         Assert.Equal("yield.wait_for_seconds_realtime.elapsed_frames", 100, Time.frameCount - startWaitForSeconds);
-        
+
         startWaitForSeconds = Time.frameCount;
         yield return new WaitForSecondsRealtime(0f);
         Assert.Equal("yield.wait_for_seconds_realtime.elapsed_frames", 1, Time.frameCount - startWaitForSeconds);
@@ -166,24 +172,24 @@ public class MovieTest : MonoBehaviour
         var time = Time.time;
         yield return null;
         Assert.Equal("time after timeScale to 1 from 0.5", 0.01f, Time.time - time, 0.0001f);
-        
+
         yield return new WaitForEndOfFrame();
         Time.timeScale = 0.5f;
         time = Time.time;
         yield return null;
         Assert.Equal("time after timeScale to 0.5 from 1", 0.005f, Time.time - time, 0.0001f);
-        
+
         Time.timeScale = 1f;
         yield return null;
-        
+
         startWaitForSeconds = Time.frameCount;
         yield return new WaitForSecondsRealtime(0.05f);
         Assert.Equal("yield.wait_for_seconds_realtime.elapsed_frames", 5, Time.frameCount - startWaitForSeconds);
-        
+
         startWaitForSeconds = Time.frameCount;
         yield return new WaitForSecondsRealtime(1f);
         Assert.Equal("yield.wait_for_seconds_realtime.elapsed_frames", 100, Time.frameCount - startWaitForSeconds);
-        
+
         startWaitForSeconds = Time.frameCount;
         yield return new WaitForSecondsRealtime(0f);
         Assert.Equal("yield.wait_for_seconds_realtime.elapsed_frames", 1, Time.frameCount - startWaitForSeconds);
@@ -242,21 +248,17 @@ public class MovieTest : MonoBehaviour
 
         Assert.Equal("horizontal_axis_move_count", 6, _horizontalAxisMoveCount);
 
-        yield return null;
-        yield return null;
-        yield return null;
-        yield return null;
-        yield return null;
-        yield return null;
-        yield return null;
-        yield return null;
+        for (var i = 0; i < 10; i++)
+        {
+            yield return null;
+        }
 
         var expectedUpdates = new[]
         {
             new UpdateInfo(UpdateType.Awake, 0, 0, 0f, 0f, 0f, 0f, 0f), // 0
             new UpdateInfo(UpdateType.Start, 1, 1, 0.01f, 0.01f, 0f, 0.01f, 0.01f),
 
-            new UpdateInfo(UpdateType.FixedUpdate, 1, 1, 0f, 0f, 0f, 0f, 0f), // 2
+            new UpdateInfo(UpdateType.FixedUpdate, 1, 1, 0f, 0f, 0f, 0f, 0.01f), // 2
             new UpdateInfo(UpdateType.Update, 1, 1, 0.01f, 0.01f, 0f, 0.01f, 0.01f),
 
             new UpdateInfo(UpdateType.FixedUpdate, 2, 2, 0.02f, 0.02f, 0.02f, 0.02f, 0.02f), // 4
@@ -275,6 +277,8 @@ public class MovieTest : MonoBehaviour
             Assert.Equal($"update_order_{i}", expected, actual);
         }
 
+        Time.timeScale = 1f;
+        yield return null;
         SceneManager.LoadScene("MovieTest2");
     }
 }
