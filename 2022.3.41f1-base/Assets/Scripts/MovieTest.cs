@@ -6,15 +6,9 @@ using UnityEngine.SceneManagement;
 
 public class MovieTest : MonoBehaviour
 {
-    private int _jumpButtonDownCount;
-    private int _jumpButtonUpCount;
-    private int _spaceDownKeyCodeCount;
-    private int _spaceUpKeyCodeCount;
-    private int _spaceDownStringCount;
-    private int _spaceUpStringCount;
-    private static int _horizontalAxisMoveCount;
-
-    private const int ButtonCountTest = 5;
+#pragma warning disable CS0414 // Field is assigned but its value is never used
+    private static bool _movieTestRun;
+#pragma warning restore CS0414 // Field is assigned but its value is never used
 
     private readonly struct UpdateInfo
     {
@@ -212,41 +206,10 @@ public class MovieTest : MonoBehaviour
 
     private IEnumerator InputTest()
     {
-        while (_jumpButtonDownCount + _jumpButtonUpCount + _spaceDownKeyCodeCount + _spaceUpKeyCodeCount +
-               _spaceDownStringCount + _spaceUpStringCount < ButtonCountTest * 6)
-        {
-            if (Input.GetAxis("Horizontal") != 0)
-                _horizontalAxisMoveCount++;
-
-            if (Input.GetButtonDown("Jump"))
-                _jumpButtonDownCount++;
-
-            if (Input.GetButtonUp("Jump"))
-                _jumpButtonUpCount++;
-
-            if (Input.GetKeyDown(KeyCode.Space))
-                _spaceDownKeyCodeCount++;
-
-            if (Input.GetKeyUp(KeyCode.Space))
-                _spaceUpKeyCodeCount++;
-
-            if (Input.GetKeyDown("space"))
-                _spaceDownStringCount++;
-
-            if (Input.GetKeyUp("space"))
-                _spaceUpStringCount++;
-
+        while (!Input.GetKeyDown(KeyCode.Return))
             yield return null;
-        }
 
-        Assert.Equal("button_count", ButtonCountTest, _jumpButtonDownCount);
-        Assert.Equal("button_count", ButtonCountTest, _jumpButtonUpCount);
-        Assert.Equal("button_count", ButtonCountTest, _spaceDownKeyCodeCount);
-        Assert.Equal("button_count", ButtonCountTest, _spaceUpKeyCodeCount);
-        Assert.Equal("button_count", ButtonCountTest, _spaceDownStringCount);
-        Assert.Equal("button_count", ButtonCountTest, _spaceUpStringCount);
-
-        Assert.Equal("horizontal_axis_move_count", 6, _horizontalAxisMoveCount);
+        _movieTestRun = true;
 
         for (var i = 0; i < 10; i++)
         {

@@ -35,6 +35,14 @@ fn test(ctx: &mut TestCtx, mut args: TestArgs) -> Result<()> {
     stream.send("play('movie.lua')")?;
     stream.wait_for_movie_end()?;
 
+    stream.send("print(traverse('MovieTest').field('_movieTestRun').GetValue())")?;
+    ctx.assert_eq(
+        &true.to_string(),
+        &stream.receive()?,
+        "movie test",
+        "failed to run movie tests",
+    );
+
     // for movie results
     ctx.get_assert_results(stream)?;
     ctx.reset_assert_results(stream)?;

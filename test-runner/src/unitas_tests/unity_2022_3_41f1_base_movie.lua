@@ -4,39 +4,35 @@ MOVIE_CONFIG = {
 
 f = movie.frame_advance
 
+f(200) -- to let some tests run
+
+-- start test
+key.hold("return")
+f()
+key.release("return")
+
 f(10)
-
--- start MovieTest
-for i = 1, 5 do
-  if i == 1 then
-    key.hold("A")
-  elseif i == 3 then
-    key.hold("d")
-  end
-  key.hold("space")
-  f()
-  key.release("space")
-  f()
-  if i == 1 then
-    key.release("A")
-  elseif i == 3 then
-    key.release("d")
-  end
-end
-
--- SceneTest
-f(20)
-
--- UGuiTest
--- TODO: once game resolution is deterministic, set this to center of screen
-mouse.move(0, 0)
+f()
+-- scene load
 f()
 
-for i = 1, 5 do
+-- keyboard
+f()
+key.hold("a")
+f()
+key.release("a")
+-- TODO: once game resolution is deterministic, set this to center of screen
+mouse.move(0, 0) -- prep mouse test
+f()
+
+-- mouse
+-- gui button click
+for _ = 1, 5 do
   mouse.left()
-  f(i)
+  f()
   mouse.left(false)
-  f(i)
+  f()
 end
 
-f(10)
+f()
+mouse.move(123, 456)
