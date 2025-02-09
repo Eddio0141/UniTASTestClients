@@ -1,8 +1,6 @@
 using System.Collections;
-using System.Diagnostics.CodeAnalysis;
 using UnityEngine;
 
-[SuppressMessage("ReSharper", "NotAccessedField.Local")]
 public class MovieTest2 : MonoBehaviour
 {
     private IEnumerator Start()
