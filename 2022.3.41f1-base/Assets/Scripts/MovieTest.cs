@@ -206,8 +206,18 @@ public class MovieTest : MonoBehaviour
 
     private IEnumerator InputTest()
     {
+        var firstFrameInputBefore = Input.GetKeyDown(KeyCode.Space);
+        yield return null;
+        var firstFrameInputAfter = Input.GetKeyDown(KeyCode.Space);
+        yield return null;
+        var firstFrameInputEnd = Input.GetKeyDown(KeyCode.Space);
+
         while (!Input.GetKeyDown(KeyCode.Return))
             yield return null;
+
+        Assert.False("Input.GetKeyDown.KeyCode", firstFrameInputBefore);
+        Assert.True("Input.GetKeyDown.KeyCode", firstFrameInputAfter);
+        Assert.False("Input.GetKeyDown.KeyCode", firstFrameInputEnd);
 
         _movieTestRun = true;
 

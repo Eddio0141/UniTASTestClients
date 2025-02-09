@@ -4,7 +4,13 @@ MOVIE_CONFIG = {
 
 f = movie.frame_advance
 
-f(200) -- to let some tests run
+-- check first input
+key.hold("space")
+f()
+key.release("space")
+f()
+
+f(198) -- to let some tests run
 
 -- start test
 key.hold("return")
