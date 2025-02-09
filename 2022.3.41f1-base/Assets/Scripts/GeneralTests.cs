@@ -4,25 +4,12 @@ using System.IO;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-public class GeneralTests : MonoBehaviour, ISerializationCallbackReceiver
+public class GeneralTests : MonoBehaviour
 {
     public static AsyncOperation LoadEmpty2;
 
     private bool _testCoroutineBundleYield;
     private AssetBundleCreateRequest _yieldBundleLoad;
-
-    private bool _deserializeCall;
-
-    public void OnBeforeSerialize()
-    {
-    }
-
-    public void OnAfterDeserialize()
-    {
-        _deserializeCall = true;
-        // I really wanna test this but it causes building to fail lmao
-        // throw new Exception("foo");
-    }
 
     private IEnumerator TestCoroutine()
     {
@@ -84,8 +71,6 @@ public class GeneralTests : MonoBehaviour, ISerializationCallbackReceiver
     private void Awake()
     {
         StartCoroutine(EndOfFrame());
-
-        Assert.True("OnAfterDeserialize", _deserializeCall);
 
         var fooResource = Resources.LoadAsync("Foo");
 

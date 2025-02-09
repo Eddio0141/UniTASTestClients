@@ -3,8 +3,21 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-public class InitTests : MonoBehaviour
+public class InitTests : MonoBehaviour, ISerializationCallbackReceiver
 {
+    private int _deserializeCallCount;
+
+    public void OnBeforeSerialize()
+    {
+    }
+
+    public void OnAfterDeserialize()
+    {
+        _deserializeCallCount++;
+        // I really wanna test this but it causes building to fail lmao
+        // throw new Exception("foo");
+    }
+    
     static InitTests()
     {
         Assert.False("runtime init method: SubsystemRegistration", _subsystemRegistrationCalled);
@@ -32,6 +45,9 @@ public class InitTests : MonoBehaviour
         Assert.Equal("init.time", 0f, Time.fixedTime);
         Assert.Equal("init.time", 0f, Time.unscaledTime);
         Assert.Equal("init.time", 0f, Time.realtimeSinceStartup);
+        
+        Assert.Equal("OnAfterDeserialize", 1, _deserializeCallCount);
+        
         StartCoroutine(AwakeCoroutine());
     }
 
