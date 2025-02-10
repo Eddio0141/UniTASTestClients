@@ -17,7 +17,7 @@ public class InitTests : MonoBehaviour, ISerializationCallbackReceiver
         // I really wanna test this but it causes building to fail lmao
         // throw new Exception("foo");
     }
-    
+
     static InitTests()
     {
         Assert.False("runtime init method: SubsystemRegistration", _subsystemRegistrationCalled);
@@ -26,6 +26,9 @@ public class InitTests : MonoBehaviour, ISerializationCallbackReceiver
         Assert.False("runtime init method: BeforeSceneLoad", _beforeSceneLoadCalled);
         Assert.False("runtime init method, AfterSceneLoad", _afterSceneLoadCalled);
     }
+
+    [SerializeField]
+    private ObjSpawn obj;
 
     private void Awake()
     {
@@ -45,9 +48,25 @@ public class InitTests : MonoBehaviour, ISerializationCallbackReceiver
         Assert.Equal("init.time", 0f, Time.fixedTime);
         Assert.Equal("init.time", 0f, Time.unscaledTime);
         Assert.Equal("init.time", 0f, Time.realtimeSinceStartup);
-        
+
         Assert.Equal("OnAfterDeserialize", 1, _deserializeCallCount);
-        
+
+        Assert.Equal("ScriptableObject.value", "foo", obj.str);
+        Assert.Equal("ScriptableObject.value", 123, obj.value);
+        Assert.Equal("ScriptableObject.value", 4, obj.obj.value);
+        Assert.Equal("ScriptableObject.value", 4, obj.values.Count);
+        Assert.Equal("ScriptableObject.value", 5, obj.values[0].value);
+        Assert.Equal("ScriptableObject.value", 6, obj.values[1].value);
+        Assert.Equal("ScriptableObject.value", 7, obj.values[2].value);
+        Assert.Equal("ScriptableObject.value", 8, obj.values[3].value);
+
+        obj.str = "bar";
+        obj.value += 5;
+        obj.obj.value += 5;
+        obj.values.RemoveRange(0, 2);
+        obj.values[0].value += 5;
+        obj.values[1].value += 5;
+
         StartCoroutine(AwakeCoroutine());
     }
 
