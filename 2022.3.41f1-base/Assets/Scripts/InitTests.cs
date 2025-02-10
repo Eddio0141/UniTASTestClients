@@ -50,7 +50,7 @@ public class InitTests : MonoBehaviour, ISerializationCallbackReceiver
 
         Assert.Equal("OnAfterDeserialize", 1, _deserializeCallCount);
 
-        Assert.NotNull("ScriptableObject.value", obj);
+        Assert.True("ScriptableObject.exists", obj != null);
         Assert.Equal("ScriptableObject.value", "foo", obj.str);
         Assert.Equal("ScriptableObject.value", 123, obj.value);
         Assert.Equal("ScriptableObject.value", 4, obj.obj.value);
@@ -78,7 +78,8 @@ public class InitTests : MonoBehaviour, ISerializationCallbackReceiver
         Assert.Equal("init.frame_count", 1, Time.frameCount);
         Assert.Equal("init.rendered_frame_count", 1, Time.renderedFrameCount);
 
-        Destroy(obj);
+        DestroyImmediate(obj, true);
+        Assert.True("ScriptableObject.exists", obj == null);
     }
 
     private IEnumerator Start()
