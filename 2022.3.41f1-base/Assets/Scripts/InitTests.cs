@@ -78,8 +78,10 @@ public class InitTests : MonoBehaviour, ISerializationCallbackReceiver
         Assert.Equal("init.frame_count", 1, Time.frameCount);
         Assert.Equal("init.rendered_frame_count", 1, Time.renderedFrameCount);
 
+#if !UNITY_EDITOR
         DestroyImmediate(obj, true);
         Assert.True("ScriptableObject.exists", obj == null);
+#endif
     }
 
     private IEnumerator Start()
