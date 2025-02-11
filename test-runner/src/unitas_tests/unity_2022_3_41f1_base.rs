@@ -116,6 +116,7 @@ fn test(ctx: &mut TestCtx, mut args: TestArgs) -> Result<()> {
         */
 
     let frame_count = 100u8;
+    let time_offset_check_count = 10u8;
 
     // unitas updates
 
@@ -141,6 +142,8 @@ fixed_update_count = 0
 update_count = 0
 end_of_frame_count = 0
 last_update_count = 0
+update_offsets_start_time = -1
+update_offsets = {{}}
 
 printed_results = 0
 
@@ -168,6 +171,10 @@ patch("UniTAS.Patcher.Implementations.UnityEvents.UnityEvents.InvokeFixedUpdate"
             print(update_count)
             print(end_of_frame_count)
             print(last_update_count)
+            print(update_offsets_start_time)
+            for _, v in pairs(update_offsets) do
+                print(v)
+            end
             printed_results = printed_results + 1
 
             -- test #2 init
@@ -191,12 +198,25 @@ patch("UniTAS.Patcher.Implementations.UnityEvents.UnityEvents.InvokeFixedUpdate"
 
     fixed_update_count = fixed_update_count + 1
 end, "method")
+
+local time = traverse("UnityEngine.Time").property("time")
+local offset = service("IUpdateInvokeOffset")
+
 patch("UniTAS.Patcher.Implementations.UnityEvents.UnityEvents.InvokeUpdate", function(this)
     if wait_for_last or wait_for_fixed_update or update_count >= {frame_count} or traverse(this).field("_updated").get_value() then
         return
     end
 
     update_count = update_count + 1
+    
+    if update_offsets_start_time == -1 then
+        reverse_invoker.invoking = true
+        update_offsets_start_time = time.GetValue()
+        reverse_invoker.invoking = false
+    end
+    if #update_offsets < {time_offset_check_count} then
+        table.insert(update_offsets, offset.Offset)
+    end
 end, "method")
 patch("UniTAS.Patcher.Implementations.UnityEvents.UnityEvents.InvokeEndOfFrame", function(this)
     if wait_for_last or wait_for_fixed_update or update_count >= {frame_count} or traverse(this).field("_endOfFrameUpdated").get_value() then
@@ -253,6 +273,29 @@ end, "method")
         "unitas updates: last update count",
         "mismatch in update count",
     );
+    let time_offset = stream.receive()?;
+    let mut time_offset = time_offset
+        .parse::<f64>()
+        .with_context(|| format!("time offset is an invalid f64 value, got: {time_offset}"))?;
+    time_offset %= 0.02;
+    for _ in 0..time_offset_check_count {
+        let offset = stream.receive()?;
+        let offset = offset
+            .parse::<f64>()
+            .with_context(|| format!("update offset is an invalid f64 value, got: {offset}"))?;
+
+        ctx.assert_eq(
+            time_offset,
+            offset,
+            "offset check",
+            "failed to validate tracked update offset",
+        );
+
+        time_offset += 0.01;
+        if time_offset >= 0.02 {
+            time_offset -= 0.02;
+        }
+    }
 
     // multiple fixed updates in a row
     // in this case, this pattern is made
@@ -296,6 +339,9 @@ end, "method")
         "unitas updates: last update count",
         "mismatch in update count",
     );
+    for _ in 0..2 {
+        stream.receive()?;
+    }
 
     Ok(())
 }
