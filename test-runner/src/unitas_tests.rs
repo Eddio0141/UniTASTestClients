@@ -69,6 +69,18 @@ impl TestCtx {
         );
     }
 
+    fn assert_eq_precision(&mut self, left: f64, right: f64, name: &str, message: &str) {
+        let result = f64::abs(right - left) < 0.00001;
+        self.assert(
+            result,
+            name,
+            &format!(
+                "`left == right`: {message}\n  left: `{:?}`\n right: `{:?}`",
+                left, right
+            ),
+        );
+    }
+
     /// Runs game behaviour checks without a movie running
     /// ## Note
     /// - You **MUST** call this on the initial scene

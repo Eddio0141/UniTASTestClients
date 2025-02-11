@@ -277,6 +277,8 @@ end, "method")
     let mut time_offset = time_offset
         .parse::<f64>()
         .with_context(|| format!("time offset is an invalid f64 value, got: {time_offset}"))?;
+    // since we're testing by hooking onto the update methods themselves, the offset is literally off by 1 frame in this case
+    time_offset += 0.01;
     time_offset %= 0.02;
     for _ in 0..time_offset_check_count {
         let offset = stream.receive()?;
@@ -284,7 +286,7 @@ end, "method")
             .parse::<f64>()
             .with_context(|| format!("update offset is an invalid f64 value, got: {offset}"))?;
 
-        ctx.assert_eq(
+        ctx.assert_eq_precision(
             time_offset,
             offset,
             "offset check",
