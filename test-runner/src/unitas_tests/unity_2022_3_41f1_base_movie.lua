@@ -42,3 +42,9 @@ end
 
 f()
 mouse.move(123, 456)
+
+f()
+mouse.left(true)
+f(2)
+mouse.left(false)
+f(2)

@@ -40,16 +40,41 @@ public class MovieTest2 : MonoBehaviour
         Assert.False("Input.GetKey.KeyCode", Input.GetKey(KeyCode.A));
         Assert.False("Input.GetKey.String", Input.GetKey("a"));
 
+        // mouse
         for (var i = 0; i <= 5; i++)
         {
             yield return null;
             yield return null;
             Assert.Equal("ugui.click_count", i, _clickCount);
         }
-        
+
         Assert.Equal("Input.mousePosition", Vector3.zero, Input.mousePosition);
+        Assert.Equal("Input.GetAxis.Mouse_X", 0f, Input.GetAxis("Mouse X"));
+        Assert.Equal("Input.GetAxis.Mouse_Y", 0f, Input.GetAxis("Mouse Y"));
         yield return null;
         Assert.Equal("Input.mousePosition", new Vector3(123f, 456f), Input.mousePosition);
+        Assert.Equal("Input.GetAxis.Mouse_X", 12.3f, Input.GetAxis("Mouse X"), 0.0001f);
+        Assert.Equal("Input.GetAxis.Mouse_Y", 45.6f, Input.GetAxis("Mouse Y"), 0.0001f);
+
+        Assert.False("Input.GetMouseButtonDown", Input.GetMouseButtonDown(0));
+        Assert.False("Input.GetMouseButtonUp", Input.GetMouseButtonUp(0));
+        Assert.False("Input.GetMouseButton", Input.GetMouseButton(0));
+        yield return null;
+        Assert.True("Input.GetMouseButtonDown", Input.GetMouseButtonDown(0));
+        Assert.False("Input.GetMouseButtonUp", Input.GetMouseButtonUp(0));
+        Assert.True("Input.GetMouseButton", Input.GetMouseButton(0));
+        yield return null;
+        Assert.False("Input.GetMouseButtonDown", Input.GetMouseButtonDown(0));
+        Assert.False("Input.GetMouseButtonUp", Input.GetMouseButtonUp(0));
+        Assert.True("Input.GetMouseButton", Input.GetMouseButton(0));
+        yield return null;
+        Assert.False("Input.GetMouseButtonDown", Input.GetMouseButtonDown(0));
+        Assert.True("Input.GetMouseButtonUp", Input.GetMouseButtonUp(0));
+        Assert.False("Input.GetMouseButton", Input.GetMouseButton(0));
+        yield return null;
+        Assert.False("Input.GetMouseButtonDown", Input.GetMouseButtonDown(0));
+        Assert.False("Input.GetMouseButtonUp", Input.GetMouseButtonUp(0));
+        Assert.False("Input.GetMouseButton", Input.GetMouseButton(0));
 
         Assert.Finish();
     }
