@@ -36,10 +36,19 @@ fn test(ctx: &mut TestCtx, mut args: TestArgs) -> Result<()> {
         r#"event_coroutine(function()
             local y = coroutine.yield
             play('movie.lua')
+            y("FixedUpdateActual")
+            print(traverse("InitTests").field("_fixedUpdate").GetValue())
             y("UpdateActual")
             print(service("IUpdateInvokeOffset").Offset)
+            print(traverse("InitTests").field("_updated").GetValue())
         end)"#,
     )?;
+    ctx.assert_eq(
+        &false.to_string(),
+        &stream.receive()?,
+        "InvokeFixedUpdate before game update",
+        "",
+    );
     let offset = stream.receive()?;
     let offset = offset
         .parse::<f64>()
@@ -49,6 +58,12 @@ fn test(ctx: &mut TestCtx, mut args: TestArgs) -> Result<()> {
         offset,
         "update offset after game restart",
         "failed to match update offset after game restart",
+    );
+    ctx.assert_eq(
+        &false.to_string(),
+        &stream.receive()?,
+        "InvokeUpdate before game update",
+        "",
     );
     stream.wait_for_movie_end()?;
 

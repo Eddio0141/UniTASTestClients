@@ -108,6 +108,21 @@ public class InitTests : MonoBehaviour, ISerializationCallbackReceiver
         Assert.Null("scene.unload.current_only_scene", SceneManager.UnloadSceneAsync(SceneManager.GetActiveScene()));
     }
 
+#pragma warning disable CS0414 // Field is assigned but its value is never used
+    private static bool _updated;
+    private static bool _fixedUpdate;
+#pragma warning restore CS0414 // Field is assigned but its value is never used
+
+    private void Update()
+    {
+        _updated = true;
+    }
+
+    private void FixedUpdate()
+    {
+        _fixedUpdate = true;
+    }
+
     private static bool _beforeSplashScreenCalled;
     private static bool _subsystemRegistrationCalled;
     private static bool _beforeSceneLoadCalled;
