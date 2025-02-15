@@ -38,15 +38,30 @@ fn test(ctx: &mut TestCtx, mut args: TestArgs) -> Result<()> {
             play('movie.lua')
             y("FixedUpdateActual")
             print(traverse("InitTests").field("_fixedUpdate").GetValue())
+            print(traverse("InitTests").field("_updated").GetValue())
+            print(traverse("InitTests").field("_updatedBeforeUpdate").GetValue())
             y("UpdateActual")
             print(service("IUpdateInvokeOffset").Offset)
             print(traverse("InitTests").field("_updated").GetValue())
+            print(traverse("InitTests").field("_updatedBeforeUpdate").GetValue())
         end)"#,
     )?;
     ctx.assert_eq(
         &false.to_string(),
         &stream.receive()?,
         "InvokeFixedUpdate before game update",
+        "",
+    );
+    ctx.assert_eq(
+        &false.to_string(),
+        &stream.receive()?,
+        "InvokeUpdate before game update 1",
+        "",
+    );
+    ctx.assert_eq(
+        &false.to_string(),
+        &stream.receive()?,
+        "InvokeUpdate before InputSystem.onBeforeUpdate 1",
         "",
     );
     let offset = stream.receive()?;
@@ -62,7 +77,13 @@ fn test(ctx: &mut TestCtx, mut args: TestArgs) -> Result<()> {
     ctx.assert_eq(
         &false.to_string(),
         &stream.receive()?,
-        "InvokeUpdate before game update",
+        "InvokeUpdate before game update 2",
+        "",
+    );
+    ctx.assert_eq(
+        &false.to_string(),
+        &stream.receive()?,
+        "InvokeUpdate before InputSystem.onBeforeUpdate 2",
         "",
     );
     stream.wait_for_movie_end()?;

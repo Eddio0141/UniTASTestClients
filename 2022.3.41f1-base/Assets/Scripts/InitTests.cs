@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 
 public class InitTests : MonoBehaviour, ISerializationCallbackReceiver
@@ -34,6 +35,9 @@ public class InitTests : MonoBehaviour, ISerializationCallbackReceiver
 #if UNITY_EDITOR
         Time.captureDeltaTime = 0.01f;
 #endif
+
+        Assert.False("InputSystem.onBeforeUpdate", _updatedBeforeUpdate);
+        InputSystem.onBeforeUpdate += () => { _updatedBeforeUpdate = true; };
 
         Assert.True("runtime init method: SubsystemRegistration", _subsystemRegistrationCalled);
         Assert.True("runtime init method: AfterAssembliesLoaded", _afterAssembliesLoaded);
@@ -101,6 +105,7 @@ public class InitTests : MonoBehaviour, ISerializationCallbackReceiver
         Assert.Equal("init.rendered_frame_count", 1, Time.renderedFrameCount);
         // Assert.True("after OnGUI call", _calledOnGUI);
         yield return null;
+        Assert.True("InputSystem.onBeforeUpdate", _updatedBeforeUpdate);
         Assert.Equal("init.frame_count", 2, Time.frameCount);
         Assert.Equal("init.rendered_frame_count", 2, Time.renderedFrameCount);
         yield return null;
@@ -110,6 +115,7 @@ public class InitTests : MonoBehaviour, ISerializationCallbackReceiver
 
 #pragma warning disable CS0414 // Field is assigned but its value is never used
     private static bool _updated;
+    private static bool _updatedBeforeUpdate;
     private static bool _fixedUpdate;
 #pragma warning restore CS0414 // Field is assigned but its value is never used
 
