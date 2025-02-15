@@ -32,7 +32,24 @@ fn test(ctx: &mut TestCtx, mut args: TestArgs) -> Result<()> {
 
     ctx.run_general_tests(stream)?;
 
-    stream.send("play('movie.lua')")?;
+    stream.send(
+        r#"event_coroutine(function()
+            local y = coroutine.yield
+            play('movie.lua')
+            y("UpdateActual")
+            print(service("IUpdateInvokeOffset").Offset)
+        end)"#,
+    )?;
+    let offset = stream.receive()?;
+    let offset = offset
+        .parse::<f64>()
+        .with_context(|| format!("failed to parse offset as f64: `{offset}`"))?;
+    ctx.assert_eq_precision(
+        0.01,
+        offset,
+        "update offset after game restart",
+        "failed to match update offset after game restart",
+    );
     stream.wait_for_movie_end()?;
 
     stream.send("print(traverse('MovieTest').field('_movieTestRun').GetValue())")?;
