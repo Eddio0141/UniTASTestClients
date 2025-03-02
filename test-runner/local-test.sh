@@ -19,6 +19,10 @@ if [ ! -d "$UNITAS_BUILD" ]; then
     echo "You need to build UniTAS with the Release profile"
     exit 1
 fi
+UNITAS_RS_BUILD="${UNITAS_REPO}/unitas-rs/target/release/libunitas_rs.so"
+if [ ! -f "$UNITAS_RS_BUILD" ]; then
+    echo "no unitas-rs build found, this will be an error in the future"
+fi
 
 if [ -d "$TEST_DIR" ]; then
     rm "$TEST_DIR" -r
@@ -60,6 +64,9 @@ else
 fi
 
 cp "$UNITAS_BUILD" "${TEST_DIR}/UniTAS" -r
+if [ -f "$UNITAS_RS_BUILD" ]; then
+    cp "$UNITAS_RS_BUILD" "${TEST_DIR}/UniTAS/BepInEx/patchers/UniTAS"
+fi
 
 # shellcheck disable=SC2090,SC2086
 exec $TEST_DIR/test-runner --github-token "$(gh auth token)" $GAME_ARGS $BEPINEX_DIR
