@@ -25,11 +25,11 @@ f()
 -- keyboard
 f()
 key.hold("a")
-f()
+f(2)
 key.release("a")
 -- TODO: once game resolution is deterministic, set this to center of screen
 mouse.move(0, 0) -- prep mouse test
-f()
+f(2)
 
 -- mouse
 -- gui button click
@@ -42,3 +42,9 @@ end
 
 f()
 mouse.move(123, 456)
+
+f()
+mouse.left(true)
+f(2)
+mouse.left(false)
+f(2)
