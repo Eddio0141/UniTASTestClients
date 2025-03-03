@@ -102,6 +102,7 @@ async fn main() -> Result<ExitCode> {
         let arch = arch.clone();
         let pb = pb.clone();
         let path = args.bepinex_path.clone();
+        let os = os.clone();
         task::spawn(async move {
             dl_bepinex(&bepinex_dir, &os, &arch, pb, path).await;
         })
@@ -152,7 +153,7 @@ async fn main() -> Result<ExitCode> {
 
     // run
     for test in tests {
-        test.run(current_dir, &bepinex_dir, &logs_dir, &args)?;
+        test.run(current_dir, &bepinex_dir, &logs_dir, &os, &args)?;
     }
 
     Ok(ExitCode::SUCCESS)

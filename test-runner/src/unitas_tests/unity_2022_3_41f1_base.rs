@@ -1,7 +1,5 @@
 use std::fs;
 
-use crate::Os;
-
 use super::{Test, TestArgs, TestCtx};
 
 use anyhow::{Context, Result};
@@ -11,7 +9,6 @@ const MOVIE: &str = include_str!("unity_2022_3_41f1_base_movie.lua");
 pub fn get() -> Test {
     Test {
         name: "2022.3.41f1-base",
-        os: Os::Linux,
         test,
     }
 }

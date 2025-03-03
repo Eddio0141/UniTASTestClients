@@ -26,12 +26,11 @@ pub fn get_linux_tests() -> Vec<Test> {
 }
 
 pub fn get_win_tests() -> Vec<Test> {
-    vec![]
+    vec![unity_2022_3_41f1_base::get()]
 }
 
 pub struct Test {
     name: &'static str,
-    os: Os,
     test: fn(ctx: &mut TestCtx, args: TestArgs) -> Result<()>,
 }
 
@@ -419,6 +418,7 @@ impl Test {
         exe_dir: &Path,
         bepinex_dir: &Path,
         logs_dir: &Path,
+        os: &Os,
         args: &Args,
     ) -> Result<(), BatchTestError> {
         println!("test initialising for {}", self.name);
@@ -429,7 +429,7 @@ impl Test {
             panic!("game dir for test unity game doesn't exist");
         }
 
-        let execute_bin = match &self.os {
+        let execute_bin = match os {
             Os::Linux => "run_bepinex.sh",
             Os::Windows => WIN_UNITY_EXE_NAME,
         };
