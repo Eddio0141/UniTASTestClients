@@ -199,8 +199,7 @@ public static class Assert
         EqualBase(name, expected, actual, Equals(expected, actual), file, line, message);
     }
 
-    public static void Equal(string name, float expected, float actual, float tolerance,
-        string message = null,
+    public static void Equal(string name, double expected, double actual, double tolerance, string message = null,
         [CallerFilePath] string file = "", [CallerLineNumber] int line = 0)
     {
         EqualBase(name, expected, actual, Math.Abs(expected - actual) < tolerance, file, line, message);
