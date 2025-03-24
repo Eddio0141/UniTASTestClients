@@ -105,16 +105,14 @@ fn test(ctx: &mut TestCtx, mut args: TestArgs) -> Result<()> {
     ctx.reset_assert_results(stream)?;
 
     // actual test
-    /*
-        stream.send(
-            r#"event_coroutine(function()
+    stream.send(
+        r#"event_coroutine(function()
         local y = coroutine.yield
 
         local fa = service("IFrameAdvancing")
-        local fa_update_mode = traverse("FrameAdvanceMode").field("Update").get_value()
-        fa.FrameAdvance(1, fa_update_mode)
+        fa.FrameAdvance(1)
 
-        local frameAdvancing_YieldNull = traverse("FrameAdvancing").field("_yieldNull");
+        local frameAdvancing_YieldNull = traverse("FrameAdvancing").field("_yieldNull")
 
         service("ISceneManagerWrapper").load_scene("FrameAdvancing")
         y("UpdateUnconditional")
@@ -126,7 +124,7 @@ fn test(ctx: &mut TestCtx, mut args: TestArgs) -> Result<()> {
         print(frameAdvancing_YieldNull.GetValue())
 
         for _ = 1, 5 do
-            fa.FrameAdvance(1, fa_update_mode)
+            fa.FrameAdvance(1)
             y("UpdateActual")
             print(frameAdvancing_YieldNull.GetValue())
             y("UpdateUnconditional")
@@ -142,28 +140,27 @@ fn test(ctx: &mut TestCtx, mut args: TestArgs) -> Result<()> {
             y("UpdateActual")
         end
     end)"#,
-        )?;
+    )?;
 
-        // frame advancing checks
+    // frame advancing checks
+    ctx.assert_eq(
+        &0.to_string(),
+        &stream.receive()?,
+        "Frame advancing: yield null check",
+        "Mismatch in reach stage",
+    );
+    for i in 0..5u8 {
         ctx.assert_eq(
-            &0.to_string(),
+            &i.to_string(),
             &stream.receive()?,
-            "Frame advancing: yield null check",
+            &format!("Frame advancing: yield null check {i}"),
             "Mismatch in reach stage",
         );
-        for i in 0..5u8 {
-            ctx.assert_eq(
-                &i.to_string(),
-                &stream.receive()?,
-                &format!("Frame advancing: yield null check {i}"),
-                "Mismatch in reach stage",
-            );
-        }
+    }
 
-        // final check
-        ctx.get_assert_results(stream)?;
-        ctx.reset_assert_results(stream)?;
-        */
+    // final check
+    ctx.get_assert_results(stream)?;
+    ctx.reset_assert_results(stream)?;
 
     let frame_count = 100u8;
     let time_offset_check_count = 10u8;
