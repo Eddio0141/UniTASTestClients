@@ -10,7 +10,7 @@ jobs:
       fail-fast: false
       matrix:
         targetGame:
-          - path: unity-latest
+          - path: unity_latest
             targetPlatform: StandaloneLinux64
             runs-on: ubuntu-latest
     runs-on: ${{ matrix.targetGame.runs-on }}
