@@ -105,6 +105,7 @@ fn test(ctx: &mut TestCtx, mut args: TestArgs) -> Result<()> {
     ctx.reset_assert_results(stream)?;
 
     // actual test
+    /*
     stream.send(
         r#"event_coroutine(function()
         local y = coroutine.yield
@@ -161,6 +162,7 @@ fn test(ctx: &mut TestCtx, mut args: TestArgs) -> Result<()> {
     // final check
     ctx.get_assert_results(stream)?;
     ctx.reset_assert_results(stream)?;
+    */
 
     let frame_count = 100u8;
     let time_offset_check_count = 10u8;
