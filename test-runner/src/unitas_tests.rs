@@ -19,14 +19,14 @@ use colored::Colorize;
 use log::{debug, trace};
 use thiserror::Error;
 
-mod unity_latest;
+mod unity_2022_3_41f1_base;
 
 pub fn get_linux_tests() -> Vec<Test> {
-    vec![unity_latest::get()]
+    vec![unity_2022_3_41f1_base::get()]
 }
 
 pub fn get_win_tests() -> Vec<Test> {
-    vec![unity_latest::get()]
+    vec![unity_2022_3_41f1_base::get()]
 }
 
 pub struct Test {
