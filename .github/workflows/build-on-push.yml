@@ -13,6 +13,9 @@ jobs:
           - path: 2022.3.41f1-base
             targetPlatform: StandaloneLinux64
             runs-on: ubuntu-latest
+          - path: unity_latest
+            targetPlatform: StandaloneLinux64
+            runs-on: ubuntu-latest
     runs-on: ${{ matrix.targetGame.runs-on }}
 
     # only run if not automation, dependabot only does cargo and flake upgrade only affects rust stuff, which is checked already
