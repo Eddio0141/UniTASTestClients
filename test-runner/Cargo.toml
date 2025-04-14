@@ -5,7 +5,7 @@ edition = "2021"
 description = "Tool to automatically execute unity games with UniTAS and BepInEx, and run tests on them"
 
 [dependencies]
-anyhow = "1.0.97"
+anyhow = "1.0.98"
 clap = { version = "4.5.36", features = ["derive"] }
 colored = "3.0.0"
 const_format = "0.2.34"
