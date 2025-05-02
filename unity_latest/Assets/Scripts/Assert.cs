@@ -495,10 +495,11 @@ public class TestInjectPrefabAttribute : TestInjectAttribute
         Debug.Log($"Creating prefab at `{prefabPath}`");
         PrefabUtility.SaveAsPrefabAsset(prefabBase, prefabPath, out var success);
         Object.DestroyImmediate(prefabBase);
-        EditorApplication.delayCall += () =>
-        {
-            field.objectReferenceValue = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
-        };
+
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+
+        field.objectReferenceValue = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
 
         if (!success)
             Debug.LogError("Failed to save prefab");
