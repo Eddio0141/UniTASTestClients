@@ -11,9 +11,13 @@ using UnityEngine.SceneManagement;
 
 [SuppressMessage("ReSharper", "UseStringInterpolation")]
 [SuppressMessage("ReSharper", "ArrangeObjectCreationWhenTypeEvident")]
-public class TestFramework : MonoBehaviour
+public class TestFrameworkRuntime : MonoBehaviour
 {
-    private static TestFramework _instance;
+    private const string AssetPath = "Assets/TestFramework";
+    public const string SceneAssetPath = AssetPath + "/Scenes";
+    public const string PrefabAssetPath = AssetPath + "/Prefabs";
+
+    private static TestFrameworkRuntime _instance;
 
     private readonly List<Result> _testResults = new List<Result>();
 #pragma warning disable CS1691 CS1692 CS0414 // Field is assigned but its value is never used
@@ -27,11 +31,7 @@ public class TestFramework : MonoBehaviour
         if (_instance != null) return;
         var obj = new GameObject();
         DontDestroyOnLoad(obj);
-        _instance = obj.AddComponent<TestFramework>();
-    }
-
-    private void Awake()
-    {
+        _instance = obj.AddComponent<TestFrameworkRuntime>();
     }
 
     public static IEnumerable<MethodInfo> GetTestFuncs(Type type)
@@ -100,7 +100,15 @@ public class TestFramework : MonoBehaviour
                 catch (Exception e)
                 {
                     success = false;
-                    msg = e.Message;
+                    if (e.InnerException is AssertionException assertionException)
+                    {
+                        msg = assertionException.Message;
+                    }
+                    else
+                    {
+                        msg = e.ToString();
+                    }
+
                     break;
                 }
 

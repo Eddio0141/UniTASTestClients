@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -11,20 +10,27 @@ using UnityEngine.SceneManagement;
 
 namespace Editor
 {
-    [SuppressMessage("ReSharper", "InconsistentNaming")]
     [InitializeOnLoad]
-    public static class TestFramework__unity_first__unity_latest
+    public static class TestFrameworkSetup
     {
-        private const string AssetPath = "Assets/TestFramework";
-        private const string SceneAssetPath = AssetPath + "/Scenes";
+        static TestFrameworkSetup()
+        {
+            Setup();
+        }
 
-        static TestFramework__unity_first__unity_latest()
+        [MenuItem("Test/Setup")]
+        private static void Setup()
         {
             Debug.Log("Loading UniTAS testing framework");
+            // AssetDatabase.StartAssetEditing();
 
-            if (!Directory.Exists(SceneAssetPath))
+            var createPaths = new[] { TestFrameworkRuntime.SceneAssetPath, TestFrameworkRuntime.PrefabAssetPath };
+            foreach (var path in createPaths)
             {
-                Directory.CreateDirectory(SceneAssetPath);
+                if (!Directory.Exists(path))
+                {
+                    Directory.CreateDirectory(path);
+                }
             }
 
             var origScene = SceneManager.GetActiveScene();
@@ -50,7 +56,7 @@ namespace Editor
                 foreach (var monoBeh in monoBehs)
                 {
                     var type = monoBeh.GetType();
-                    var testMethods = TestFramework.GetTestFuncs(type);
+                    var testMethods = TestFrameworkRuntime.GetTestFuncs(type);
 
                     var invalidTest = false;
                     foreach (var testMethod in testMethods)
@@ -80,53 +86,7 @@ namespace Editor
                         }
 
                         Debug.Log($"Injecting field {type.FullName}.{fieldName}");
-                        const string injectFailMsg = "Inject used on an unsupported type";
-                        const string alreadyInjected = "Field already injected";
-
-                        switch (attr)
-                        {
-                            case TestInjectSceneAttribute:
-                            {
-                                if (fieldType != typeof(string))
-                                    break;
-                                if (!string.IsNullOrEmpty(field.stringValue) &&
-                                    AssetDatabase.AssetPathExists(field.stringValue))
-                                {
-                                    Debug.Log(alreadyInjected);
-                                    continue;
-                                }
-
-                                string scenePath;
-                                while (true)
-                                {
-                                    var sceneName = $"{Guid.NewGuid()}.unity";
-                                    scenePath = Path.Combine(SceneAssetPath, sceneName);
-                                    if (EditorBuildSettings.scenes.All(s => s.path != scenePath))
-                                        break;
-                                }
-
-                                Debug.Log($"Creating scene at `{scenePath}`");
-                                var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene,
-                                    NewSceneMode.Additive);
-                                if (!EditorSceneManager.SaveScene(scene, scenePath))
-                                {
-                                    Debug.LogError($"Failed to save scene {scenePath}");
-                                    break;
-                                }
-
-                                EditorSceneManager.CloseScene(scene, true);
-
-                                field.stringValue = scenePath;
-
-                                Debug.Log("Done");
-
-                                continue;
-                            }
-                            default:
-                                throw new ArgumentOutOfRangeException(nameof(attr));
-                        }
-
-                        Debug.LogError(injectFailMsg);
+                        attr.InjectField(fieldType, field);
                     }
 
                     prop.ApplyModifiedProperties();
@@ -136,7 +96,14 @@ namespace Editor
                 Debug.LogError("Failed to save scene");
             }
 
+            // AssetDatabase.StopAssetEditing();
             Debug.Log("Finished loading UniTAS testing framework");
+        }
+        
+        [MenuItem("Test/Run General Tests")]
+        private static void RunGeneralTests()
+        {
+            TestFrameworkRuntime.Run();
         }
     }
 }

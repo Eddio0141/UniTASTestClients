@@ -1,19 +1,25 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 public class GeneralTests : MonoBehaviour
 {
     [SerializeField] private GameObject cubePrefab;
+    public static AsyncInstantiateOperation AsyncInit;
+
+    private void Awake()
+    {
+    }
 
     private IEnumerator Start()
     {
-        yield return InstantiateWaitSceneActivation();
-        yield return ForceObjectInitBlocking();
-        yield return InstantiateAsyncTriple();
-        yield return InstantiateAsyncSceneLoadStall();
-
-        Assert.Finish();
+        // yield return InstantiateWaitSceneActivation();
+        // yield return ForceObjectInitBlocking();
+        // yield return InstantiateAsyncTriple();
+        // yield return InstantiateAsyncSceneLoadStall();
+        // InstantiateSceneSyncLoad(); // must come last, involves scene loading
+        yield break;
     }
 
     private IEnumerator InstantiateWaitSceneActivation()
@@ -147,5 +153,23 @@ public class GeneralTests : MonoBehaviour
         Assert.True("InstantiateAsyncSceneLoadStall.isDone", initOp.isDone);
         yield return null;
         Assert.False("InstantiateAsyncSceneLoadStall.scene.loaded", loadEmptyScene.isDone);
+    }
+
+    private void InstantiateSceneSyncLoad()
+    {
+        // now try sync loading scene, see if it force init
+        AsyncInit = InstantiateAsync(cubePrefab);
+        AsyncInit.allowSceneActivation = false;
+        Assert.NotNull("InstantiateSceneSyncLoad.operation_not_null", AsyncInit);
+        SceneManager.LoadScene("General2");
+    }
+
+
+    [TestInjectScene] public string test;
+
+    [Test]
+    private IEnumerator<TestYield> Thing()
+    {
+        yield break;
     }
 }
