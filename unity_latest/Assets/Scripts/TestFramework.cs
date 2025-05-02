@@ -1,0 +1,185 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
+using System.Reflection;
+using UnityEngine;
+#if UNITY_5_3_OR_NEWER
+using UnityEngine.SceneManagement;
+#endif
+
+[SuppressMessage("ReSharper", "UseStringInterpolation")]
+[SuppressMessage("ReSharper", "ArrangeObjectCreationWhenTypeEvident")]
+public class TestFramework : MonoBehaviour
+{
+    private static TestFramework _instance;
+
+    private readonly List<Result> _testResults = new List<Result>();
+#pragma warning disable CS1691 CS1692 CS0414 // Field is assigned but its value is never used
+    private bool _testsDone;
+#pragma warning restore CS1691 CS1692 CS0414 // Field is assigned but its value is never used
+
+    private Test[] _discoveredGeneralTests;
+
+    private static void InstanceInitIfNot()
+    {
+        if (_instance != null) return;
+        var obj = new GameObject();
+        DontDestroyOnLoad(obj);
+        _instance = obj.AddComponent<TestFramework>();
+    }
+
+    private void Awake()
+    {
+    }
+
+    public static IEnumerable<MethodInfo> GetTestFuncs(Type type)
+    {
+        return type
+            .GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public |
+                        BindingFlags.NonPublic).Where(m =>
+                m.GetCustomAttributes(typeof(TestAttribute)).Any() &&
+                m.GetCustomAttribute<AutoTestAttribute>(true) == null);
+    }
+
+    private void DiscoverGeneralTestsIfNot()
+    {
+        if (_discoveredGeneralTests != null) return;
+
+        var tests = new List<Test>();
+#if UNITY_5_3_OR_NEWER
+        var sceneCount = SceneManager.sceneCount;
+        for (var i = 0; i < sceneCount; i++)
+        {
+            var scene = SceneManager.GetSceneAt(i);
+            var objs = scene.GetRootGameObjects();
+            foreach (var monoBeh in objs.SelectMany(o => o.GetComponents<MonoBehaviour>()))
+            {
+                var monoBehType = monoBeh.GetType();
+                var methods = GetTestFuncs(monoBehType);
+                tests.AddRange(methods.Select(m => new Test($"{monoBehType.FullName}.{m.Name}", m, monoBeh,
+                    m.GetCustomAttribute<AutoTestAttribute>()?.Type)));
+            }
+        }
+#else
+            throw new NotImplementedException();
+#endif
+        _discoveredGeneralTests = tests.ToArray();
+        Debug.Log($"Discovered {_discoveredGeneralTests.Length} tests");
+    }
+
+    public static void Run()
+    {
+        InstanceInitIfNot();
+        _instance.RunInternal();
+    }
+
+    private void RunInternal()
+    {
+        DiscoverGeneralTestsIfNot();
+        StartCoroutine(RunInternalCoroutine(_discoveredGeneralTests.Where(t => t.AutoTestType == null)));
+    }
+
+    private IEnumerator RunInternalCoroutine(IEnumerable<Test> tests)
+    {
+        foreach (var test in tests)
+        {
+            Debug.Log($"Running test {test.Name}");
+            var executeIter = test.Execute();
+
+            var success = true;
+            string msg = null;
+            while (true)
+            {
+                bool moveNextResult;
+                try
+                {
+                    moveNextResult = executeIter.MoveNext();
+                }
+                catch (Exception e)
+                {
+                    success = false;
+                    msg = e.Message;
+                    break;
+                }
+
+                if (!moveNextResult) break;
+                yield return executeIter.Current;
+            }
+
+            var result = new Result(test.Name, msg, success);
+            _testResults.Add(result);
+        }
+
+        _testsDone = true;
+        Debug.Log("Tests finished");
+        foreach (var result in _testResults)
+        {
+            Debug.Log(result);
+        }
+    }
+
+    public static void RunAuto()
+    {
+    }
+
+    [SuppressMessage("ReSharper", "MemberCanBePrivate.Local")]
+    [SuppressMessage("ReSharper", "StructCanBeMadeReadOnly")]
+    private struct Result
+    {
+        public Result(string name, string message, bool success)
+        {
+            Name = name;
+            Message = message;
+            Success = success;
+        }
+
+        public readonly string Name;
+        public readonly string Message;
+        public readonly bool Success;
+
+        public override string ToString()
+        {
+            return Success ? string.Format("success: {0}", Name) : string.Format("failure: {0}: {1}", Name, Message);
+        }
+    }
+
+    private readonly struct Test
+    {
+        public readonly string Name;
+        private readonly MethodInfo _method;
+        private readonly bool _testDoesIter;
+        private readonly MonoBehaviour _objInstance;
+        public readonly AutoTestType? AutoTestType;
+
+        public Test(string name, MethodInfo method, MonoBehaviour objInstance, AutoTestType? autoTestType)
+        {
+            Name = name;
+            _method = method;
+            _objInstance = objInstance;
+            AutoTestType = autoTestType;
+            _testDoesIter = method.ReturnType == typeof(IEnumerator<TestYield>);
+        }
+
+        public IEnumerator Execute()
+        {
+            var testRet = _method.Invoke(_objInstance, Array.Empty<object>());
+            if (!_testDoesIter)
+            {
+                yield break;
+            }
+
+            var iter = (IEnumerator<TestYield>)testRet;
+
+            while (iter.MoveNext())
+            {
+                yield return iter.Current switch
+                {
+                    UnityYield unityYield => unityYield.Yield,
+                    _ => throw new ArgumentOutOfRangeException()
+                };
+            }
+        }
+    }
+}

@@ -63,6 +63,7 @@ public static class Assert
     public static void Null<T>(string name, T actual, string message = null,
         [CallerFilePath] string file = null,
         [CallerLineNumber] int line = 0)
+        where T : class
     {
         Result result;
         if (actual == null)
@@ -82,6 +83,7 @@ public static class Assert
     public static void NotNull<T>(string name, T actual, string message = null,
         [CallerFilePath] string file = null,
         [CallerLineNumber] int line = 0)
+        where T : class
     {
         Result result;
         if (actual == null)
@@ -338,4 +340,58 @@ public static class Assert
             Line = line;
         }
     }
+}
+
+// test yield
+public abstract class TestYield
+{
+}
+
+public class UnityYield : TestYield
+{
+    public readonly object Yield;
+
+    public UnityYield(object yield)
+    {
+        Yield = yield;
+    }
+}
+
+// test attributes
+[AttributeUsage(AttributeTargets.Method)]
+public class TestAttribute : Attribute
+{
+}
+
+[AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
+public class AutoTestAttribute : Attribute
+{
+    public readonly AutoTestType Type;
+
+    /// <summary>
+    /// Test(s) will run automatically based on the type
+    ///
+    /// This can be used on individual methods or the whole class to make the tests automatically ran
+    /// </summary>
+    public AutoTestAttribute(AutoTestType type)
+    {
+        Type = type;
+    }
+}
+
+public enum AutoTestType
+{
+    Awake,
+    MovieTest
+}
+
+// injection attributes
+
+[AttributeUsage(AttributeTargets.Field)]
+public class TestInjectAttribute : Attribute
+{
+}
+
+public class TestInjectSceneAttribute : TestInjectAttribute
+{
 }
