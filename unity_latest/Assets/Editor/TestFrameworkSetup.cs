@@ -10,19 +10,12 @@ using UnityEngine.SceneManagement;
 
 namespace Editor
 {
-    [InitializeOnLoad]
     public static class TestFrameworkSetup
     {
-        static TestFrameworkSetup()
-        {
-            Setup();
-        }
-
         [MenuItem("Test/Setup")]
         private static void Setup()
         {
             Debug.Log("Loading UniTAS testing framework");
-            // AssetDatabase.StartAssetEditing();
 
             var createPaths = new[] { TestFrameworkRuntime.SceneAssetPath, TestFrameworkRuntime.PrefabAssetPath };
             foreach (var path in createPaths)
@@ -96,7 +89,6 @@ namespace Editor
                 Debug.LogError("Failed to save scene");
             }
 
-            // AssetDatabase.StopAssetEditing();
             Debug.Log("Finished loading UniTAS testing framework");
         }
         

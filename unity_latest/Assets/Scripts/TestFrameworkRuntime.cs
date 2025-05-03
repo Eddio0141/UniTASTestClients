@@ -118,6 +118,12 @@ public class TestFrameworkRuntime : MonoBehaviour
 
             var result = new Result(test.Name, msg, success);
             _testResults.Add(result);
+
+            // safety padding between tests, it won't be noticeable
+            for (var i = 0; i < 5; i++)
+            {
+                yield return null;
+            }
         }
 
         _testsDone = true;
@@ -182,11 +188,11 @@ public class TestFrameworkRuntime : MonoBehaviour
 
             while (iter.MoveNext())
             {
-                yield return iter.Current switch
+                if (iter.Current == null)
                 {
-                    UnityYield unityYield => unityYield.Yield,
-                    _ => throw new ArgumentOutOfRangeException()
-                };
+                    throw new InvalidOperationException("Test yield returned null which isn't expected");
+                }
+                yield return iter.Current.Operation();
             }
         }
     }

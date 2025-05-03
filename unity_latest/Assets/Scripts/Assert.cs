@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -9,6 +10,7 @@ using JetBrains.Annotations;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
 [SuppressMessage("ReSharper", "UseStringInterpolation")]
@@ -86,6 +88,25 @@ public static class Assert
         TestResults.Add(result);
     }
 
+    public static void Null<T>(T actual, string message = null,
+        [CallerFilePath] string file = null,
+        [CallerLineNumber] int line = 0)
+        where T : class
+    {
+        if (actual == null) return;
+        throw new AssertionException(string.Format("assertion failed `actual` == null{{0}}\n actual: {0}", actual),
+            message, file, line);
+    }
+
+    public static void NotNull<T>(T actual, string message = null,
+        [CallerFilePath] string file = null,
+        [CallerLineNumber] int line = 0)
+        where T : class
+    {
+        if (actual != null) return;
+        throw new AssertionException("assertion failed `actual` != null{0}", message, file, line);
+    }
+
     public static void NotNull<T>(string name, T actual, string message = null,
         [CallerFilePath] string file = null,
         [CallerLineNumber] int line = 0)
@@ -127,6 +148,13 @@ public static class Assert
 
         LogAssert(name, file, line, result);
         TestResults.Add(result);
+    }
+
+    public static void False(bool success, string message = null, [CallerFilePath] string file = null,
+        [CallerLineNumber] int line = 0)
+    {
+        if (!success) return;
+        throw new AssertionException("assertion failed{0}", message, file, line);
     }
 
     public static void False(string name, bool success, string message = null,
@@ -208,6 +236,13 @@ public static class Assert
         NotEqualBase(name, expected, actual, Equals(expected, actual), file, line, message);
     }
 
+    public static void Equal<T>(T expected, T actual, string message = null,
+        [CallerFilePath] string file = null,
+        [CallerLineNumber] int line = 0)
+    {
+        EqualBase(expected, actual, Equals(expected, actual), file, line, message);
+    }
+
     public static void Equal<T>(string name, T expected, T actual, string message = null,
         [CallerFilePath] string file = null,
         [CallerLineNumber] int line = 0)
@@ -241,6 +276,30 @@ public static class Assert
 
         LogAssert(name, file, line, result);
         TestResults.Add(result);
+    }
+
+    private static void EqualBase<T>(T expected, T actual, bool success, string file, int line,
+        string message = null)
+    {
+        if (success) return;
+        var assertMsg = new StringBuilder();
+        assertMsg.AppendLine("assertion failed `expected` == `actual`{0}");
+        if (typeof(T) == typeof(string) && expected != null && actual != null)
+        {
+            var sExpected = (string)(object)expected;
+            var sActual = (string)(object)actual;
+            sExpected = ShowHiddenChars(sExpected);
+            sActual = ShowHiddenChars(sActual);
+            assertMsg.AppendLine(string.Format(" expected: {0}", sExpected));
+            assertMsg.AppendLine(string.Format("   actual: {0}", sActual));
+        }
+        else
+        {
+            assertMsg.AppendLine(string.Format(" expected: {0}", expected));
+            assertMsg.AppendLine(string.Format("   actual: {0}", actual));
+        }
+
+        throw new AssertionException(assertMsg.ToString(), message, file, line);
     }
 
     private static void EqualBase<T>(string name, T expected, T actual, bool success, string file, int line,
@@ -374,15 +433,37 @@ public class AssertionException : Exception
 // test yield
 public abstract class TestYield
 {
+    public abstract IEnumerator Operation();
 }
 
 public class UnityYield : TestYield
 {
-    public readonly object Yield;
+    private readonly object _yield;
 
     public UnityYield(object yield)
     {
-        Yield = yield;
+        _yield = yield;
+    }
+
+    public override IEnumerator Operation()
+    {
+        yield return _yield;
+    }
+}
+
+public class SceneSwitchYield : TestYield
+{
+    private readonly string _scenePath;
+
+    public SceneSwitchYield(string scenePath)
+    {
+        _scenePath = scenePath;
+    }
+
+    public override IEnumerator Operation()
+    {
+        SceneManager.LoadScene(_scenePath);
+        yield break;
     }
 }
 
@@ -394,6 +475,7 @@ public class TestAttribute : Attribute
 }
 
 [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
+[MeansImplicitUse]
 public class AutoTestAttribute : Attribute
 {
     public readonly AutoTestType Type;
@@ -465,6 +547,9 @@ public class TestInjectSceneAttribute : TestInjectAttribute
         }
 
         EditorSceneManager.CloseScene(scene, true);
+        var scenes = EditorBuildSettings.scenes.ToList();
+        scenes.Add(new EditorBuildSettingsScene(scenePath, true));
+        EditorBuildSettings.scenes = scenes.ToArray();
 
         field.stringValue = scenePath;
     }
@@ -504,15 +589,4 @@ public class TestInjectPrefabAttribute : TestInjectAttribute
         if (!success)
             Debug.LogError("Failed to save prefab");
     }
-
-    // private class PostProcessor : AssetPostprocessor
-    // {
-    //     public static Queue<(SerializedProperty, string path)> PendingPrefabAssigns = new Queue<(SerializedProperty, string path)>();
-    //     
-    //     private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets,
-    //         string[] movedFromAssetPaths, bool didDomainReload)
-    //     {
-    //         
-    //     }
-    // }
 }
