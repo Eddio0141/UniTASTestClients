@@ -472,29 +472,40 @@ public class SceneSwitchYield : TestYield
 [MeansImplicitUse]
 public class TestAttribute : Attribute
 {
-}
+    public readonly SpecialTestType? Type;
 
-[AttributeUsage(AttributeTargets.Method | AttributeTargets.Class)]
-[MeansImplicitUse]
-public class AutoTestAttribute : Attribute
-{
-    public readonly AutoTestType Type;
+    // for some reason unity hates it when the constructor takes the nullable as an argument
+    public TestAttribute()
+    {
+        Type = null;
+    }
 
-    /// <summary>
-    /// Test(s) will run automatically based on the type
-    ///
-    /// This can be used on individual methods or the whole class to make the tests automatically ran
-    /// </summary>
-    public AutoTestAttribute(AutoTestType type)
+    public TestAttribute(SpecialTestType type)
     {
         Type = type;
     }
 }
 
-public enum AutoTestType
+public enum SpecialTestType
 {
-    Awake,
-    MovieTest
+    Awake
+}
+
+[AttributeUsage(AttributeTargets.Class)]
+[MeansImplicitUse]
+public class MovieTestAttribute : Attribute
+{
+    public readonly MovieTestTiming Timing;
+    
+    public MovieTestAttribute(MovieTestTiming timing)
+    {
+        Timing = timing;
+    }
+}
+
+public enum MovieTestTiming
+{
+    Awake
 }
 
 // injection attributes

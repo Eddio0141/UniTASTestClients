@@ -71,7 +71,7 @@ public class InstantiateAsync__2022_3__latest : MonoBehaviour
         Assert.False(completedCalledNonBlocking);
         Assert.False(initOp2.IsWaitingForSceneActivation());
         // TODO: why does yield return on the op not work, must test too
-        // yield return initOp2;
+        // yield return new UnityYield(initOp2);
         yield return new UnityYield(null);
         Assert.True(completedCalledNonBlocking);
     }

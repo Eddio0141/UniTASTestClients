@@ -13,6 +13,7 @@ Those tests just test unity state without checking on UniTAS internals
     - They are ran during UniTAS is playing a movie
     - Linearly ran (tests defined in order) and a failed test may influence next movie tests
     - A whole class has to be declared as running movie tests with the `MovieTest` attribute
+    - Movies themselves aren't defined on the C# side, it must be defined in test-runner and ran from there, more about movie tests further down
 - Event tests
     - They are ran from specific unity events occuring such as Awake or Start calls
     - Cannot be ran manually
@@ -37,6 +38,10 @@ Those tests just test unity state without checking on UniTAS internals
 If you need things such as a prefab or an empty scene you need to:
 - Declare an instance field and make sure its serializable, by making it `public` or giving it the `SerializeField` attribute
 - Give the field an "injection attribute", which is named as `InjectSomeResource` such as `InjectScene`
+
+#### Movie tests
+- On the C# side you should place the test in the `Movie` namespace
+- Movie tests are ran from test-runner code, check below for more information
 
 ### To make sure everything is defined correctly
 In unity, click on the `Test` button at the top of the editor window
@@ -97,10 +102,14 @@ public class ExampleMovieTest__2022_3_41f1__6000_0_40f1 : MonoBehaviour {
 ```
 
 ## UniTAS tests
-Tests that tests UniTAS internals during unity runtime
+Tests that tests UniTAS internals during unity runtime, and movie tests
 
 TODO: finish this
 
 # How it works
 
 TODO: finish this
+
+## Scene setup
+There is one scene with one object that has all the scripts named `Tests`
+Any extra scenes and objects should be automatically generated

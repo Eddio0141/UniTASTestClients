@@ -24,7 +24,8 @@ public class TestFrameworkRuntime : MonoBehaviour
     private bool _testsDone;
 #pragma warning restore CS1691 CS1692 CS0414 // Field is assigned but its value is never used
 
-    private Test[] _discoveredGeneralTests;
+    private Test[] _discoveredTests;
+    private (string name, Test[])[] _movieTests;
 
     private static void InstanceInitIfNot()
     {
@@ -39,15 +40,15 @@ public class TestFrameworkRuntime : MonoBehaviour
         return type
             .GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public |
                         BindingFlags.NonPublic).Where(m =>
-                m.GetCustomAttributes(typeof(TestAttribute)).Any() &&
-                m.GetCustomAttribute<AutoTestAttribute>(true) == null);
+                m.GetCustomAttributes<TestAttribute>().Any(t => t.Type == null));
     }
 
-    private void DiscoverGeneralTestsIfNot()
+    private void DiscoverTestsIfNot()
     {
-        if (_discoveredGeneralTests != null) return;
-
+        if (_discoveredTests != null && _movieTests != null) return;
+        
         var tests = new List<Test>();
+        var movieTests = new List<(string, Test[])>();
 #if UNITY_5_3_OR_NEWER
         var sceneCount = SceneManager.sceneCount;
         for (var i = 0; i < sceneCount; i++)
@@ -57,16 +58,24 @@ public class TestFrameworkRuntime : MonoBehaviour
             foreach (var monoBeh in objs.SelectMany(o => o.GetComponents<MonoBehaviour>()))
             {
                 var monoBehType = monoBeh.GetType();
+                var movieTestAttr = monoBehType.GetCustomAttribute<MovieTestAttribute>();
                 var methods = GetTestFuncs(monoBehType);
-                tests.AddRange(methods.Select(m => new Test($"{monoBehType.FullName}.{m.Name}", m, monoBeh,
-                    m.GetCustomAttribute<AutoTestAttribute>()?.Type)));
+                var testsIter = methods.Select(m => new Test($"{monoBehType.FullName}.{m.Name}", m, monoBeh,
+                    m.GetCustomAttribute<TestAttribute>()?.Type));
+                if (movieTestAttr != null)
+                {
+                    movieTests.Add((monoBehType.FullName, testsIter.ToArray()));
+                    continue;
+                }
+                tests.AddRange(testsIter);
             }
         }
 #else
             throw new NotImplementedException();
 #endif
-        _discoveredGeneralTests = tests.ToArray();
-        Debug.Log($"Discovered {_discoveredGeneralTests.Length} tests");
+        _discoveredTests = tests.ToArray();
+        _movieTests = movieTests.ToArray();
+        Debug.Log($"Discovered {_discoveredTests.Length + _movieTests.Length} tests");
     }
 
     public static void Run()
@@ -77,8 +86,8 @@ public class TestFrameworkRuntime : MonoBehaviour
 
     private void RunInternal()
     {
-        DiscoverGeneralTestsIfNot();
-        StartCoroutine(RunInternalCoroutine(_discoveredGeneralTests.Where(t => t.AutoTestType == null)));
+        DiscoverTestsIfNot();
+        StartCoroutine(RunInternalCoroutine(_discoveredTests.Where(t => t.SpecialTestType == null)));
     }
 
     private IEnumerator RunInternalCoroutine(IEnumerable<Test> tests)
@@ -134,10 +143,6 @@ public class TestFrameworkRuntime : MonoBehaviour
         }
     }
 
-    public static void RunAuto()
-    {
-    }
-
     [SuppressMessage("ReSharper", "MemberCanBePrivate.Local")]
     [SuppressMessage("ReSharper", "StructCanBeMadeReadOnly")]
     private struct Result
@@ -165,14 +170,14 @@ public class TestFrameworkRuntime : MonoBehaviour
         private readonly MethodInfo _method;
         private readonly bool _testDoesIter;
         private readonly MonoBehaviour _objInstance;
-        public readonly AutoTestType? AutoTestType;
+        public readonly SpecialTestType? SpecialTestType;
 
-        public Test(string name, MethodInfo method, MonoBehaviour objInstance, AutoTestType? autoTestType)
+        public Test(string name, MethodInfo method, MonoBehaviour objInstance, SpecialTestType? specialTestType)
         {
             Name = name;
             _method = method;
             _objInstance = objInstance;
-            AutoTestType = autoTestType;
+            SpecialTestType = specialTestType;
             _testDoesIter = method.ReturnType == typeof(IEnumerator<TestYield>);
         }
 
@@ -192,6 +197,7 @@ public class TestFrameworkRuntime : MonoBehaviour
                 {
                     throw new InvalidOperationException("Test yield returned null which isn't expected");
                 }
+
                 yield return iter.Current.Operation();
             }
         }
