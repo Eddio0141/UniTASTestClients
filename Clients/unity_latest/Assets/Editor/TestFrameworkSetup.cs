@@ -134,6 +134,7 @@ namespace Editor
                     {
                         File.Delete(destFile);
                     }
+
                     SymlinkFile(sourceFile, destFile);
                 }
             }
@@ -141,22 +142,29 @@ namespace Editor
 
         private static void SymlinkFile(string source, string target)
         {
+            var exceptions = new List<Exception>();
             try
             {
                 // TODO: handle errors
                 symlink(source, target);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                exceptions.Add(ex);
                 try
                 {
                     // TODO: handle errors
                     CreateSymbolicLink(target, source, SymbolicLink.File);
                 }
-                catch (Exception)
+                catch (Exception ex2)
                 {
-                    Debug.LogError("Failed to create symbolic link with directories");
+                    exceptions.Add(ex2);
                 }
+            }
+
+            if (exceptions.Count > 0)
+            {
+                throw new AggregateException(exceptions);
             }
         }
 
