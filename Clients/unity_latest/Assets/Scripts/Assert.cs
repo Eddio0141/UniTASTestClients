@@ -472,21 +472,21 @@ public class SceneSwitchYield : TestYield
 [MeansImplicitUse]
 public class TestAttribute : Attribute
 {
-    public readonly SpecialTestType? Type;
+    public readonly EventTiming? Timing;
 
     // for some reason unity hates it when the constructor takes the nullable as an argument
     public TestAttribute()
     {
-        Type = null;
+        Timing = null;
     }
 
-    public TestAttribute(SpecialTestType type)
+    public TestAttribute(EventTiming timing)
     {
-        Type = type;
+        Timing = timing;
     }
 }
 
-public enum SpecialTestType
+public enum EventTiming
 {
     Awake
 }

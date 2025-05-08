@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Object = UnityEngine.Object;
 
 namespace Editor
 {
@@ -17,15 +19,10 @@ namespace Editor
         {
             Debug.Log("Loading UniTAS testing framework");
 
-            var createPaths = new[] { TestFrameworkRuntime.SceneAssetPath, TestFrameworkRuntime.PrefabAssetPath };
-            foreach (var path in createPaths)
-            {
-                if (!Directory.Exists(path))
-                {
-                    Directory.CreateDirectory(path);
-                }
-            }
+            SetupFilesAndDirs();
+            SetupTestScene();
 
+            // TODO: refactor to make tests be a single component
             var origScene = SceneManager.GetActiveScene();
             foreach (var buildSettingsScene in EditorBuildSettings.scenes)
             {
@@ -91,11 +88,136 @@ namespace Editor
 
             Debug.Log("Finished loading UniTAS testing framework");
         }
-        
+
+        private static void SetupFilesAndDirs()
+        {
+            const string scriptsDir = "Assets/Scripts";
+            const string editorDir = "Assets/Editor";
+
+            // not generating editor dir, how else is this script running then?
+            var createPaths = new[]
+                { TestFrameworkRuntime.SceneAssetPath, TestFrameworkRuntime.PrefabAssetPath, scriptsDir };
+            foreach (var path in createPaths)
+            {
+                if (!Directory.Exists(path))
+                {
+                    Directory.CreateDirectory(path);
+                }
+            }
+
+            // TODO: figure out which unity version didn't work with symlinks
+
+            var repoDir = Directory.GetCurrentDirectory();
+            while (Path.GetFileName(repoDir) != "UniTASTestClients")
+            {
+                repoDir = Directory.GetParent(repoDir)?.FullName;
+                if (repoDir != null) continue;
+                Debug.LogError("Failed to find repository base directory, failed file setup");
+                return;
+            }
+
+            var sharedDir = Path.Combine(repoDir, "UnityShared");
+            UnityEngine.Assertions.Assert.IsTrue(Directory.Exists(sharedDir));
+            var sharedScriptsDir = Path.Combine(sharedDir, "Scripts");
+            UnityEngine.Assertions.Assert.IsTrue(Directory.Exists(sharedScriptsDir));
+            var sharedEditorDir = Path.Combine(sharedDir, "Editor");
+
+            // link everything
+            var links = new[] { (sharedScriptsDir, scriptsDir), (sharedEditorDir, editorDir) };
+
+            foreach (var (sourceDir, destDir) in links)
+            {
+                foreach (var sourceFile in Directory.GetFiles(sourceDir, "*.cs", SearchOption.TopDirectoryOnly))
+                {
+                    var destFile = Path.Combine(destDir, Path.GetFileName(sourceFile));
+                    if (File.Exists(destFile))
+                    {
+                        File.Delete(destFile);
+                    }
+                    SymlinkFile(sourceFile, destFile);
+                }
+            }
+        }
+
+        private static void SymlinkFile(string source, string target)
+        {
+            try
+            {
+                // TODO: handle errors
+                symlink(source, target);
+            }
+            catch (Exception)
+            {
+                try
+                {
+                    // TODO: handle errors
+                    CreateSymbolicLink(target, source, SymbolicLink.File);
+                }
+                catch (Exception)
+                {
+                    Debug.LogError("Failed to create symbolic link with directories");
+                }
+            }
+        }
+
+        [DllImport("kernel32.dll")]
+        private static extern bool CreateSymbolicLink(string lpSymlinkFileName, string lpTargetFileName,
+            SymbolicLink dwFlags);
+
+        [DllImport("libc.so")]
+        private static extern int symlink(string oldname, string newname);
+
+        private enum SymbolicLink
+        {
+            File = 0,
+        }
+
+        private static void SetupTestScene()
+        {
+            var saveScene = false;
+            var scene = AssetDatabase.AssetPathExists(TestFrameworkRuntime.TestingScenePath)
+                ? EditorSceneManager.OpenScene(TestFrameworkRuntime.TestingScenePath, OpenSceneMode.Single)
+                : EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+
+            const string testObjName = "Tests";
+            const string eventHooksObjName = "EventHooks";
+
+            var testObj = Object.FindObjectsByType<GameObject>(FindObjectsSortMode.None)
+                .FirstOrDefault(o => o.name == testObjName);
+            if (testObj == null)
+            {
+                testObj = new GameObject(testObjName);
+                saveScene = true;
+            }
+
+            if (testObj.GetComponent<TestFrameworkRuntime>() == null)
+            {
+                testObj.AddComponent<TestFrameworkRuntime>();
+                saveScene = true;
+            }
+
+            var eventHooksObj = Object.FindObjectsByType<GameObject>(FindObjectsSortMode.None)
+                .FirstOrDefault(o => o.name == eventHooksObjName);
+            if (eventHooksObj == null)
+            {
+                eventHooksObj = new GameObject(eventHooksObjName);
+                saveScene = true;
+            }
+
+            if (eventHooksObj.GetComponent<EventHooks>() == null)
+            {
+                eventHooksObj.AddComponent<EventHooks>();
+                saveScene = true;
+            }
+
+            if (saveScene)
+                EditorSceneManager.SaveScene(scene, TestFrameworkRuntime.TestingScenePath);
+        }
+
         [MenuItem("Test/Run General Tests")]
         private static void RunGeneralTests()
         {
-            TestFrameworkRuntime.Run();
+            TestFrameworkRuntime.RunGeneral();
         }
     }
 }

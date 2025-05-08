@@ -9,18 +9,15 @@ Those tests just test unity state without checking on UniTAS internals
 - General tests
     - They can be ran as long as UniTAS is loaded and maybe with some environment setups
     - Can be ran any number of times at any point of the unity runtime
+    - May hook onto unity events such as `Awake` and `Start`
 - Movie tests
     - They are ran during UniTAS is playing a movie
     - Linearly ran (tests defined in order) and a failed test may influence next movie tests
     - A whole class has to be declared as running movie tests with the `MovieTest` attribute
     - Movies themselves aren't defined on the C# side, it must be defined in test-runner and ran from there, more about movie tests further down
-- Event tests
-    - They are ran from specific unity events occuring such as Awake or Start calls
-    - Cannot be ran manually
-    - The `Test` attribute is used to specify as an event test
 
 ### Where to write them
-- `UnityTests/Shared` contains all tests
+- `UnityShared/Tests` contains all tests
 - File name indicates the type of test and the unity versions the script covers
     - Formatted as `SomeCategory__min_version_inclusive__max_version_inclusive`
 - If the category seems like the appropriate place for the test then write in it, otherwise new file
@@ -52,7 +49,7 @@ This will show a dropdown of tools to verify tests and make sure things are setu
 - To run "general tests", there is `Run General Tests` which you should run with the preview running
 
 ### Example
-General and event tests
+General tests
 ```cs
 public class ExampleTest__2022_3_41f1__6000_0_40f1 : MonoBehaviour {
     [InjectScene] public string scenePath;
@@ -69,7 +66,7 @@ public class ExampleTest__2022_3_41f1__6000_0_40f1 : MonoBehaviour {
 
     [InjectPrefab] public GameObject emptyPrefab;
 
-    [Test(SpecialTestType.Awake)]
+    [Test(EventTiming.Awake)]
     public void AwakeEventTest() {
         var obj = Instantiate(emptyPrefab);
         // ...
@@ -79,7 +76,7 @@ public class ExampleTest__2022_3_41f1__6000_0_40f1 : MonoBehaviour {
 
 Movie tests, starting from Awake
 ```cs
-[MovieTest(Timing.Awake)]
+[MovieTest(MovieTestTiming.Awake)]
 public class ExampleMovieTest__2022_3_41f1__6000_0_40f1 : MonoBehaviour {
     [Test]
     public IEnumerator<TestYield> First() {

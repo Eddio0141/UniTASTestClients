@@ -16,39 +16,41 @@ public class TestFrameworkRuntime : MonoBehaviour
     private const string AssetPath = "Assets/TestFramework";
     public const string SceneAssetPath = AssetPath + "/Scenes";
     public const string PrefabAssetPath = AssetPath + "/Prefabs";
+    public const string TestingScenePath = AssetPath + "/Scenes/general.unity";
 
     private static TestFrameworkRuntime _instance;
+    private readonly List<Result> _generalTestResults = new List<Result>();
+    private readonly List<Result> _movieTestResults = new List<Result>();
+    private Test[] _generalTests;
+    private Test[] _eventTests;
+    private (MovieTestAttribute, Test[])[] _movieTests;
 
-    private readonly List<Result> _testResults = new List<Result>();
-#pragma warning disable CS1691 CS1692 CS0414 // Field is assigned but its value is never used
-    private bool _testsDone;
-#pragma warning restore CS1691 CS1692 CS0414 // Field is assigned but its value is never used
+    private void Awake()
+    {
+        if (_instance != null)
+        {
+            DestroyImmediate(gameObject);
+            return;
+        }
 
-    private Test[] _discoveredTests;
-    private (string name, Test[])[] _movieTests;
+        DontDestroyOnLoad(this);
+        _instance = this;
+    }
 
     private static void InstanceInitIfNot()
     {
+        // don't handle modifications to game object here, do that in Awake
         if (_instance != null) return;
         var obj = new GameObject();
-        DontDestroyOnLoad(obj);
-        _instance = obj.AddComponent<TestFrameworkRuntime>();
-    }
-
-    public static IEnumerable<MethodInfo> GetTestFuncs(Type type)
-    {
-        return type
-            .GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public |
-                        BindingFlags.NonPublic).Where(m =>
-                m.GetCustomAttributes<TestAttribute>().Any(t => t.Type == null));
+        obj.AddComponent<TestFrameworkRuntime>();
     }
 
     private void DiscoverTestsIfNot()
     {
-        if (_discoveredTests != null && _movieTests != null) return;
-        
-        var tests = new List<Test>();
-        var movieTests = new List<(string, Test[])>();
+        if (_generalTests != null && _movieTests != null && _eventTests != null) return;
+        var generalTests = new List<Test>();
+        var eventTests = new List<Test>();
+        var movieTests = new List<(MovieTestAttribute, Test[])>();
 #if UNITY_5_3_OR_NEWER
         var sceneCount = SceneManager.sceneCount;
         for (var i = 0; i < sceneCount; i++)
@@ -61,86 +63,124 @@ public class TestFrameworkRuntime : MonoBehaviour
                 var movieTestAttr = monoBehType.GetCustomAttribute<MovieTestAttribute>();
                 var methods = GetTestFuncs(monoBehType);
                 var testsIter = methods.Select(m => new Test($"{monoBehType.FullName}.{m.Name}", m, monoBeh,
-                    m.GetCustomAttribute<TestAttribute>()?.Type));
+                    m.GetCustomAttribute<TestAttribute>().Timing)).ToArray();
                 if (movieTestAttr != null)
                 {
-                    movieTests.Add((monoBehType.FullName, testsIter.ToArray()));
+                    foreach (var test in testsIter)
+                    {
+                        if (test.EventTiming.HasValue)
+                        {
+                            Debug.LogWarning(
+                                $"Test {test.Name} is a movie test and the event timing argument is ineffective");
+                        }
+                    }
+
+                    movieTests.Add((movieTestAttr, testsIter));
                     continue;
                 }
-                tests.AddRange(testsIter);
+
+                generalTests.AddRange(testsIter.Where(t => !t.EventTiming.HasValue).ToArray());
+                eventTests.AddRange(testsIter.Where(t => t.EventTiming.HasValue).ToArray());
             }
         }
 #else
             throw new NotImplementedException();
 #endif
-        _discoveredTests = tests.ToArray();
+        _generalTests = generalTests.ToArray();
+        _eventTests = eventTests.ToArray();
         _movieTests = movieTests.ToArray();
-        Debug.Log($"Discovered {_discoveredTests.Length + _movieTests.Length} tests");
+        Debug.Log($"Discovered {_generalTests.Length} general tests" +
+                  $", {_eventTests.Length} event tests" +
+                  $", and {_movieTests.Length} movie tests");
     }
 
-    public static void Run()
+    public static IEnumerable<MethodInfo> GetTestFuncs(Type type)
+    {
+        return type
+            .GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
+            .Where(m => m.GetCustomAttributes<TestAttribute>().Any(t => t.Timing == null));
+    }
+
+    public static void RunGeneral()
     {
         InstanceInitIfNot();
-        _instance.RunInternal();
+        _instance.DiscoverTestsIfNot();
+        _instance.StartCoroutine(_instance.RunGeneralInternal());
     }
 
-    private void RunInternal()
+    private IEnumerator RunGeneralInternal()
     {
-        DiscoverTestsIfNot();
-        StartCoroutine(RunInternalCoroutine(_discoveredTests.Where(t => t.SpecialTestType == null)));
-    }
-
-    private IEnumerator RunInternalCoroutine(IEnumerable<Test> tests)
-    {
-        foreach (var test in tests)
+        foreach (var test in _generalTests)
         {
-            Debug.Log($"Running test {test.Name}");
-            var executeIter = test.Execute();
-
-            var success = true;
-            string msg = null;
-            while (true)
-            {
-                bool moveNextResult;
-                try
-                {
-                    moveNextResult = executeIter.MoveNext();
-                }
-                catch (Exception e)
-                {
-                    success = false;
-                    if (e.InnerException is AssertionException assertionException)
-                    {
-                        msg = assertionException.Message;
-                    }
-                    else
-                    {
-                        msg = e.ToString();
-                    }
-
-                    break;
-                }
-
-                if (!moveNextResult) break;
-                yield return executeIter.Current;
-            }
-
-            var result = new Result(test.Name, msg, success);
-            _testResults.Add(result);
-
-            // safety padding between tests, it won't be noticeable
-            for (var i = 0; i < 5; i++)
-            {
-                yield return null;
-            }
+            yield return RunTest(test);
         }
 
-        _testsDone = true;
-        Debug.Log("Tests finished");
-        foreach (var result in _testResults)
+        foreach (var test in _eventTests)
+        {
+            _pendingEventTests.Enqueue(test);
+        }
+
+        EventTestStart();
+    }
+
+    private void GeneralTestsFinish()
+    {
+        Debug.Log("General tests finished");
+        foreach (var result in _generalTestResults)
         {
             Debug.Log(result);
         }
+    }
+
+    private IEnumerator RunTest(Test test)
+    {
+        Debug.Log($"Running test {test.Name}");
+        var executeIter = test.Execute();
+        while (executeIter.MoveNext())
+        {
+            if (executeIter.Current is Result result)
+            {
+                _generalTestResults.Add(result);
+                break;
+            }
+
+            yield return executeIter.Current;
+        }
+
+        // safety padding between tests, it won't be noticeable
+        for (var i = 0; i < 5; i++)
+        {
+            yield return null;
+        }
+    }
+
+    private void EventTestStart()
+    {
+        if (_pendingEventTests.Count == 0)
+        {
+            GeneralTestsFinish();
+            return;
+        }
+
+        // trigger Awake / Start event
+        _currentEventTest = _pendingEventTests.Dequeue();
+        SceneManager.LoadScene(TestingScenePath);
+    }
+
+    private readonly Queue<Test> _pendingEventTests = new Queue<Test>();
+    private Test? _currentEventTest;
+
+    public static IEnumerator AwakeTestHook()
+    {
+        yield return _instance.EventHookInternal(EventTiming.Awake);
+    }
+
+    private IEnumerator EventHookInternal(EventTiming timing)
+    {
+        if (!_currentEventTest.HasValue || _currentEventTest.Value.EventTiming != timing)
+            yield break;
+        yield return RunTest(_currentEventTest.Value);
+        EventTestStart();
     }
 
     [SuppressMessage("ReSharper", "MemberCanBePrivate.Local")]
@@ -170,36 +210,80 @@ public class TestFrameworkRuntime : MonoBehaviour
         private readonly MethodInfo _method;
         private readonly bool _testDoesIter;
         private readonly MonoBehaviour _objInstance;
-        public readonly SpecialTestType? SpecialTestType;
+        public readonly EventTiming? EventTiming;
 
-        public Test(string name, MethodInfo method, MonoBehaviour objInstance, SpecialTestType? specialTestType)
+        public Test(string name, MethodInfo method, MonoBehaviour objInstance, EventTiming? eventTiming)
         {
             Name = name;
             _method = method;
             _objInstance = objInstance;
-            SpecialTestType = specialTestType;
+            EventTiming = eventTiming;
             _testDoesIter = method.ReturnType == typeof(IEnumerator<TestYield>);
         }
 
+        private static string GetExceptionMsg(Exception ex)
+        {
+            if (ex.InnerException is AssertionException assertionException)
+            {
+                return assertionException.Message;
+            }
+
+            return ex.ToString();
+        }
+
+        /// <summary>
+        /// Executes test, check return value for result
+        /// </summary>
+        /// <returns>Either unity coroutine yields or test result which indicates the test has finished</returns>
         public IEnumerator Execute()
         {
-            var testRet = _method.Invoke(_objInstance, Array.Empty<object>());
-            if (!_testDoesIter)
+            string msg = null;
+            var success = true;
+            object testRet = null;
+            try
             {
+                testRet = _method.Invoke(_objInstance, Array.Empty<object>());
+            }
+            catch (Exception e)
+            {
+                success = false;
+                msg = GetExceptionMsg(e);
+            }
+
+            if (!_testDoesIter || !success)
+            {
+                yield return new Result(Name, msg, false);
                 yield break;
             }
 
             var iter = (IEnumerator<TestYield>)testRet;
-
-            while (iter.MoveNext())
+            while (true)
             {
+                bool moveNextResult;
+                try
+                {
+                    moveNextResult = iter.MoveNext();
+                }
+                catch (Exception e)
+                {
+                    success = false;
+                    msg = GetExceptionMsg(e);
+                    break;
+                }
+
+                if (!moveNextResult) break;
+
                 if (iter.Current == null)
                 {
-                    throw new InvalidOperationException("Test yield returned null which isn't expected");
+                    success = false;
+                    msg = "Error: test yield returned null, which isn't expected";
+                    break;
                 }
 
                 yield return iter.Current.Operation();
             }
+
+            yield return new Result(Name, msg, success);
         }
     }
 }
