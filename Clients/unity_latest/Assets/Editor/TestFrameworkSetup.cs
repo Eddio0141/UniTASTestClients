@@ -142,37 +142,26 @@ namespace Editor
 
         private static void SymlinkFile(string source, string target)
         {
-            var exceptions = new List<Exception>();
-            try
+            var plat = Environment.OSVersion.Platform;
+            var success = plat switch
             {
-                // TODO: handle errors
-                symlink(source, target);
-            }
-            catch (Exception ex)
-            {
-                exceptions.Add(ex);
-                try
-                {
-                    // TODO: handle errors
-                    CreateSymbolicLink(target, source, SymbolicLink.File);
-                }
-                catch (Exception ex2)
-                {
-                    exceptions.Add(ex2);
-                }
-            }
+                PlatformID.Unix => symlink(source, target) == 0,
+                PlatformID.Win32NT or PlatformID.Win32S or PlatformID.Win32Windows or PlatformID.WinCE =>
+                    CreateSymbolicLink(target, source, SymbolicLink.File),
+                _ => throw new NotImplementedException($"symlink operation not implemented for platform {plat}")
+            };
 
-            if (exceptions.Count > 0)
+            if (!success)
             {
-                throw new AggregateException(exceptions);
+                throw new Exception($"symlink failed: error code {Marshal.GetLastWin32Error()}");
             }
         }
 
-        [DllImport("kernel32.dll")]
+        [DllImport("kernel32", SetLastError = true)]
         private static extern bool CreateSymbolicLink(string lpSymlinkFileName, string lpTargetFileName,
             SymbolicLink dwFlags);
 
-        [DllImport("libc.so")]
+        [DllImport("libc", SetLastError = true)]
         private static extern int symlink(string oldname, string newname);
 
         private enum SymbolicLink
