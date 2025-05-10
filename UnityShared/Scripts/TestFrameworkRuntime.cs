@@ -885,7 +885,7 @@ public class TestInjectPrefabAttribute : TestInjectAttribute
 }
 
 /// <summary>
-/// Note that this should not contain test processing, that must be done in TestFrameworkRuntime
+/// Note that this class should not contain test processing
 /// </summary>
 public class EventHooks : MonoBehaviour
 {
