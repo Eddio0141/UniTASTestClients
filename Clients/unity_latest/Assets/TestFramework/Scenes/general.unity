@@ -119,22 +119,7 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!115 &84938648
-MonoScript:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  serializedVersion: 7
-  m_DefaultReferences: {}
-  m_Icon: {fileID: 0}
-  m_Type: 0
-  m_ExecutionOrder: 0
-  m_ClassName: EventHooks
-  m_Namespace: 
-  m_AssemblyName: Assembly-CSharp
---- !u!1 &645491777
+--- !u!1 &679942612
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -142,9 +127,8 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 645491779}
-  - component: {fileID: 645491778}
-  - component: {fileID: 645491780}
+  - component: {fileID: 679942614}
+  - component: {fileID: 679942613}
   m_Layer: 0
   m_Name: EventHooks
   m_TagString: Untagged
@@ -152,25 +136,25 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &645491778
+--- !u!114 &679942613
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 645491777}
+  m_GameObject: {fileID: 679942612}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e269cfa9088a41ecb9ae030bd30f1b2f, type: 3}
+  m_Script: {fileID: 11500000, guid: 55b812f054364f33ab45835fe7972c66, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!4 &645491779
+--- !u!4 &679942614
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 645491777}
+  m_GameObject: {fileID: 679942612}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -179,19 +163,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &645491780
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 645491777}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 84938648}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!1 &1861263210
+--- !u!1 &929898651
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -199,8 +171,9 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1861263212}
-  - component: {fileID: 1861263211}
+  - component: {fileID: 929898653}
+  - component: {fileID: 929898652}
+  - component: {fileID: 929898654}
   m_Layer: 0
   m_Name: Tests
   m_TagString: Untagged
@@ -208,25 +181,25 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1861263211
+--- !u!114 &929898652
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1861263210}
+  m_GameObject: {fileID: 929898651}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ed4914e6c26a44a7b8cac2aa54a54089, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!4 &1861263212
+--- !u!4 &929898653
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1861263210}
+  m_GameObject: {fileID: 929898651}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -235,9 +208,23 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &929898654
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 929898651}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fa6e2c5c64af48988769e21bae99191d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  prefab: {fileID: 2000638186068339730, guid: 5fd6237b04b9df297976ae6b730c584d, type: 3}
+  emptyScene: Assets/TestFramework/Scenes/generated.unity
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
-  - {fileID: 1861263212}
-  - {fileID: 645491779}
+  - {fileID: 929898653}
+  - {fileID: 679942614}

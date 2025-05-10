@@ -7,7 +7,6 @@ using System.Runtime.InteropServices;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
 namespace Editor
@@ -20,71 +19,8 @@ namespace Editor
             Debug.Log("Loading UniTAS testing framework");
 
             SetupFilesAndDirs();
-            SetupTestScene();
-
-            // TODO: refactor to make tests be a single component
-            var origScene = SceneManager.GetActiveScene();
-            foreach (var buildSettingsScene in EditorBuildSettings.scenes)
-            {
-                var currentScene = origScene;
-                if (origScene.path != buildSettingsScene.path)
-                {
-                    try
-                    {
-                        currentScene = EditorSceneManager.OpenScene(buildSettingsScene.path, OpenSceneMode.Additive);
-                    }
-                    catch (Exception e)
-                    {
-                        Debug.LogWarning($"Failed to open scene `{buildSettingsScene.path}`: {e}");
-                        continue;
-                    }
-                }
-
-                var monoBehs = currentScene.GetRootGameObjects().Where(obj => obj != null)
-                    .SelectMany(obj => obj.GetComponents<MonoBehaviour>());
-
-                foreach (var monoBeh in monoBehs)
-                {
-                    var type = monoBeh.GetType();
-                    var testMethods = TestFrameworkRuntime.GetTestFuncs(type);
-
-                    var invalidTest = false;
-                    foreach (var testMethod in testMethods)
-                    {
-                        if (testMethod.ReturnType == typeof(void) ||
-                            testMethod.ReturnType == typeof(IEnumerator<TestYield>)) continue;
-                        Debug.LogError("Test return type must be void or IEnumerable<TestYield>");
-                        invalidTest = true;
-                        break;
-                    }
-
-                    if (invalidTest)
-                        continue;
-
-                    var injectFields = type
-                        .GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
-                        .Select(f => (f.Name, f.GetCustomAttribute<TestInjectAttribute>(true), f.FieldType))
-                        .Where(tuple => tuple.Item2 != null);
-                    var prop = new SerializedObject(monoBeh);
-                    foreach (var (fieldName, attr, fieldType) in injectFields)
-                    {
-                        var field = prop.FindProperty(fieldName);
-                        if (field == null)
-                        {
-                            Debug.LogError($"Field {fieldName} not found");
-                            continue;
-                        }
-
-                        Debug.Log($"Injecting field {type.FullName}.{fieldName}");
-                        attr.InjectField(fieldType, field);
-                    }
-
-                    prop.ApplyModifiedProperties();
-                }
-
-                if (EditorSceneManager.SaveScene(currentScene)) continue;
-                Debug.LogError("Failed to save scene");
-            }
+            var testObj = InitTestScene();
+            SetupTestScene(testObj);
 
             Debug.Log("Finished loading UniTAS testing framework");
         }
@@ -195,7 +131,7 @@ namespace Editor
             File = 0
         }
 
-        private static void SetupTestScene()
+        private static GameObject InitTestScene()
         {
             var saveScene = false;
             var scene = AssetDatabase.AssetPathExists(TestFrameworkRuntime.TestingScenePath)
@@ -235,6 +171,61 @@ namespace Editor
 
             if (saveScene)
                 EditorSceneManager.SaveScene(scene, TestFrameworkRuntime.TestingScenePath);
+
+            var buildScenes = EditorBuildSettings.scenes.ToList();
+            buildScenes.Add(new EditorBuildSettingsScene(TestFrameworkRuntime.TestingScenePath, true));
+            EditorBuildSettings.scenes = buildScenes.ToArray();
+
+            return testObj;
+        }
+
+        private static void SetupTestScene(GameObject tests)
+        {
+            foreach (var monoBeh in tests.GetComponents<MonoBehaviour>())
+            {
+                var type = monoBeh.GetType();
+                var testMethods = TestFrameworkRuntime.GetTestFuncs(type);
+
+                var invalidTest = false;
+                var hasTests = false;
+                foreach (var testMethod in testMethods)
+                {
+                    hasTests = true;
+                    if (testMethod.ReturnType == typeof(void) ||
+                        testMethod.ReturnType == typeof(IEnumerator<TestYield>)) continue;
+                    Debug.LogError("Test return type must be void or IEnumerable<TestYield>");
+                    invalidTest = true;
+                    break;
+                }
+
+                if (invalidTest || !hasTests)
+                    continue;
+
+                var injectFields = type
+                    .GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+                    .Select(f => (f.Name, f.GetCustomAttribute<TestInjectAttribute>(true), f.FieldType))
+                    .Where(tuple => tuple.Item2 != null);
+                var prop = new SerializedObject(monoBeh);
+                foreach (var (fieldName, attr, fieldType) in injectFields)
+                {
+                    var field = prop.FindProperty(fieldName);
+                    if (field == null)
+                    {
+                        Debug.LogError($"Field {fieldName} not found");
+                        continue;
+                    }
+
+                    Debug.Log($"Injecting field {type.FullName}.{fieldName}");
+                    attr.InjectField(fieldType, field);
+                }
+
+                prop.ApplyModifiedProperties();
+            }
+
+            if (!EditorSceneManager.SaveOpenScenes())
+            {
+                Debug.LogError("failed to save open scenes");
+            }
         }
 
         [MenuItem("Test/Run General Tests")]
