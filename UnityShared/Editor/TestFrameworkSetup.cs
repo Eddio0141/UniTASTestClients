@@ -78,8 +78,6 @@ namespace Editor
 
         private static void RelativeSymlinkFile(string source, string target)
         {
-            // add rest of the path from the base
-
             var targetWorking = Directory.GetParent(target)?.FullName;
             if (targetWorking == null)
             {
