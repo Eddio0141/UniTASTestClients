@@ -229,6 +229,12 @@ namespace Editor
         [MenuItem("Test/Run General Tests")]
         private static void RunGeneralTests()
         {
+            if (!EditorApplication.isPlaying)
+            {
+                Debug.LogError("click play first");
+                return;
+            }
+
             TestFrameworkRuntime.RunGeneral();
         }
     }

@@ -154,7 +154,7 @@ public class InstantiateAsync__2022_3__latest : MonoBehaviour
     {
         SceneManager.LoadSceneAsync(emptyScene);
         var initOp = InstantiateAsync(prefab);
-        yield return null;
+        yield return new UnityYield(null);
         // now in 1f delay
         Assert.True(initOp.isDone);
     }

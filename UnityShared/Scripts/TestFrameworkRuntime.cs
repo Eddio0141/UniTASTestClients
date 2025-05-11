@@ -12,12 +12,10 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using Object = UnityEngine.Object;
-#if UNITY_5_3_OR_NEWER
-using UnityEngine.SceneManagement;
-#endif
 
 [SuppressMessage("ReSharper", "UseStringInterpolation")]
 [SuppressMessage("ReSharper", "ArrangeObjectCreationWhenTypeEvident")]
+[DefaultExecutionOrder(0)]
 public class TestFrameworkRuntime : MonoBehaviour
 {
     private const string AssetPath = "Assets/TestFramework";
@@ -44,55 +42,39 @@ public class TestFrameworkRuntime : MonoBehaviour
         _instance = this;
     }
 
-    private static void InstanceInitIfNot()
-    {
-        // don't handle modifications to game object here, do that in Awake
-        if (_instance != null) return;
-        var obj = new GameObject();
-        obj.AddComponent<TestFrameworkRuntime>();
-    }
-
     private void DiscoverTestsIfNot()
     {
         if (_generalTests != null && _movieTests != null && _eventTests != null) return;
         var generalTests = new List<Test>();
         var eventTests = new List<Test>();
         var movieTests = new List<(MovieTestAttribute, Test[])>();
-#if UNITY_5_3_OR_NEWER
-        var sceneCount = SceneManager.sceneCount;
-        for (var i = 0; i < sceneCount; i++)
-        {
-            var scene = SceneManager.GetSceneAt(i);
-            var objs = scene.GetRootGameObjects();
-            foreach (var monoBeh in objs.SelectMany(o => o.GetComponents<MonoBehaviour>()))
-            {
-                var monoBehType = monoBeh.GetType();
-                var movieTestAttr = monoBehType.GetCustomAttribute<MovieTestAttribute>();
-                var methods = GetTestFuncs(monoBehType);
-                var testsIter = methods.Select(m => new Test($"{monoBehType.FullName}.{m.Name}", m, monoBeh,
-                    m.GetCustomAttribute<TestAttribute>().Timing)).ToArray();
-                if (movieTestAttr != null)
-                {
-                    foreach (var test in testsIter)
-                    {
-                        if (test.EventTiming.HasValue)
-                        {
-                            Debug.LogWarning(
-                                $"Test {test.Name} is a movie test and the event timing argument is ineffective");
-                        }
-                    }
 
-                    movieTests.Add((movieTestAttr, testsIter));
-                    continue;
+        foreach (var monoBeh in GetComponents<MonoBehaviour>())
+        {
+            var monoBehType = monoBeh.GetType();
+            var movieTestAttr = monoBehType.GetCustomAttribute<MovieTestAttribute>();
+            var methods = GetTestFuncs(monoBehType);
+            var testsIter = methods.Select(m => new Test($"{monoBehType.FullName}.{m.Name}", m, monoBeh,
+                m.GetCustomAttribute<TestAttribute>().Timing)).ToArray();
+            if (movieTestAttr != null)
+            {
+                foreach (var test in testsIter)
+                {
+                    if (test.EventTiming.HasValue)
+                    {
+                        Debug.LogWarning(
+                            $"Test {test.Name} is a movie test and the event timing argument is ineffective");
+                    }
                 }
 
-                generalTests.AddRange(testsIter.Where(t => !t.EventTiming.HasValue).ToArray());
-                eventTests.AddRange(testsIter.Where(t => t.EventTiming.HasValue).ToArray());
+                movieTests.Add((movieTestAttr, testsIter));
+                continue;
             }
+
+            generalTests.AddRange(testsIter.Where(t => !t.EventTiming.HasValue).ToArray());
+            eventTests.AddRange(testsIter.Where(t => t.EventTiming.HasValue).ToArray());
         }
-#else
-            throw new NotImplementedException();
-#endif
+
         _generalTests = generalTests.ToArray();
         _eventTests = eventTests.ToArray();
         _movieTests = movieTests.ToArray();
@@ -103,16 +85,23 @@ public class TestFrameworkRuntime : MonoBehaviour
 
     public static IEnumerable<MethodInfo> GetTestFuncs(Type type)
     {
-        return type
-            .GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)
-            .Where(m => m.GetCustomAttributes<TestAttribute>().Any(t => t.Timing == null));
+        return type.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public |
+                               BindingFlags.NonPublic).Where(m => m.GetCustomAttributes<TestAttribute>().Any());
     }
 
     public static void RunGeneral()
     {
-        InstanceInitIfNot();
+        if (!InstanceSetCheckAndLog()) return;
         _instance.DiscoverTestsIfNot();
         _instance.StartCoroutine(_instance.RunGeneralInternal());
+    }
+
+    private static bool InstanceSetCheckAndLog()
+    {
+        if (_instance != null) return true;
+
+        Debug.LogError("wait for the test runner instance to be instantiated");
+        return false;
     }
 
     private IEnumerator RunGeneralInternal()
@@ -171,7 +160,7 @@ public class TestFrameworkRuntime : MonoBehaviour
 
         // trigger Awake / Start event
         _currentEventTest = _pendingEventTests.Dequeue();
-        SceneManager.LoadScene(TestingScenePath);
+        Helper.Scene.LoadScene(TestingScenePath);
     }
 
     private readonly Queue<Test> _pendingEventTests = new Queue<Test>();
@@ -179,6 +168,7 @@ public class TestFrameworkRuntime : MonoBehaviour
 
     public static IEnumerator AwakeTestHook()
     {
+        if (!InstanceSetCheckAndLog()) yield break;
         yield return _instance.EventHookInternal(EventTiming.Awake);
     }
 
@@ -259,7 +249,7 @@ public class TestFrameworkRuntime : MonoBehaviour
 
             if (!_testDoesIter || !success)
             {
-                yield return new Result(Name, msg, false);
+                yield return new Result(Name, msg, success);
                 yield break;
             }
 
@@ -744,7 +734,7 @@ public class SceneSwitchYield : TestYield
 
     public override IEnumerator Operation()
     {
-        SceneManager.LoadScene(_scenePath);
+        Helper.Scene.LoadScene(_scenePath);
         yield break;
     }
 }
@@ -881,5 +871,20 @@ public class TestInjectPrefabAttribute : TestInjectAttribute
 
         if (!success)
             Debug.LogError("Failed to save prefab");
+    }
+}
+
+public static class Helper
+{
+    public static class Scene
+    {
+        public static void LoadScene(string scene)
+        {
+#if UNITY_5_3_OR_NEWER
+            UnityEngine.SceneManagement.SceneManager.LoadScene(scene);
+#else
+throw new NotImplementedException();
+#endif
+        }
     }
 }

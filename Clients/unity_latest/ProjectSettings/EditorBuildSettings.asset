@@ -26,6 +26,63 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/TestFramework/Scenes/generated.unity
     guid: 88a85441e501cfae2b9a8ca3877ef0b0
+  - enabled: 1
+    path: Assets/TestFramework/Scenes/general.unity
+    guid: 637b81af0596e2f2dab2c174364b439f
+  - enabled: 1
+    path: Assets/TestFramework/Scenes/general.unity
+    guid: 637b81af0596e2f2dab2c174364b439f
+  - enabled: 1
+    path: Assets/TestFramework/Scenes/general.unity
+    guid: 637b81af0596e2f2dab2c174364b439f
+  - enabled: 1
+    path: Assets/TestFramework/Scenes/general.unity
+    guid: 637b81af0596e2f2dab2c174364b439f
+  - enabled: 1
+    path: Assets/TestFramework/Scenes/general.unity
+    guid: 637b81af0596e2f2dab2c174364b439f
+  - enabled: 1
+    path: Assets/TestFramework/Scenes/general.unity
+    guid: 637b81af0596e2f2dab2c174364b439f
+  - enabled: 1
+    path: Assets/TestFramework/Scenes/general.unity
+    guid: 637b81af0596e2f2dab2c174364b439f
+  - enabled: 1
+    path: Assets/TestFramework/Scenes/general.unity
+    guid: 637b81af0596e2f2dab2c174364b439f
+  - enabled: 1
+    path: Assets/TestFramework/Scenes/general.unity
+    guid: 637b81af0596e2f2dab2c174364b439f
+  - enabled: 1
+    path: Assets/TestFramework/Scenes/general.unity
+    guid: 637b81af0596e2f2dab2c174364b439f
+  - enabled: 1
+    path: Assets/TestFramework/Scenes/general.unity
+    guid: 637b81af0596e2f2dab2c174364b439f
+  - enabled: 1
+    path: Assets/TestFramework/Scenes/general.unity
+    guid: 637b81af0596e2f2dab2c174364b439f
+  - enabled: 1
+    path: Assets/TestFramework/Scenes/general.unity
+    guid: 637b81af0596e2f2dab2c174364b439f
+  - enabled: 1
+    path: Assets/TestFramework/Scenes/general.unity
+    guid: 637b81af0596e2f2dab2c174364b439f
+  - enabled: 1
+    path: Assets/TestFramework/Scenes/general.unity
+    guid: 637b81af0596e2f2dab2c174364b439f
+  - enabled: 1
+    path: Assets/TestFramework/Scenes/general.unity
+    guid: 637b81af0596e2f2dab2c174364b439f
+  - enabled: 1
+    path: Assets/TestFramework/Scenes/general.unity
+    guid: 637b81af0596e2f2dab2c174364b439f
+  - enabled: 1
+    path: Assets/TestFramework/Scenes/general.unity
+    guid: 637b81af0596e2f2dab2c174364b439f
+  - enabled: 1
+    path: Assets/TestFramework/Scenes/general.unity
+    guid: 637b81af0596e2f2dab2c174364b439f
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_UseUCBPForAssetBundles: 0
