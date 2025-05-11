@@ -93,7 +93,7 @@ namespace Editor
                 if (targetWorking == null)
                 {
                     throw new InvalidOperationException("Directory.GetParent returned null, this should never happen" +
-                                                        $", source: `{source}, target: {target}");
+                                                        $", source: `{source}`, target: `{target}`");
                 }
 
                 sourceRel += $"..{Path.DirectorySeparatorChar}";
