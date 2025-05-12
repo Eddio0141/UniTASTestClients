@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 [SuppressMessage("ReSharper", "InconsistentNaming")]
-public class InstantiateAsync__2022_3__latest : MonoBehaviour
+public class InstantiateAsync__2022_3__6000_0_44f1 : MonoBehaviour
 {
     [TestInjectPrefab] public GameObject prefab;
     [TestInjectScene] public string emptyScene;

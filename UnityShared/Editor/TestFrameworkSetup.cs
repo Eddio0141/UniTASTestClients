@@ -16,21 +16,23 @@ namespace Editor
         [MenuItem("Test/Setup")]
         private static void Setup()
         {
-            Debug.Log("Loading UniTAS testing framework");
+            AssetDatabase.StartAssetEditing();
 
+            Debug.Log("Loading UniTAS testing framework");
             InitDirs();
             var (sharedScriptsDir, sharedEditorDir, testsDir) = GetRepoDirs();
             LinkRunnerFiles(sharedScriptsDir, sharedEditorDir);
-            LinkTests(testsDir);
-            var testObj = InitTestScene();
-            SetupTestScene(testObj);
+            InitTestScene();
+            LinkAndAddTests(testsDir);
 
-            Debug.Log("Finished loading UniTAS testing framework");
+            AssetDatabase.StopAssetEditing();
+            AssetDatabase.Refresh();
         }
 
         private const string ScriptsDir = "Assets/Scripts";
+        private const string TestsDir = ScriptsDir + "/Tests";
 
-        private static ( string sharedScriptsDir, string sharedEditorDir, string testsDir) GetRepoDirs()
+        private static (string sharedScriptsDir, string sharedEditorDir, string testsDir) GetRepoDirs()
         {
             var repoDir = Directory.GetCurrentDirectory();
             while (Path.GetFileName(repoDir) != "UniTASTestClients")
@@ -48,7 +50,6 @@ namespace Editor
             AssertDirExists(sharedEditorDir);
             var testsDir = Path.Combine(sharedDir, "Tests");
             AssertDirExists(testsDir);
-
             return (sharedScriptsDir, sharedEditorDir, testsDir);
         }
 
@@ -61,7 +62,7 @@ namespace Editor
         {
             var createPaths = new[]
             {
-                TestFrameworkRuntime.SceneAssetPath, TestFrameworkRuntime.PrefabAssetPath, ScriptsDir
+                TestFrameworkRuntime.SceneAssetPath, TestFrameworkRuntime.PrefabAssetPath, TestsDir
             };
             foreach (var path in createPaths)
             {
@@ -95,7 +96,7 @@ namespace Editor
             }
         }
 
-        private static void LinkTests(string testsDir)
+        private static void LinkAndAddTests(string testsDir)
         {
             foreach (var sourceFile in Directory.GetFiles(testsDir, "*.cs", SearchOption.TopDirectoryOnly))
             {
@@ -106,7 +107,7 @@ namespace Editor
                 }
 
                 Debug.Log($"found matching test file `{fileNameNoExt}`");
-                var destFile = Path.Combine(ScriptsDir, Path.GetFileName(sourceFile));
+                var destFile = Path.Combine(TestsDir, Path.GetFileName(sourceFile));
                 if (File.Exists(destFile))
                 {
                     File.Delete(destFile);
@@ -116,43 +117,113 @@ namespace Editor
             }
         }
 
+        [UnityEditor.Callbacks.DidReloadScripts]
+        private static void AfterReload()
+        {
+            if (EditorApplication.isCompiling || EditorApplication.isUpdating)
+            {
+                EditorApplication.delayCall += AfterReload;
+                return;
+            }
+
+            var testObj = Object.FindObjectsByType<GameObject>(FindObjectsSortMode.None)
+                .First(o => o.name == TestObjName);
+
+            AddTests(testObj);
+            SetupTestScene(testObj);
+
+            if (!EditorSceneManager.SaveOpenScenes())
+            {
+                Debug.LogError("failed to save opened scenes");
+            }
+            
+            Debug.Log("Finished loading UniTAS testing framework");
+        }
+
+        private static void AddTests(GameObject testObj)
+        {
+            if (!Directory.Exists(TestsDir))
+            {
+                Debug.LogWarning($"tests directory `{TestsDir}` doesn't exist");
+                return;
+            }
+
+            foreach (var testPath in Directory.GetFiles(TestsDir, "*.cs", SearchOption.TopDirectoryOnly))
+            {
+                var script = AssetDatabase.LoadAssetAtPath<MonoScript>(testPath);
+                testObj.AddComponent(script.GetClass());
+            }
+        }
+
         private const string TinySep = "_";
         private const string BigSep = "__";
 
         private static bool MatchesVersion(string testName)
         {
             var exampleTestName = $"`Category{BigSep}2022{TinySep}3{TinySep}41{BigSep}2023{TinySep}3`";
-
             var versionStartIdx = testName.IndexOf(BigSep, StringComparison.InvariantCulture);
-            if (versionStartIdx == -1)
+            switch (versionStartIdx)
             {
-                throw new InvalidOperationException(
-                    $"test name `{testName}` is formatted wrong, missing initial `{BigSep}` before stating" +
-                    " minimum unity version like so: " + exampleTestName);
-            }
-
-            if (versionStartIdx == 0)
-            {
-                Debug.LogWarning($"test name `{testName}` has got no category prefixed in the name like so: " +
-                                 exampleTestName);
+                case -1:
+                    throw new InvalidOperationException(
+                        $"test name `{testName}` is formatted wrong, missing initial `{BigSep}` before stating" +
+                        " minimum unity version like so: " + exampleTestName);
+                case 0:
+                    Debug.LogWarning($"test name `{testName}` has got no category prefixed in the name like so: " +
+                                     exampleTestName);
+                    break;
             }
 
             var fullVersionRaw = testName[(versionStartIdx + BigSep.Length)..];
             var versionSepIdx = fullVersionRaw.IndexOf(BigSep, StringComparison.InvariantCulture);
-            if (versionSepIdx == -1)
+            switch (versionSepIdx)
             {
-                throw new InvalidOperationException(
-                    $"test name `{testName}` doesn't have a max version defined for the test, only the min version" +
-                    "you need to add the maximum inclusive version like so: " + exampleTestName);
+                case -1:
+                    throw new InvalidOperationException(
+                        $"test name `{testName}` doesn't have a max version defined for the test, only the min version" +
+                        "you need to add the maximum inclusive version like so: " + exampleTestName);
+                case 0:
+                    throw new InvalidOperationException(
+                        $"test name `{testName}` minimum version is non-existent, you need to define it like so: " +
+                        exampleTestName);
             }
 
             var versionMinRaw = fullVersionRaw[..versionSepIdx];
             var versionMaxRaw = fullVersionRaw[(versionSepIdx + BigSep.Length)..];
+            if (versionMaxRaw.Trim().Length == 0)
+            {
+                throw new InvalidOperationException(
+                    $"test name `{testName}` maximum version is non-existent, you need to define it like so: " +
+                    exampleTestName);
+            }
 
-            var versionMin = GetVersionFromRaw(versionMinRaw);
-            var versionMax = GetVersionFromRaw(versionMaxRaw);
-            
-            var currentVersion = Application.version;
+            using var versionMin = GetVersionFromRaw(versionMinRaw).GetEnumerator();
+            using var versionMax = GetVersionFromRaw(versionMaxRaw).GetEnumerator();
+            var currentVersion = Application.unityVersion.Split('.').Select(v => int.Parse(v.Replace('f', '0')))
+                .ToArray();
+            foreach (var currentVersionEntry in currentVersion)
+            {
+                if (!versionMin.MoveNext())
+                {
+                    break;
+                }
+
+                if (currentVersionEntry > versionMin.Current) break;
+                if (currentVersionEntry < versionMin.Current) return false;
+            }
+
+            foreach (var currentVersionEntry in currentVersion)
+            {
+                if (!versionMax.MoveNext())
+                {
+                    break;
+                }
+
+                if (currentVersionEntry < versionMax.Current) break;
+                if (currentVersionEntry > versionMax.Current) return false;
+            }
+
+            return true;
         }
 
         private static IEnumerable<int> GetVersionFromRaw(string rawVersion)
@@ -160,7 +231,7 @@ namespace Editor
             var split = rawVersion.Split(TinySep);
             return split.Select(v =>
             {
-                if (int.TryParse(v, out var success))
+                if (int.TryParse(v.Replace('f', '0'), out var success))
                 {
                     return success;
                 }
@@ -220,19 +291,20 @@ namespace Editor
             File = 0
         }
 
-        private static GameObject InitTestScene()
+        private const string TestObjName = "Tests";
+
+        private static void InitTestScene()
         {
             var saveScene = false;
             var scene = AssetDatabase.AssetPathExists(TestFrameworkRuntime.TestingScenePath)
                 ? EditorSceneManager.OpenScene(TestFrameworkRuntime.TestingScenePath, OpenSceneMode.Single)
                 : EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
-            const string testObjName = "Tests";
             const string eventHooksObjName = "EventHooks";
             var testObj = Object.FindObjectsByType<GameObject>(FindObjectsSortMode.None)
-                .FirstOrDefault(o => o.name == testObjName);
+                .FirstOrDefault(o => o.name == TestObjName);
             if (testObj == null)
             {
-                testObj = new GameObject(testObjName);
+                testObj = new GameObject(TestObjName);
                 saveScene = true;
             }
 
@@ -260,13 +332,13 @@ namespace Editor
             var buildScenes = EditorBuildSettings.scenes.ToList();
             buildScenes.Add(new EditorBuildSettingsScene(TestFrameworkRuntime.TestingScenePath, true));
             EditorBuildSettings.scenes = buildScenes.ToArray();
-            return testObj;
         }
 
         private static void SetupTestScene(GameObject tests)
         {
             foreach (var monoBeh in tests.GetComponents<MonoBehaviour>())
             {
+                if (monoBeh == null) continue;
                 var type = monoBeh.GetType();
                 var testMethods = TestFrameworkRuntime.GetTestFuncs(type);
                 var invalidTest = false;
@@ -301,11 +373,6 @@ namespace Editor
                 }
 
                 prop.ApplyModifiedProperties();
-            }
-
-            if (!EditorSceneManager.SaveOpenScenes())
-            {
-                Debug.LogError("failed to save open scenes");
             }
         }
 
