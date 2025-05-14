@@ -10,6 +10,9 @@ Those tests just test unity state without checking on UniTAS internals
     - They can be ran as long as UniTAS is loaded and maybe with some environment setups
     - Can be ran any number of times at any point of the unity runtime
     - May hook onto unity events such as `Awake` and `Start`
+- Init tests
+    - Automatically ran on initialization of unity, which could be from `RuntimeInitializeOnLoadMethodAttribute` or `Awake`, whatever is required
+    - Tests are ran in parallel all at once
 - Movie tests
     - They are ran during UniTAS is playing a movie
     - Linearly ran (tests defined in order) and a failed test may influence next movie tests
