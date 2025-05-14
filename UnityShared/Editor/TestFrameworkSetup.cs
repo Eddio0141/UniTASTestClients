@@ -29,7 +29,12 @@ namespace Editor
         [UnityEditor.Callbacks.DidReloadScripts]
         private static void AfterReload()
         {
-            if (_preventAfterReload) return;
+            if (_preventAfterReload)
+            {
+                Debug.LogError("prevented AfterReload call happening recursively, something is causing this");
+                return;
+            }
+            
             if (EditorApplication.isCompiling || EditorApplication.isUpdating)
             {
                 EditorApplication.delayCall += AfterReload;
