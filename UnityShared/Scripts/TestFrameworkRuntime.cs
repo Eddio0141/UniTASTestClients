@@ -810,15 +810,8 @@ public class TestInjectSceneAttribute : TestInjectAttribute
             return;
         }
 
-        string scenePath;
-        while (true)
-        {
-            const string sceneName = "generated.unity";
-            scenePath = AssetDatabase.GenerateUniqueAssetPath(Path.Combine(TestFrameworkRuntime.SceneAssetPath,
-                sceneName));
-            if (EditorBuildSettings.scenes.All(s => s.path != scenePath))
-                break;
-        }
+        var scenePath = AssetDatabase.GenerateUniqueAssetPath(Path.Combine(TestFrameworkRuntime.SceneAssetPath,
+            "generated.unity"));
 
         Debug.Log($"Creating scene at `{scenePath}`");
         var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene,
@@ -864,10 +857,12 @@ public class TestInjectPrefabAttribute : TestInjectAttribute
         PrefabUtility.SaveAsPrefabAsset(prefabBase, prefabPath, out var success);
         Object.DestroyImmediate(prefabBase);
 
-        AssetDatabase.SaveAssets();
-        AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
-
-        field.objectReferenceValue = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+        EditorApplication.delayCall += () =>
+        {
+            field.objectReferenceValue = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+            field.serializedObject.ApplyModifiedProperties();
+            Helper.Scene.DelaySaveOpenScenes();
+        };
 
         if (!success)
             Debug.LogError("Failed to save prefab");
@@ -885,6 +880,17 @@ public static class Helper
 #else
 throw new NotImplementedException();
 #endif
+        }
+
+        public static void DelaySaveOpenScenes()
+        {
+            EditorApplication.delayCall += () =>
+            {
+                if (!EditorSceneManager.SaveOpenScenes())
+                {
+                    Debug.LogError("failed to save open scenes");
+                }
+            };
         }
     }
 }

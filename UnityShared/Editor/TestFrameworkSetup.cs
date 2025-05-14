@@ -16,18 +16,46 @@ namespace Editor
         [MenuItem("Test/Setup")]
         private static void Setup()
         {
-            AssetDatabase.StartAssetEditing();
-
             Debug.Log("Loading UniTAS testing framework");
             InitDirs();
             var (sharedScriptsDir, sharedEditorDir, testsDir) = GetRepoDirs();
             LinkRunnerFiles(sharedScriptsDir, sharedEditorDir);
             InitTestScene();
             LinkAndAddTests(testsDir);
-
-            AssetDatabase.StopAssetEditing();
-            AssetDatabase.Refresh();
         }
+
+        private static bool _preventAfterReload;
+
+        [UnityEditor.Callbacks.DidReloadScripts]
+        private static void AfterReload()
+        {
+            if (_preventAfterReload) return;
+            if (EditorApplication.isCompiling || EditorApplication.isUpdating)
+            {
+                EditorApplication.delayCall += AfterReload;
+                return;
+            }
+
+            _preventAfterReload = true;
+
+            var testObj = Object.FindObjectsByType<GameObject>(FindObjectsSortMode.None)
+                .FirstOrDefault(o => o.name == TestObjName);
+
+            if (testObj != null)
+            {
+                AddTests(testObj);
+                SetupTestScene(testObj);
+
+                if (!EditorSceneManager.SaveOpenScenes())
+                {
+                    Debug.LogError("failed to save opened scenes");
+                }
+            }
+
+            Debug.Log("Finished loading UniTAS testing framework");
+            _preventAfterReload = false;
+        }
+
 
         private const string ScriptsDir = "Assets/Scripts";
         private const string TestsDir = ScriptsDir + "/Tests";
@@ -117,29 +145,6 @@ namespace Editor
             }
         }
 
-        [UnityEditor.Callbacks.DidReloadScripts]
-        private static void AfterReload()
-        {
-            if (EditorApplication.isCompiling || EditorApplication.isUpdating)
-            {
-                EditorApplication.delayCall += AfterReload;
-                return;
-            }
-
-            var testObj = Object.FindObjectsByType<GameObject>(FindObjectsSortMode.None)
-                .First(o => o.name == TestObjName);
-
-            AddTests(testObj);
-            SetupTestScene(testObj);
-
-            if (!EditorSceneManager.SaveOpenScenes())
-            {
-                Debug.LogError("failed to save opened scenes");
-            }
-            
-            Debug.Log("Finished loading UniTAS testing framework");
-        }
-
         private static void AddTests(GameObject testObj)
         {
             if (!Directory.Exists(TestsDir))
@@ -151,7 +156,9 @@ namespace Editor
             foreach (var testPath in Directory.GetFiles(TestsDir, "*.cs", SearchOption.TopDirectoryOnly))
             {
                 var script = AssetDatabase.LoadAssetAtPath<MonoScript>(testPath);
-                testObj.AddComponent(script.GetClass());
+                var scriptType = script.GetClass();
+                if (testObj.GetComponent(scriptType) != null) continue;
+                testObj.AddComponent(scriptType);
             }
         }
 
