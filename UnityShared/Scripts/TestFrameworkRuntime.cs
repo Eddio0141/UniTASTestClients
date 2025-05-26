@@ -54,8 +54,11 @@ public class TestFrameworkRuntime : MonoBehaviour
             var monoBehType = monoBeh.GetType();
             var movieTestAttr = monoBehType.GetCustomAttribute<MovieTestAttribute>();
             var methods = GetTestFuncs(monoBehType);
-            var testsIter = methods.Select(m => new Test($"{monoBehType.FullName}.{m.Name}", m, monoBeh,
-                m.GetCustomAttribute<TestAttribute>().Timing)).ToArray();
+            var testsIter = methods.Select(m =>
+            {
+                var attr = m.GetCustomAttribute<TestAttribute>();
+                return new Test($"{monoBehType.FullName}.{m.Name}", m, monoBeh, attr.EventTiming, attr.InitTestTiming);
+            }).ToArray();
             if (movieTestAttr != null)
             {
                 foreach (var test in testsIter)
@@ -208,14 +211,25 @@ public class TestFrameworkRuntime : MonoBehaviour
         private readonly bool _testDoesIter;
         private readonly MonoBehaviour _objInstance;
         public readonly EventTiming? EventTiming;
+        public readonly InitTestTiming? InitTest;
 
-        public Test(string name, MethodInfo method, MonoBehaviour objInstance, EventTiming? eventTiming)
+        public Test(string name, MethodInfo method, MonoBehaviour objInstance, EventTiming? eventTiming,
+            InitTestTiming? initTest)
         {
             Name = name;
             _method = method;
             _objInstance = objInstance;
             EventTiming = eventTiming;
+            InitTest = initTest;
             _testDoesIter = method.ReturnType == typeof(IEnumerator<TestYield>);
+
+            if (EventTiming != null && InitTest != null)
+            {
+                throw new InvalidOperationException(
+                    $"Test {name} has event timing and init timing specified, choose one, " +
+                    "event timing are tests that can be ran at any point in the lifetime of unity games, " +
+                    "init tests are ran automatically on the specified timing");
+            }
         }
 
         private static string GetExceptionMsg(Exception ex)
@@ -744,17 +758,24 @@ public class SceneSwitchYield : TestYield
 [MeansImplicitUse]
 public class TestAttribute : Attribute
 {
-    public readonly EventTiming? Timing;
+    public readonly EventTiming? EventTiming;
+    public readonly InitTestTiming? InitTestTiming;
 
     // for some reason unity hates it when the constructor takes the nullable as an argument
     public TestAttribute()
     {
-        Timing = null;
+        EventTiming = null;
+        InitTestTiming = null;
     }
 
-    public TestAttribute(EventTiming timing)
+    public TestAttribute(EventTiming eventTiming)
     {
-        Timing = timing;
+        EventTiming = eventTiming;
+    }
+
+    public TestAttribute(InitTestTiming initTestTiming)
+    {
+        InitTestTiming = initTestTiming;
     }
 }
 
@@ -778,6 +799,10 @@ public class MovieTestAttribute : Attribute
 public enum MovieTestTiming
 {
     Awake
+}
+
+public enum InitTestTiming
+{
 }
 
 // injection attributes
