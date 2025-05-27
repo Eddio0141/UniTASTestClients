@@ -25,10 +25,16 @@ public class TestFrameworkRuntime : MonoBehaviour
 
     private static TestFrameworkRuntime _instance;
     private readonly List<Result> _generalTestResults = new List<Result>();
+    private readonly List<Result> _initTestResults = new List<Result>();
     private readonly List<Result> _movieTestResults = new List<Result>();
     private Test[] _generalTests;
     private Test[] _eventTests;
     private (MovieTestAttribute, Test[])[] _movieTests;
+    private Test[] _initTestsAwake;
+
+    private bool _initTestsAwakeRan;
+
+    private bool InitTestsAwakeDone => _initTestsAwakeRan;
 
     private void Awake()
     {
@@ -42,12 +48,16 @@ public class TestFrameworkRuntime : MonoBehaviour
         _instance = this;
     }
 
+    private bool _discoveredTests;
+
     private void DiscoverTestsIfNot()
     {
-        if (_generalTests != null && _movieTests != null && _eventTests != null) return;
+        if (_discoveredTests) return;
+        _discoveredTests = true;
         var generalTests = new List<Test>();
         var eventTests = new List<Test>();
         var movieTests = new List<(MovieTestAttribute, Test[])>();
+        var initTestsAwake = new List<Test>();
 
         foreach (var monoBeh in GetComponents<MonoBehaviour>())
         {
@@ -65,6 +75,7 @@ public class TestFrameworkRuntime : MonoBehaviour
                 {
                     if (test.EventTiming.HasValue)
                     {
+                        // TODO: why warn here? the tests discovery isn't used in setup
                         Debug.LogWarning(
                             $"Test {test.Name} is a movie test and the event timing argument is ineffective");
                     }
@@ -74,16 +85,19 @@ public class TestFrameworkRuntime : MonoBehaviour
                 continue;
             }
 
-            generalTests.AddRange(testsIter.Where(t => !t.EventTiming.HasValue).ToArray());
-            eventTests.AddRange(testsIter.Where(t => t.EventTiming.HasValue).ToArray());
+            generalTests.AddRange(testsIter.Where(t => !t.EventTiming.HasValue && !t.InitTiming.HasValue));
+            initTestsAwake.AddRange(testsIter.Where(t => t.InitTiming.HasValue));
+            eventTests.AddRange(testsIter.Where(t => t.EventTiming.HasValue));
         }
 
         _generalTests = generalTests.ToArray();
         _eventTests = eventTests.ToArray();
         _movieTests = movieTests.ToArray();
+        _initTestsAwake = initTestsAwake.ToArray();
         Debug.Log($"Discovered {_generalTests.Length} general tests" +
                   $", {_eventTests.Length} event tests" +
-                  $", and {_movieTests.Length} movie tests");
+                  $", {_movieTests.Length} movie tests" +
+                  $", {_initTestsAwake.Length} init tests (Awake)");
     }
 
     public static IEnumerable<MethodInfo> GetTestFuncs(Type type)
@@ -169,10 +183,79 @@ public class TestFrameworkRuntime : MonoBehaviour
     private readonly Queue<Test> _pendingEventTests = new Queue<Test>();
     private Test? _currentEventTest;
 
+    /// <summary>
+    /// Runs tests as init tests, meaning the tests run in parallel
+    /// </summary>
+    private IEnumerator RunInitTests(IEnumerable<Test> tests)
+    {
+        var testsList = tests.Select(t =>
+        {
+            Debug.Log($"Running test {t.Name}");
+            return t.Execute();
+        }).ToList();
+
+        // could be better with removing tests but whatever, it won't matter
+        var removes = new List<int>();
+
+        while (testsList.Count > 0)
+        {
+            for (var i = 0; i < testsList.Count; i++)
+            {
+                var executeIter = testsList[i];
+                if (!executeIter.MoveNext())
+                {
+                    removes.Add(i);
+                    continue;
+                }
+
+                if (executeIter.Current is Result result)
+                {
+                    _initTestResults.Add(result);
+                    removes.Add(i);
+                    continue;
+                }
+
+                yield return executeIter.Current;
+            }
+
+            // also could be better
+            foreach (var i in ((IEnumerable<int>)removes).Reverse())
+            {
+                testsList.RemoveAt(i);
+            }
+        }
+    }
+
     public static IEnumerator AwakeTestHook()
     {
         if (!InstanceSetCheckAndLog()) yield break;
+
+        yield return _instance.InitTestAwakeCheckAndRun();
         yield return _instance.EventHookInternal(EventTiming.Awake);
+    }
+
+    private IEnumerator InitTestAwakeCheckAndRun()
+    {
+        if (_initTestsAwakeRan) yield break;
+        _initTestsAwakeRan = true;
+        DiscoverTestsIfNot();
+        yield return RunInitTests(_initTestsAwake);
+
+        InitTestsFinishCheckAndLog();
+    }
+
+    private bool _initTestsFinishLogged;
+
+    private void InitTestsFinishCheckAndLog()
+    {
+        if (!InitTestsAwakeDone || _initTestsFinishLogged) return;
+        _initTestsFinishLogged = true;
+
+        Debug.Log("Init tests finished");
+        foreach (var result in _initTestResults)
+        {
+            Debug.Log(result);
+        }
     }
 
     private IEnumerator EventHookInternal(EventTiming timing)
@@ -211,19 +294,19 @@ public class TestFrameworkRuntime : MonoBehaviour
         private readonly bool _testDoesIter;
         private readonly MonoBehaviour _objInstance;
         public readonly EventTiming? EventTiming;
-        public readonly InitTestTiming? InitTest;
+        public readonly InitTestTiming? InitTiming;
 
         public Test(string name, MethodInfo method, MonoBehaviour objInstance, EventTiming? eventTiming,
-            InitTestTiming? initTest)
+            InitTestTiming? initTiming)
         {
             Name = name;
             _method = method;
             _objInstance = objInstance;
             EventTiming = eventTiming;
-            InitTest = initTest;
+            InitTiming = initTiming;
             _testDoesIter = method.ReturnType == typeof(IEnumerator<TestYield>);
 
-            if (EventTiming != null && InitTest != null)
+            if (EventTiming != null && InitTiming != null)
             {
                 throw new InvalidOperationException(
                     $"Test {name} has event timing and init timing specified, choose one, " +
@@ -803,6 +886,7 @@ public enum MovieTestTiming
 
 public enum InitTestTiming
 {
+    Awake
 }
 
 // injection attributes

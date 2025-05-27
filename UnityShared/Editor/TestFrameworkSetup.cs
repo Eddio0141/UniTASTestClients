@@ -41,6 +41,8 @@ namespace Editor
                 return;
             }
 
+            if (EditorApplication.isPlaying) return;
+
             _preventAfterReload = true;
 
             var testObj = Object.FindObjectsByType<GameObject>(FindObjectsSortMode.None)

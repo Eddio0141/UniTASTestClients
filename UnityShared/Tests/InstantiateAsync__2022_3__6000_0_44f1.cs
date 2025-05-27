@@ -6,6 +6,33 @@ using UnityEngine.SceneManagement;
 [SuppressMessage("ReSharper", "InconsistentNaming")]
 public class InstantiateAsync__2022_3__6000_0_44f1 : MonoBehaviour
 {
+    [Test(InitTestTiming.Awake)]
+    public void asdf(){}
+
+    [Test(InitTestTiming.Awake)]
+    public IEnumerator<TestYield> foo()
+    {
+        Debug.Log(Time.frameCount);
+        yield return new UnityYield(null);
+        Debug.Log(Time.frameCount);
+        yield return new UnityYield(null);
+        Debug.Log(Time.frameCount);
+        yield return new UnityYield(null);
+        Debug.Log(Time.frameCount);
+    }
+    
+    [Test(InitTestTiming.Awake)]
+    public IEnumerator<TestYield> bar()
+    {
+        Debug.Log("a"); 
+        yield return new UnityYield(null);
+        Debug.Log("bar");
+        yield return new UnityYield(null);
+        Debug.Log("baz");
+        yield return new UnityYield(null);
+        Debug.Log("buh");
+    }
+    
     [TestInjectPrefab] public GameObject prefab;
     [TestInjectScene] public string emptyScene;
 
