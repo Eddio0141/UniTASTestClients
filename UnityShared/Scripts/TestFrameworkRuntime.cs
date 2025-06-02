@@ -30,11 +30,9 @@ public class TestFrameworkRuntime : MonoBehaviour
     private Test[] _generalTests;
     private Test[] _eventTests;
     private (MovieTestAttribute, Test[])[] _movieTests;
-    private Test[] _initTestsAwake;
+    private List<Test> _initTestsAwake;
 
     private bool _initTestsAwakeRan;
-
-    private bool InitTestsAwakeDone => _initTestsAwakeRan;
 
     private void Awake()
     {
@@ -93,11 +91,11 @@ public class TestFrameworkRuntime : MonoBehaviour
         _generalTests = generalTests.ToArray();
         _eventTests = eventTests.ToArray();
         _movieTests = movieTests.ToArray();
-        _initTestsAwake = initTestsAwake.ToArray();
+        _initTestsAwake = initTestsAwake;
         Debug.Log($"Discovered {_generalTests.Length} general tests" +
                   $", {_eventTests.Length} event tests" +
                   $", {_movieTests.Length} movie tests" +
-                  $", {_initTestsAwake.Length} init tests (Awake)");
+                  $", {_initTestsAwake.Count} init tests (Awake)");
     }
 
     public static IEnumerable<MethodInfo> GetTestFuncs(Type type)
@@ -125,7 +123,8 @@ public class TestFrameworkRuntime : MonoBehaviour
     {
         foreach (var test in _generalTests)
         {
-            yield return RunTest(test);
+            yield return RunTest(test, _generalTestResults);
+            yield return TestSafetyDelay();
         }
 
         foreach (var test in _eventTests)
@@ -145,7 +144,7 @@ public class TestFrameworkRuntime : MonoBehaviour
         }
     }
 
-    private IEnumerator RunTest(Test test)
+    private static IEnumerator RunTest(Test test, List<Result> results)
     {
         Debug.Log($"Running test {test.Name}");
         var executeIter = test.Execute();
@@ -153,14 +152,16 @@ public class TestFrameworkRuntime : MonoBehaviour
         {
             if (executeIter.Current is Result result)
             {
-                _generalTestResults.Add(result);
+                results.Add(result);
                 break;
             }
 
             yield return executeIter.Current;
         }
+    }
 
-        // safety padding between tests, it won't be noticeable
+    private static IEnumerator TestSafetyDelay()
+    {
         for (var i = 0; i < 5; i++)
         {
             yield return null;
@@ -186,44 +187,12 @@ public class TestFrameworkRuntime : MonoBehaviour
     /// <summary>
     /// Runs tests as init tests, meaning the tests run in parallel
     /// </summary>
-    private IEnumerator RunInitTests(IEnumerable<Test> tests)
+    private IEnumerator RunInitTest(Test test)
     {
-        var testsList = tests.Select(t =>
-        {
-            Debug.Log($"Running test {t.Name}");
-            return t.Execute();
-        }).ToList();
+        yield return RunTest(test, _initTestResults);
+        _initTestsAwake.Remove(test);
 
-        // could be better with removing tests but whatever, it won't matter
-        var removes = new List<int>();
-
-        while (testsList.Count > 0)
-        {
-            for (var i = 0; i < testsList.Count; i++)
-            {
-                var executeIter = testsList[i];
-                if (!executeIter.MoveNext())
-                {
-                    removes.Add(i);
-                    continue;
-                }
-
-                if (executeIter.Current is Result result)
-                {
-                    _initTestResults.Add(result);
-                    removes.Add(i);
-                    continue;
-                }
-
-                yield return executeIter.Current;
-            }
-
-            // also could be better
-            foreach (var i in ((IEnumerable<int>)removes).Reverse())
-            {
-                testsList.RemoveAt(i);
-            }
-        }
+        InitTestsFinishCheckAndLog();
     }
 
     public static IEnumerator AwakeTestHook()
@@ -239,16 +208,17 @@ public class TestFrameworkRuntime : MonoBehaviour
         if (_initTestsAwakeRan) yield break;
         _initTestsAwakeRan = true;
         DiscoverTestsIfNot();
-        yield return RunInitTests(_initTestsAwake);
-
-        InitTestsFinishCheckAndLog();
+        foreach (var test in _initTestsAwake)
+        {
+            StartCoroutine(RunInitTest(test));
+        }
     }
 
     private bool _initTestsFinishLogged;
 
     private void InitTestsFinishCheckAndLog()
     {
-        if (!InitTestsAwakeDone || _initTestsFinishLogged) return;
+        if (_initTestsAwake.Count > 0 || _initTestsFinishLogged) return;
         _initTestsFinishLogged = true;
 
         Debug.Log("Init tests finished");
@@ -262,7 +232,8 @@ public class TestFrameworkRuntime : MonoBehaviour
     {
         if (!_currentEventTest.HasValue || _currentEventTest.Value.EventTiming != timing)
             yield break;
-        yield return RunTest(_currentEventTest.Value);
+        yield return RunTest(_currentEventTest.Value, _generalTestResults);
+        yield return TestSafetyDelay();
         EventTestStart();
     }
 
@@ -287,7 +258,7 @@ public class TestFrameworkRuntime : MonoBehaviour
         }
     }
 
-    private readonly struct Test
+    private readonly struct Test : IEquatable<Test>
     {
         public readonly string Name;
         private readonly MethodInfo _method;
@@ -378,6 +349,21 @@ public class TestFrameworkRuntime : MonoBehaviour
             }
 
             yield return new Result(Name, msg, success);
+        }
+
+        public bool Equals(Test other)
+        {
+            return Equals(_method, other._method);
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is Test other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            return (_method != null ? _method.GetHashCode() : 0);
         }
     }
 }
