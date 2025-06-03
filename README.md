@@ -113,6 +113,7 @@ TODO: finish this
 ## Movie test
 The test runner will set a flag in the running game via event callback for movie start / soft restart
 This flag will in return let movie tests start running from the specified timing
+The flag will also contain information about which movie test it is running so it knows what series of tests to run since **movie tests aren't all ran together in parallel**
 
 ## Scene setup
 There is one scene with one object that has all the scripts named `Tests`
