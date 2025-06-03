@@ -110,6 +110,10 @@ TODO: finish this
 
 TODO: finish this
 
+## Movie test
+The test runner will set a flag in the running game via event callback for movie start / soft restart
+This flag will in return let movie tests start running from the specified timing
+
 ## Scene setup
 There is one scene with one object that has all the scripts named `Tests`
 Any extra scenes and objects should be automatically generated
