@@ -34,6 +34,13 @@ public class TestFrameworkRuntime : MonoBehaviour
 
     private bool _initTestsAwakeRan;
 
+    /// <summary>
+    /// Movie test to run by name, setting this flag will make certain events check / start running movie tests
+    /// </summary>
+    private static string _movieTestToRun;
+
+    private bool _movieTestStarted;
+
     private void Awake()
     {
         if (_instance != null)
@@ -65,7 +72,8 @@ public class TestFrameworkRuntime : MonoBehaviour
             var testsIter = methods.Select(m =>
             {
                 var attr = m.GetCustomAttribute<TestAttribute>();
-                return new Test($"{monoBehType.FullName}.{m.Name}", m, monoBeh, attr.EventTiming, attr.InitTestTiming);
+                return new Test($"{monoBehType.FullName}.{m.Name}", monoBehType.FullName, m, monoBeh, attr.EventTiming,
+                    attr.InitTestTiming);
             }).ToArray();
             if (movieTestAttr != null)
             {
@@ -199,8 +207,26 @@ public class TestFrameworkRuntime : MonoBehaviour
     {
         if (!InstanceSetCheckAndLog()) yield break;
 
+        yield return _instance.MovieTestCheckAndRun(MovieTestTiming.Awake);
         yield return _instance.InitTestAwakeCheckAndRun();
         yield return _instance.EventHookInternal(EventTiming.Awake);
+    }
+
+    private IEnumerator MovieTestCheckAndRun(MovieTestTiming movieTestTiming)
+    {
+        if (_movieTestToRun != null && _movieTestStarted) yield break;
+        DiscoverTestsIfNot();
+        var testPairIdx = Array.FindIndex(_movieTests, t => t.Item1.Timing == movieTestTiming);
+        if (testPairIdx < 0) yield break;
+        _movieTestStarted = true;
+        var testPair = _movieTests[testPairIdx];
+        var tests = testPair.Item2.Where(t => t.TypeName == _movieTestToRun).ToArray();
+
+        Debug.Log($"Running {tests.Length} movie tests");
+        foreach (var test in testPair.Item2)
+        {
+            yield return RunTest(test, _movieTestResults);
+        }
     }
 
     private IEnumerator InitTestAwakeCheckAndRun()
@@ -261,16 +287,19 @@ public class TestFrameworkRuntime : MonoBehaviour
     private readonly struct Test : IEquatable<Test>
     {
         public readonly string Name;
+        public readonly string TypeName;
         private readonly MethodInfo _method;
         private readonly bool _testDoesIter;
         private readonly MonoBehaviour _objInstance;
         public readonly EventTiming? EventTiming;
         public readonly InitTestTiming? InitTiming;
 
-        public Test(string name, MethodInfo method, MonoBehaviour objInstance, EventTiming? eventTiming,
+        public Test(string name, string typeName, MethodInfo method, MonoBehaviour objInstance,
+            EventTiming? eventTiming,
             InitTestTiming? initTiming)
         {
             Name = name;
+            TypeName = typeName;
             _method = method;
             _objInstance = objInstance;
             EventTiming = eventTiming;
