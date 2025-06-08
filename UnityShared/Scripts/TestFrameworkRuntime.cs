@@ -32,6 +32,10 @@ public class TestFrameworkRuntime : MonoBehaviour
     private (MovieTestAttribute, Test[])[] _movieTests;
     private List<Test> _initTestsAwake;
 
+#pragma warning disable CS0414 // Field is assigned but its value is never used
+    private static bool _generalTestsDone;
+#pragma warning restore CS0414 // Field is assigned but its value is never used
+
     private bool _initTestsAwakeRan;
 
     /// <summary>
@@ -112,11 +116,26 @@ public class TestFrameworkRuntime : MonoBehaviour
                                BindingFlags.NonPublic).Where(m => m.GetCustomAttributes<TestAttribute>().Any());
     }
 
-    public static void RunGeneral()
+    public static void RunGeneralTests()
     {
         if (!InstanceSetCheckAndLog()) return;
         _instance.DiscoverTestsIfNot();
         _instance.StartCoroutine(_instance.RunGeneralInternal());
+    }
+
+    public static void ResetTests()
+    {
+        if (!InstanceSetCheckAndLog()) return;
+        _instance.ResetTestsInternal();
+    }
+
+    private void ResetTestsInternal()
+    {
+        _generalTestResults.Clear();
+        _initTestResults.Clear();
+        _movieTestResults.Clear();
+        
+        _generalTestsDone = false;
     }
 
     private static bool InstanceSetCheckAndLog()
@@ -129,6 +148,8 @@ public class TestFrameworkRuntime : MonoBehaviour
 
     private IEnumerator RunGeneralInternal()
     {
+        _generalTestsDone = false;
+        
         foreach (var test in _generalTests)
         {
             yield return RunTest(test, _generalTestResults);
@@ -145,6 +166,7 @@ public class TestFrameworkRuntime : MonoBehaviour
 
     private void GeneralTestsFinish()
     {
+        _generalTestsDone = true;
         Debug.Log("General tests finished");
         foreach (var result in _generalTestResults)
         {

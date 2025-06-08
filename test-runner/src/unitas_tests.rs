@@ -81,9 +81,6 @@ impl TestCtx {
         );
     }
 
-    /// Runs game behaviour checks without a movie running
-    /// ## Note
-    /// - You **MUST** call this on the initial scene
     fn run_general_tests(&mut self, stream: &mut UniTasStream) -> Result<()> {
         self.run_general_tests_iter(stream)?;
 
@@ -93,8 +90,8 @@ impl TestCtx {
 
         let mut setup_fail = true;
         for _ in 0..30 {
-            stream.send("print(service('ISceneManagerWrapper').ActiveSceneName)")?;
-            if !stream.receive()?.starts_with("General") {
+            stream.send("print(service('IGameRestart').Restarting)")?;
+            if stream.receive()? == "false" {
                 setup_fail = false;
                 break;
             }
@@ -110,76 +107,48 @@ impl TestCtx {
 
     // single iteration version
     fn run_general_tests_iter(&mut self, stream: &mut UniTasStream) -> Result<()> {
-        self.get_assert_results(stream)?;
-        self.reset_assert_results(stream)?;
+        stream.send("traverse('TestFrameworkRuntime').method('RunGeneralTests').GetValue()")?;
 
-        stream.send("service('ISceneManagerWrapper').load_scene('General')")?;
-
-        let mut setup_fail = true;
-        for _ in 0..30 {
-            stream.send("print(service('ISceneManagerWrapper').ActiveSceneName)")?;
-            if stream.receive()? == "General" {
-                setup_fail = false;
+        let mut timeout = true;
+        for _ in 0..60 {
+            stream.send(
+                "print(traverse('TestFrameworkRuntime').field('_generalTestsDone').GetValue())",
+            )?;
+            if stream.receive()? == "true" {
+                timeout = false;
                 break;
             }
             thread::sleep(Duration::from_secs(1));
         }
 
-        if setup_fail {
-            panic!("failed to load scene `General`");
+        if timeout {
+            panic!("failed to finish running general tests");
         }
 
-        self.get_assert_results(stream)?;
-        self.reset_assert_results(stream)?;
+        self.print_test_results(stream, TestType::General)?;
+        self.reset_test_results(stream)?;
 
         Ok(())
     }
 
-    fn reset_assert_results(&self, stream: &mut UniTasStream) -> Result<()> {
-        stream.send("traverse('Assert').method('Reset').GetValue()")?;
-
-        for _ in 0..30 {
-            stream.send(
-                "print(traverse('Assert').field('TestResults').property('Count').GetValue())",
-            )?;
-            let count = stream
-                .receive()?
-                .parse::<usize>()
-                .expect("count of test results should be a number");
-            if count == 0 {
-                return Ok(());
-            }
-            thread::sleep(Duration::from_secs(1));
-        }
-
-        panic!("failed to reset assert tests")
+    fn reset_test_results(&self, stream: &mut UniTasStream) -> Result<()> {
+        stream.send("traverse('TestFrameworkRuntime').method('ResetTests').GetValue()")
     }
 
-    fn get_assert_results(&mut self, stream: &mut UniTasStream) -> Result<()> {
-        let mut setup_fail = true;
-        for _ in 0..30 {
-            stream.send("print(traverse('Assert').field('_testsDone').GetValue())")?;
-            if stream.receive()? == "true" {
-                setup_fail = false;
-                break;
-            }
-            thread::sleep(Duration::from_secs(1));
-        }
-
-        if setup_fail {
-            self.assert(false, "assertion", "failed to complete tests");
-        }
+    fn print_test_results(&mut self, stream: &mut UniTasStream, test_type: TestType) -> Result<()> {
+        let res_field_name = test_type.results_field_name();
 
         stream
-            .send("print(traverse('Assert').field('TestResults').property('Count').GetValue())")?;
+            .send(&format!("print(traverse('TestFrameworkRuntime').field('_instance').field('{res_field_name}').property('Count').GetValue())"))?;
         let count = stream
             .receive()?
             .parse::<usize>()
             .expect("count of test results should be a number");
 
-        stream.send(
-            "local results = traverse('Assert').field('TestResults').GetValue() \
+        stream.send(&format!(
+            "local results = traverse('TestFrameworkRuntime').field('_instance').field('{res_field_name}').GetValue() \
             for _, res in ipairs(results) do print(res.Name) print(res.Success) print(res.Message) end",
+        )
         )?;
 
         for _ in 0..count {
@@ -201,6 +170,50 @@ impl TestCtx {
         }
 
         Ok(())
+    }
+
+    fn run_movie_test(&self, stream: &mut UniTasStream, name: &str) -> Result<()> {
+        // wait till movie ends
+        loop {
+            stream.send("print(movie_status().basically_running)")?;
+            if stream.receive()? == "false" {
+                return Ok(());
+            }
+            thread::sleep(Duration::from_secs(1));
+        }
+
+        todo!()
+        // TODO:
+        // stream.send(
+        //     r#"event_coroutine(function()
+        //         local y = coroutine.yield
+        //         play('movie.lua')
+        //         y("FixedUpdateActual")
+        //         print(traverse("InitTests").field("_fixedUpdate").GetValue())
+        //         print(traverse("InitTests").field("_updated").GetValue())
+        //         print(traverse("InitTests").field("_updatedBeforeUpdate").GetValue())
+        //         y("UpdateActual")
+        //         print(service("IUpdateInvokeOffset").Offset)
+        //         print(traverse("InitTests").field("_updated").GetValue())
+        //         print(traverse("InitTests").field("_updatedBeforeUpdate").GetValue())
+        //     end)"#,
+        // )?;
+    }
+}
+
+enum TestType {
+    General,
+    Movie,
+    Init,
+}
+
+impl TestType {
+    fn results_field_name(&self) -> &str {
+        match self {
+            TestType::General => "_generalTestResults",
+            TestType::Movie => "_movieTestResults",
+            TestType::Init => "_initTestResults",
+        }
     }
 }
 
@@ -401,16 +414,6 @@ impl UniTasStream {
 
         Some(Ok(msg))
     }
-
-    fn wait_for_movie_end(&mut self) -> Result<()> {
-        loop {
-            self.send("print(movie_status().basically_running)")?;
-            if self.receive()? == "false" {
-                return Ok(());
-            }
-            thread::sleep(Duration::from_secs(1));
-        }
-    }
 }
 
 impl Test {
@@ -494,9 +497,13 @@ impl Test {
             }
         }
 
-        let stream = UniTasStream::new(stream.unwrap()).context("failed to initialise connection to UniTAS, verifying connection as a script has failed")?;
+        let mut stream = UniTasStream::new(stream.unwrap()).context("failed to initialise connection to UniTAS, verifying connection as a script has failed")?;
 
         println!("connected\n");
+
+        // get full access of lua api, before moving into test_args
+        stream.send("full_access(true)")?;
+        stream.receive()?;
 
         let test_args = TestArgs {
             game_dir: &game_dir,

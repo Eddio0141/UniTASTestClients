@@ -399,7 +399,7 @@ namespace Editor
                 return;
             }
 
-            TestFrameworkRuntime.RunGeneral();
+            TestFrameworkRuntime.RunGeneralTests();
         }
     }
 }

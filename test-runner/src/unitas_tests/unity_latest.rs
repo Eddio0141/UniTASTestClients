@@ -10,9 +10,6 @@ pub fn get() -> Test {
 fn test(ctx: &mut TestCtx, mut args: TestArgs) -> Result<()> {
     let stream = &mut args.stream;
 
-    stream.send("full_access(true)")?;
-    stream.receive()?;
-
     ctx.run_general_tests(stream)?;
 
     Ok(())
