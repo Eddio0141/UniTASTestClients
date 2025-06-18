@@ -172,32 +172,57 @@ impl TestCtx {
         Ok(())
     }
 
-    fn run_movie_test(&self, stream: &mut UniTasStream, name: &str) -> Result<()> {
+    fn run_movie_test(
+        &mut self,
+        stream: &mut UniTasStream,
+        movie: &str,
+        name: &str,
+        game_dir: &Path,
+    ) -> Result<()> {
+        let dest = game_dir.join(format!("{name}.lua"));
+        fs::write(&dest, movie)
+            .with_context(|| format!("failed to write movie file to `{}`", dest.display()))?;
+
+        stream.send(&format!(
+            r#"
+            local game_restart = service("IGameRestart")
+
+            local function on_restart(_, pre_scene_load)
+                if not pre_scene_load then
+                    # I mean this is impossible lol
+                    return
+                end
+
+                game_restart.OnGameRestart.remove(on_restart)
+
+                traverse("TestFrameworkRuntime").field("_generalTestsDone").SetValue("{name}")
+            end
+
+            game_restart.OnGameRestart.add(on_restart)
+            play("{}")
+            "#,
+            dest.display()
+        ))?;
+
         // wait till movie ends
-        loop {
+        let mut fail = true;
+        for _ in 0..60 {
             stream.send("print(movie_status().basically_running)")?;
             if stream.receive()? == "false" {
-                return Ok(());
+                fail = false;
+                break;
             }
             thread::sleep(Duration::from_secs(1));
         }
 
-        todo!()
-        // TODO:
-        // stream.send(
-        //     r#"event_coroutine(function()
-        //         local y = coroutine.yield
-        //         play('movie.lua')
-        //         y("FixedUpdateActual")
-        //         print(traverse("InitTests").field("_fixedUpdate").GetValue())
-        //         print(traverse("InitTests").field("_updated").GetValue())
-        //         print(traverse("InitTests").field("_updatedBeforeUpdate").GetValue())
-        //         y("UpdateActual")
-        //         print(service("IUpdateInvokeOffset").Offset)
-        //         print(traverse("InitTests").field("_updated").GetValue())
-        //         print(traverse("InitTests").field("_updatedBeforeUpdate").GetValue())
-        //     end)"#,
-        // )?;
+        if fail {
+            panic!("movie failed to stop running");
+        }
+
+        self.print_test_results(stream, TestType::Movie)?;
+        self.reset_test_results(stream)?;
+
+        Ok(())
     }
 }
 

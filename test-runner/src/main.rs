@@ -23,6 +23,7 @@ use unitas_tests::{get_linux_tests, get_win_tests};
 mod cli;
 mod download;
 mod fs_utils;
+mod movies;
 mod symbols;
 mod unitas_tests;
 
