@@ -34,7 +34,7 @@ namespace Editor
                 Debug.LogError("prevented AfterReload call happening recursively, something is causing this");
                 return;
             }
-            
+
             if (EditorApplication.isCompiling || EditorApplication.isUpdating)
             {
                 EditorApplication.delayCall += AfterReload;
@@ -383,11 +383,95 @@ namespace Editor
                     }
 
                     Debug.Log($"Injecting field {type.FullName}.{fieldName}");
-                    attr.InjectField(fieldType, field);
+                    InjectField(attr, fieldType, field);
                 }
 
                 prop.ApplyModifiedProperties();
             }
+        }
+
+        private const string AlreadyInjected = "Field already injected";
+
+        private static void InjectField(TestInjectAttribute attr, Type fieldType, SerializedProperty field)
+        {
+            switch (attr)
+            {
+                case TestInjectSceneAttribute:
+                    InjectFieldTestInjectScene(fieldType, field);
+                    break;
+                case TestInjectPrefabAttribute:
+                    InjectFieldTestInjectPrefab(fieldType, field);
+                    break;
+            }
+        }
+
+        private static void InjectFieldTestInjectScene(Type fieldType, SerializedProperty field)
+        {
+            if (fieldType != typeof(string))
+            {
+                Debug.LogError("Field type is not string");
+                return;
+            }
+
+            if (!string.IsNullOrEmpty(field.stringValue) &&
+                AssetDatabase.AssetPathExists(field.stringValue))
+            {
+                Debug.Log(AlreadyInjected);
+                return;
+            }
+
+            var scenePath = AssetDatabase.GenerateUniqueAssetPath(Path.Combine(TestFrameworkRuntime.SceneAssetPath,
+                "generated.unity"));
+
+            Debug.Log($"Creating scene at `{scenePath}`");
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene,
+                NewSceneMode.Additive);
+            if (!EditorSceneManager.SaveScene(scene, scenePath))
+            {
+                Debug.LogError($"Failed to save scene {scenePath}");
+                return;
+            }
+
+            EditorSceneManager.CloseScene(scene, true);
+            var scenes = EditorBuildSettings.scenes.ToList();
+            scenes.Add(new EditorBuildSettingsScene(scenePath.Substring("Assets/".Length), true));
+            EditorBuildSettings.scenes = scenes.ToArray();
+
+            field.stringValue = scenePath;
+        }
+
+        private static void InjectFieldTestInjectPrefab(Type fieldType, SerializedProperty field)
+        {
+            if (fieldType != typeof(GameObject))
+            {
+                Debug.LogError("Field type is not GameObject");
+                return;
+            }
+
+            if (field.objectReferenceValue != null)
+            {
+                Debug.Log(AlreadyInjected);
+                return;
+            }
+
+            var prefabBase = new GameObject();
+
+            const string prefabName = "generated.prefab";
+            var prefabPath =
+                AssetDatabase.GenerateUniqueAssetPath(Path.Combine(TestFrameworkRuntime.PrefabAssetPath, prefabName));
+            Debug.Log($"Creating prefab at `{prefabPath}`");
+            PrefabUtility.SaveAsPrefabAsset(prefabBase, prefabPath, out var success);
+            Object.DestroyImmediate(prefabBase);
+
+            EditorApplication.delayCall += () =>
+            {
+                field.objectReferenceValue = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+                field.serializedObject.ApplyModifiedProperties();
+                HelperEditor.DelaySaveOpenScenes();
+            };
+
+            if (!success)
+                Debug.LogError("Failed to save prefab");
         }
 
         [MenuItem("Test/Run General Tests")]
@@ -401,5 +485,19 @@ namespace Editor
 
             TestFrameworkRuntime.RunGeneralTests();
         }
+    }
+}
+
+public static class HelperEditor
+{
+    public static void DelaySaveOpenScenes()
+    {
+        EditorApplication.delayCall += () =>
+        {
+            if (!EditorSceneManager.SaveOpenScenes())
+            {
+                Debug.LogError("failed to save open scenes");
+            }
+        };
     }
 }

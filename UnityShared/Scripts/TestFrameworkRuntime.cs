@@ -2,16 +2,12 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using JetBrains.Annotations;
-using UnityEditor;
-using UnityEditor.SceneManagement;
 using UnityEngine;
-using Object = UnityEngine.Object;
 
 [SuppressMessage("ReSharper", "UseStringInterpolation")]
 [SuppressMessage("ReSharper", "ArrangeObjectCreationWhenTypeEvident")]
@@ -134,7 +130,7 @@ public class TestFrameworkRuntime : MonoBehaviour
         _generalTestResults.Clear();
         _initTestResults.Clear();
         _movieTestResults.Clear();
-        
+
         _generalTestsDone = false;
     }
 
@@ -149,7 +145,7 @@ public class TestFrameworkRuntime : MonoBehaviour
     private IEnumerator RunGeneralInternal()
     {
         _generalTestsDone = false;
-        
+
         foreach (var test in _generalTests)
         {
             yield return RunTest(test, _generalTestResults);
@@ -931,88 +927,14 @@ public enum InitTestTiming
 [AttributeUsage(AttributeTargets.Field)]
 public abstract class TestInjectAttribute : Attribute
 {
-    protected const string AlreadyInjected = "Field already injected";
-
-    /// <summary>
-    /// Injects serialized property
-    /// </summary>
-    public abstract void InjectField(Type fieldType, SerializedProperty field);
 }
 
 public class TestInjectSceneAttribute : TestInjectAttribute
 {
-    public override void InjectField(Type fieldType, SerializedProperty field)
-    {
-        if (fieldType != typeof(string))
-        {
-            Debug.LogError("Field type is not string");
-            return;
-        }
-
-        if (!string.IsNullOrEmpty(field.stringValue) &&
-            AssetDatabase.AssetPathExists(field.stringValue))
-        {
-            Debug.Log(AlreadyInjected);
-            return;
-        }
-
-        var scenePath = AssetDatabase.GenerateUniqueAssetPath(Path.Combine(TestFrameworkRuntime.SceneAssetPath,
-            "generated.unity"));
-
-        Debug.Log($"Creating scene at `{scenePath}`");
-        var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene,
-            NewSceneMode.Additive);
-        if (!EditorSceneManager.SaveScene(scene, scenePath))
-        {
-            Debug.LogError($"Failed to save scene {scenePath}");
-            return;
-        }
-
-        EditorSceneManager.CloseScene(scene, true);
-        var scenes = EditorBuildSettings.scenes.ToList();
-        scenes.Add(new EditorBuildSettingsScene(scenePath, true));
-        EditorBuildSettings.scenes = scenes.ToArray();
-
-        field.stringValue = scenePath;
-    }
 }
 
-[SuppressMessage("ReSharper", "ArrangeObjectCreationWhenTypeEvident")]
 public class TestInjectPrefabAttribute : TestInjectAttribute
 {
-    public override void InjectField(Type fieldType, SerializedProperty field)
-    {
-        if (fieldType != typeof(GameObject))
-        {
-            Debug.LogError("Field type is not GameObject");
-            return;
-        }
-
-        if (field.objectReferenceValue != null)
-        {
-            Debug.Log(AlreadyInjected);
-            return;
-        }
-
-        var prefabBase = new GameObject();
-
-        const string prefabName = "generated.prefab";
-        var prefabPath =
-            AssetDatabase.GenerateUniqueAssetPath(Path.Combine(TestFrameworkRuntime.PrefabAssetPath, prefabName));
-        Debug.Log($"Creating prefab at `{prefabPath}`");
-        PrefabUtility.SaveAsPrefabAsset(prefabBase, prefabPath, out var success);
-        Object.DestroyImmediate(prefabBase);
-
-        EditorApplication.delayCall += () =>
-        {
-            field.objectReferenceValue = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
-            field.serializedObject.ApplyModifiedProperties();
-            Helper.Scene.DelaySaveOpenScenes();
-        };
-
-        if (!success)
-            Debug.LogError("Failed to save prefab");
-    }
 }
 
 public static class Helper
@@ -1026,17 +948,6 @@ public static class Helper
 #else
 throw new NotImplementedException();
 #endif
-        }
-
-        public static void DelaySaveOpenScenes()
-        {
-            EditorApplication.delayCall += () =>
-            {
-                if (!EditorSceneManager.SaveOpenScenes())
-                {
-                    Debug.LogError("failed to save open scenes");
-                }
-            };
         }
     }
 }
