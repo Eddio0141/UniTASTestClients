@@ -19,4 +19,4 @@ thiserror = "2.0.15"
 tokio = { version = "1.47.1", features = ["fs", "macros", "rt-multi-thread"] }
 tokio-macros = "2.4.0"
 tokio-stream = "0.1.17"
-zip = "4.3.0"
+zip = "4.5.0"
