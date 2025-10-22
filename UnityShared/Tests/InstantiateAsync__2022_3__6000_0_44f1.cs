@@ -13,13 +13,21 @@ public class InstantiateAsync__2022_3__6000_0_44f1 : MonoBehaviour
     public void ForceSameFrameLoadWithActivation()
     {
         // interesting enough, this makes it load on the same frame
+        var completedCalled = false;
+        var frameCount = Time.frameCount;
         var initOp = InstantiateAsync(prefab);
+        initOp.completed += _ =>
+        {
+            Assert.Equal(0, Time.frameCount - frameCount);
+            completedCalled = true;
+        };
         initOp.allowSceneActivation = false;
         Assert.False(initOp.isDone);
         Assert.True(initOp.IsWaitingForSceneActivation());
         initOp.allowSceneActivation = true;
         Assert.True(initOp.isDone);
         Assert.NotNull(initOp.Result);
+        Assert.True(completedCalled);
     }
 
     [Test]
