@@ -14,7 +14,7 @@ using UnityEngine;
 [DefaultExecutionOrder(0)]
 public class TestFrameworkRuntime : MonoBehaviour
 {
-    private const string AssetPath = "Assets/TestFramework";
+    public const string AssetPath = "Assets/TestFramework";
     public const string SceneAssetPath = AssetPath + "/Scenes";
     public const string PrefabAssetPath = AssetPath + "/Prefabs";
     public const string TestingScenePath = AssetPath + "/Scenes/general.unity";

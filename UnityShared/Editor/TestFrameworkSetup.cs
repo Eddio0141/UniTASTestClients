@@ -357,9 +357,8 @@ namespace Editor
             }
 
             if (saveScene) EditorSceneManager.SaveScene(scene, TestFrameworkRuntime.TestingScenePath);
-            var buildScenes = EditorBuildSettings.scenes.ToList();
-            buildScenes.Add(new EditorBuildSettingsScene(TestFrameworkRuntime.TestingScenePath, true));
-            EditorBuildSettings.scenes = buildScenes.ToArray();
+            EditorBuildSettings.scenes = new EditorBuildSettingsScene[]
+                { new EditorBuildSettingsScene(TestFrameworkRuntime.TestingScenePath, true) };
         }
 
         private static void SetupTestScene(GameObject tests)
@@ -427,31 +426,35 @@ namespace Editor
                 return;
             }
 
-            if (!string.IsNullOrEmpty(field.stringValue) &&
-                AssetDatabase.AssetPathExists(field.stringValue))
+            string scenePath;
+            if (string.IsNullOrEmpty(field.stringValue) ||
+                !AssetDatabase.AssetPathExists(field.stringValue))
+            {
+                scenePath = AssetDatabase.GenerateUniqueAssetPath(Path.Combine(TestFrameworkRuntime.SceneAssetPath,
+                    "generated.unity"));
+
+                Debug.Log($"Creating scene at `{scenePath}`");
+                var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene,
+                    NewSceneMode.Additive);
+                if (!EditorSceneManager.SaveScene(scene, scenePath))
+                {
+                    Debug.LogError($"Failed to save scene {scenePath}");
+                    return;
+                }
+
+                EditorSceneManager.CloseScene(scene, true);
+
+                field.stringValue = scenePath;
+            }
+            else
             {
                 Debug.Log(AlreadyInjected);
-                return;
+                scenePath = field.stringValue;
             }
 
-            var scenePath = AssetDatabase.GenerateUniqueAssetPath(Path.Combine(TestFrameworkRuntime.SceneAssetPath,
-                "generated.unity"));
-
-            Debug.Log($"Creating scene at `{scenePath}`");
-            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene,
-                NewSceneMode.Additive);
-            if (!EditorSceneManager.SaveScene(scene, scenePath))
-            {
-                Debug.LogError($"Failed to save scene {scenePath}");
-                return;
-            }
-
-            EditorSceneManager.CloseScene(scene, true);
             var scenes = EditorBuildSettings.scenes.ToList();
-            scenes.Add(new EditorBuildSettingsScene(scenePath.Substring("Assets/".Length), true));
+            scenes.Add(new EditorBuildSettingsScene(scenePath, true));
             EditorBuildSettings.scenes = scenes.ToArray();
-
-            field.stringValue = scenePath;
         }
 
         private static void InjectFieldTestInjectPrefab(Type fieldType, SerializedProperty field)
