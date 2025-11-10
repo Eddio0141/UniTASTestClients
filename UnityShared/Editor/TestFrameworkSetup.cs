@@ -22,6 +22,20 @@ namespace Editor
             LinkRunnerFiles(sharedScriptsDir, sharedEditorDir);
             InitTestScene();
             LinkAndAddTests(testsDir);
+
+            Debug.Log("Domain reload");
+            DomainReload();
+        }
+
+        private static void DomainReload()
+        {
+#if UNITY_2019_3_OR_NEWER
+            EditorUtility.RequestScriptReload();
+#else
+            var dummyScript = Path.Combine(TestFrameworkRuntime.AssetPath, "dummyScript.cs");
+            File.Create(dummyScript).Dispose();
+            AssetDatabase.ImportAsset(dummyScript);
+#endif
         }
 
         private static bool _preventAfterReload;
