@@ -375,6 +375,9 @@ public class TestFrameworkRuntime : MonoBehaviour
             if (!_testDoesIter || !success)
             {
                 yield return new Result(Name, msg, success);
+#pragma warning disable CS0618 // Type or member is obsolete
+                Application.RegisterLogCallback(null);
+#pragma warning restore CS0618 // Type or member is obsolete
                 yield break;
             }
 
@@ -406,6 +409,9 @@ public class TestFrameworkRuntime : MonoBehaviour
             }
 
             yield return new Result(Name, msg, success);
+#pragma warning disable CS0618 // Type or member is obsolete
+            Application.RegisterLogCallback(null);
+#pragma warning restore CS0618 // Type or member is obsolete
         }
 
         public bool Equals(Test other)
@@ -939,11 +945,39 @@ public abstract class TestInjectAttribute : Attribute
 {
 }
 
+/// <summary>
+/// <para>Injects a scene</para>
+/// <para>Accepted forms:</para>
+/// <para>- <see cref="string"/> - Scene path</para>
+/// </summary>
 public class TestInjectSceneAttribute : TestInjectAttribute
 {
 }
 
+/// <summary>
+/// <para>Injects a prefab</para>
+/// <para>Accepted forms:</para>
+/// <para>- <see cref="GameObject"/> - Reference to the prefab</para>
+/// </summary>
 public class TestInjectPrefabAttribute : TestInjectAttribute
+{
+}
+
+/// <summary>
+/// <para>Injects an asset accessible by <see cref="Resources"/> API</para>
+/// <para>Accepted forms:</para>
+/// <para>- <see cref="string"/> - Path to resource</para>
+/// </summary>
+public class TestInjectResource : TestInjectAttribute
+{
+}
+
+/// <summary>
+/// <para>Injects an asset bundle</para>
+/// <para>Accepted forms:</para>
+/// <para>- <see cref="OnceOnly{string}"/> - Path to asset bundle. Asset can only be used in a single test</para>
+/// </summary>
+public class TestInjectAssetBundle : TestInjectAttribute
 {
 }
 
@@ -953,11 +987,38 @@ public static class Helper
     {
         public static void LoadScene(string scene)
         {
-#if UNITY_5_3_OR_NEWER
-            UnityEngine.SceneManagement.SceneManager.LoadScene(scene);
-#else
-throw new NotImplementedException();
-#endif
+#pragma warning disable CS0618 // Type or member is obsolete
+            Application.LoadLevel(scene);
+#pragma warning restore CS0618 // Type or member is obsolete
+        }
+    }
+}
+
+/// <summary>
+/// You can only access the inner value once
+/// </summary>
+[Serializable]
+public class OnceOnly<T>
+{
+    private readonly T _inner;
+    private bool _used;
+
+    public OnceOnly(T inner)
+    {
+        _inner = inner;
+    }
+
+    public T Inner
+    {
+        get
+        {
+            if (_used)
+            {
+                throw new InvalidOperationException("Inner value was already accessed");
+            }
+
+            _used = true;
+            return _inner;
         }
     }
 }

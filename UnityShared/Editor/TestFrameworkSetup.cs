@@ -410,15 +410,29 @@ namespace Editor
             switch (attr)
             {
                 case TestInjectSceneAttribute:
-                    InjectFieldTestInjectScene(fieldType, field);
+                    InjectFieldScene(fieldType, field);
                     break;
                 case TestInjectPrefabAttribute:
-                    InjectFieldTestInjectPrefab(fieldType, field);
+                    InjectFieldPrefab(fieldType, field);
                     break;
+                case TestInjectResource:
+                    InjectFieldResource(fieldType, field);
+                    break;
+                default:
+                    throw new InvalidOperationException(string.Format("Injection type `{0}` is not handled", attr));
             }
         }
 
-        private static void InjectFieldTestInjectScene(Type fieldType, SerializedProperty field)
+        private static void InjectFieldResource(Type fieldType, SerializedProperty field)
+        {
+            if (fieldType != typeof(OnceOnly<string>))
+            {
+                Debug.LogError("Field type is not `OnceOnly<string>`");
+                return;
+            }
+        }
+
+        private static void InjectFieldScene(Type fieldType, SerializedProperty field)
         {
             if (fieldType != typeof(string))
             {
@@ -457,7 +471,7 @@ namespace Editor
             EditorBuildSettings.scenes = scenes.ToArray();
         }
 
-        private static void InjectFieldTestInjectPrefab(Type fieldType, SerializedProperty field)
+        private static void InjectFieldPrefab(Type fieldType, SerializedProperty field)
         {
             if (fieldType != typeof(GameObject))
             {
