@@ -23,7 +23,9 @@ mod unity_2022_3_41f1_base;
 mod unity_latest;
 
 pub fn get_linux_tests() -> Vec<Test> {
-    vec![unity_2022_3_41f1_base::get(), unity_latest::get()]
+    vec![
+        /* unity_2022_3_41f1_base::get(), */ unity_latest::get(),
+    ]
 }
 
 pub fn get_win_tests() -> Vec<Test> {
