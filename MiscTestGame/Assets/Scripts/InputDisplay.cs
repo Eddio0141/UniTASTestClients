@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Linq;
 using System.Text;
@@ -13,6 +14,8 @@ public class InputDisplay : MonoBehaviour
     private RectTransform _textRectTransform;
 
     private RectTransform _parentRectTransform;
+
+    public GameObject clone;
 
     private void Awake()
     {
@@ -80,6 +83,7 @@ public class InputDisplay : MonoBehaviour
     private bool _smallRes;
     private AsyncOperation emptyOp;
     private AsyncOperation unloadOp;
+    private Scene? _fooScene;
 
     private void Update()
     {
@@ -149,6 +153,35 @@ public class InputDisplay : MonoBehaviour
             emptyOp.allowSceneActivation = true;
         }
 
+        if (Input.GetKeyDown(KeyCode.U))
+        {
+            Debug.Log("spawn");
+            var pos = new ReadOnlySpan<Vector3>(new Vector3[] { new(1, 2, 3), new(4, 5, 6) });
+            // // var rot = new ReadOnlySpan<Quaternion>(new[] { Quaternion.Euler(7, 8, 9), Quaternion.Euler(10, 11, 12) });
+            var rot = new ReadOnlySpan<Quaternion>(new[]
+                { Quaternion.Euler(7, 8, 9), Quaternion.Euler(10, 11, 12), Quaternion.Euler(13, 14, 15) });
+            foreach (var r in rot)
+            {
+                Debug.Log($"thingy: {r.x}, {r.y}, {r.z}");
+            }
+
+            InstantiateAsync(clone, 4, pos, rot);
+            // Thingy(new ReadOnlySpan<Foo>(new Foo[] { new() { x = 1.2f } }));
+        }
+
+        if (Input.GetKeyDown(KeyCode.H))
+        {
+            Debug.Log("create scene foo");
+            if (_fooScene.HasValue)
+            {
+                SceneManager.LoadScene(0);
+            }
+            else
+            {
+                _fooScene = SceneManager.CreateScene("foo");
+            }
+        }
+
         if (_text == null) return;
 
         var builder = new StringBuilder();
@@ -182,5 +215,31 @@ public class InputDisplay : MonoBehaviour
             yield return new WaitForEndOfFrame();
             _ = 1;
         }
+    }
+
+    private struct Foo
+    {
+        public float x;
+    }
+
+    private struct Bar
+    {
+        public float y;
+    }
+
+    private static void Thingy(ReadOnlySpan<Foo> a)
+    {
+        unsafe
+        {
+            fixed (void* aPtr = a)
+            {
+                Call(new ReadOnlySpan<Bar>(aPtr, a.Length));
+            }
+        }
+    }
+
+    private static void Call(ReadOnlySpan<Bar> b)
+    {
+        Debug.Log($"b is {b.Length}, {b[0].y}");
     }
 }
