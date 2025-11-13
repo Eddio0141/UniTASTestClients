@@ -352,6 +352,16 @@ public class TestFrameworkRuntime : MonoBehaviour
             string msg = null;
             var success = true;
             object testRet = null;
+
+#pragma warning disable CS0618 // Type or member is obsolete
+            Application.RegisterLogCallback((condition, _, type) =>
+            {
+                if (type != LogType.Exception) return;
+                success = false;
+                msg = condition;
+            });
+#pragma warning restore CS0618 // Type or member is obsolete
+
             try
             {
                 testRet = _method.Invoke(_objInstance, Array.Empty<object>());
@@ -359,7 +369,7 @@ public class TestFrameworkRuntime : MonoBehaviour
             catch (Exception e)
             {
                 success = false;
-                msg = GetExceptionMsg(e);
+                msg ??= GetExceptionMsg(e);
             }
 
             if (!_testDoesIter || !success)
@@ -368,7 +378,7 @@ public class TestFrameworkRuntime : MonoBehaviour
                 yield break;
             }
 
-            var iter = (IEnumerator<TestYield>)testRet;
+            var iter = (IEnumerator<TestYield>)testRet!;
             while (true)
             {
                 bool moveNextResult;
@@ -379,7 +389,7 @@ public class TestFrameworkRuntime : MonoBehaviour
                 catch (Exception e)
                 {
                     success = false;
-                    msg = GetExceptionMsg(e);
+                    msg ??= GetExceptionMsg(e);
                     break;
                 }
 
