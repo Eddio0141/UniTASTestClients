@@ -1,19 +1,31 @@
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using UnityEngine;
 
 [SuppressMessage("ReSharper", "InconsistentNaming")]
 public class AssetAsync__2022_3_6000_0_4 : MonoBehaviour
 {
-    [TestInjectResource] public string resource;
+    public ITestAsset emptyObjectAsset => new GameObjectAsset();
 
-    [TestInjectAssetBundle] public OnceOnly<string> loadOnInitNonBlockingAssetBundle;
+    [TestInjectResource(nameof(emptyObjectAsset))]
+    public OnceOnlyPath resource;
+
+    public Dictionary<string, ITestAsset> assetBundleEmptyObjs => new()
+    {
+        { "empty.prefab", new GameObjectAsset() },
+        { "empty2.prefab", new GameObjectAsset() }
+    };
+
+    [TestInjectAssetBundle(nameof(assetBundleEmptyObjs))]
+    public OnceOnlyPath loadOnInitNonBlockingAssetBundle;
+
 
     [Test(InitTestTiming.Awake)]
     public void LoadOnInitNonBlocking()
     {
         var fooResource = Resources.LoadAsync(resource);
 
-        var op = AssetBundle.LoadFromFileAsync(loadOnInitNonBlockingAssetBundle.Inner);
+        var op = AssetBundle.LoadFromFileAsync(loadOnInitNonBlockingAssetBundle);
         var callback = false;
         op.completed += _ => { callback = true; };
 

@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using JetBrains.Annotations;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 [SuppressMessage("ReSharper", "UseStringInterpolation")]
 [SuppressMessage("ReSharper", "ArrangeObjectCreationWhenTypeEvident")]
@@ -18,6 +19,8 @@ public class TestFrameworkRuntime : MonoBehaviour
     public const string SceneAssetPath = AssetPath + "/Scenes";
     public const string PrefabAssetPath = AssetPath + "/Prefabs";
     public const string TestingScenePath = AssetPath + "/Scenes/general.unity";
+    public const string ResourcesPath = AssetPath + "/Resources";
+    public const string AssetBundlePath = AssetPath + "/AssetBundles";
 
     private static TestFrameworkRuntime _instance;
     private readonly List<Result> _generalTestResults = new List<Result>();
@@ -940,6 +943,17 @@ public enum InitTestTiming
 
 // injection attributes
 
+/// <summary>
+/// A unity asset that is declarative
+/// </summary>
+public interface ITestAsset
+{
+}
+
+public class GameObjectAsset : ITestAsset
+{
+}
+
 [AttributeUsage(AttributeTargets.Field)]
 public abstract class TestInjectAttribute : Attribute
 {
@@ -966,19 +980,33 @@ public class TestInjectPrefabAttribute : TestInjectAttribute
 /// <summary>
 /// <para>Injects an asset accessible by <see cref="Resources"/> API</para>
 /// <para>Accepted forms:</para>
-/// <para>- <see cref="string"/> - Path to resource</para>
+/// <para>- <see cref="OnceOnlyPath{T}"/> - Path to resource. Resource can only be used in a single test</para>
 /// </summary>
 public class TestInjectResource : TestInjectAttribute
 {
+    /// <param name="assetProperty">Name of the property that returns <see cref="ITestAsset"/> for this resource</param>
+    public TestInjectResource(string assetProperty)
+    {
+        AssetProperty = assetProperty;
+    }
+
+    public string AssetProperty { get; }
 }
 
 /// <summary>
-/// <para>Injects an asset bundle</para>
+/// <para>Injects an asset bundle accessible by <see cref="AssetBundle"/> API</para>
 /// <para>Accepted forms:</para>
-/// <para>- <see cref="OnceOnly{string}"/> - Path to asset bundle. Asset can only be used in a single test</para>
+/// <para>- <see cref="OnceOnlyPath{T}"/> - Path to asset bundle. Asset can only be used in a single test</para>
 /// </summary>
 public class TestInjectAssetBundle : TestInjectAttribute
 {
+    /// <param name="assetProperty">Name of the property that returns <see cref="ITestAsset"/> for this resource</param>
+    public TestInjectAssetBundle(string assetProperty)
+    {
+        AssetProperty = assetProperty;
+    }
+
+    public string AssetProperty { get; }
 }
 
 public static class Helper
@@ -998,27 +1026,31 @@ public static class Helper
 /// You can only access the inner value once
 /// </summary>
 [Serializable]
-public class OnceOnly<T>
+public class OnceOnlyPath
 {
-    private readonly T _inner;
+    public const string InnerFieldName = nameof(_inner);
+    
+    private string _inner;
     private bool _used;
 
-    public OnceOnly(T inner)
+    private OnceOnlyPath(string inner)
     {
         _inner = inner;
     }
 
-    public T Inner
+    public static implicit operator OnceOnlyPath(string from)
     {
-        get
-        {
-            if (_used)
-            {
-                throw new InvalidOperationException("Inner value was already accessed");
-            }
+        return new OnceOnlyPath(from);
+    }
 
-            _used = true;
-            return _inner;
+    public static implicit operator string(OnceOnlyPath from)
+    {
+        if (from._used)
+        {
+            throw new InvalidOperationException("Inner value was already accessed");
         }
+
+        from._used = true;
+        return from._inner;
     }
 }

@@ -111,7 +111,8 @@ namespace Editor
         {
             var createPaths = new[]
             {
-                TestFrameworkRuntime.SceneAssetPath, TestFrameworkRuntime.PrefabAssetPath, TestsDir
+                TestFrameworkRuntime.SceneAssetPath, TestFrameworkRuntime.PrefabAssetPath, TestsDir,
+                TestFrameworkRuntime.ResourcesPath
             };
             foreach (var path in createPaths)
             {
@@ -396,7 +397,7 @@ namespace Editor
                     }
 
                     Debug.Log($"Injecting field {type.FullName}.{fieldName}");
-                    InjectField(attr, fieldType, field);
+                    InjectField(type, attr, fieldType, field);
                 }
 
                 prop.ApplyModifiedProperties();
@@ -405,7 +406,8 @@ namespace Editor
 
         private const string AlreadyInjected = "Field already injected";
 
-        private static void InjectField(TestInjectAttribute attr, Type fieldType, SerializedProperty field)
+        private static void InjectField(Type monoBehType, TestInjectAttribute attr, Type fieldType,
+            SerializedProperty field)
         {
             switch (attr)
             {
@@ -415,21 +417,96 @@ namespace Editor
                 case TestInjectPrefabAttribute:
                     InjectFieldPrefab(fieldType, field);
                     break;
-                case TestInjectResource:
-                    InjectFieldResource(fieldType, field);
+                case TestInjectResource resource:
+                    InjectFieldResource(monoBehType, fieldType, field, resource);
+                    break;
+                case TestInjectAssetBundle assetBundle:
+                    InjectAssetBundle(monoBehType, fieldType, field, assetBundle);
                     break;
                 default:
                     throw new InvalidOperationException(string.Format("Injection type `{0}` is not handled", attr));
             }
         }
 
-        private static void InjectFieldResource(Type fieldType, SerializedProperty field)
+        private static void InjectAssetBundle(Type monoBehType, Type fieldType, SerializedProperty field,
+            TestInjectAssetBundle assetBundle)
         {
-            if (fieldType != typeof(OnceOnly<string>))
+            if (fieldType != typeof(OnceOnlyPath))
             {
-                Debug.LogError("Field type is not `OnceOnly<string>`");
+                Debug.LogError($"Field type is not `{nameof(OnceOnlyPath)}`");
                 return;
             }
+
+            var property = monoBehType.GetProperty(assetBundle.AssetProperty);
+            if (property == null)
+            {
+                Debug.LogError("`AssetProperty` isn't pointing to a valid property");
+                return;
+            }
+
+            var assetRaw = property.GetValue(null);
+            if (assetRaw == null)
+            {
+                Debug.LogError("Asset is null");
+                return;
+            }
+
+            if (assetRaw.GetType() != typeof(Dictionary<string, ITestAsset>))
+            {
+                Debug.LogError($"Asset property was expected to be {nameof(Dictionary<string, ITestAsset>)}");
+                return;
+            }
+
+            foreach (var (assetBundlePath, asset) in (Dictionary<string, ITestAsset>)assetRaw)
+            {
+                InitAsset(asset, TestFrameworkRuntime.AssetBundlePath,
+                    path =>
+                    {
+                        var inner = field.FindPropertyRelative(OnceOnlyPath.InnerFieldName);
+                        inner.stringValue = path;
+                        inner.serializedObject.ApplyModifiedProperties();
+                    });
+            }
+
+            BuildPipeline.BuildAssetBundles();
+        }
+
+        private static void InjectFieldResource(Type monoBehType, Type fieldType, SerializedProperty field,
+            TestInjectResource resource)
+        {
+            if (fieldType != typeof(OnceOnlyPath))
+            {
+                Debug.LogError($"Field type is not `{nameof(OnceOnlyPath)}`");
+                return;
+            }
+
+            var property = monoBehType.GetProperty(resource.AssetProperty);
+            if (property == null)
+            {
+                Debug.LogError("`AssetProperty` isn't pointing to a valid property");
+                return;
+            }
+
+            var assetRaw = property.GetValue(null);
+            if (assetRaw == null)
+            {
+                Debug.LogError("Asset is null");
+                return;
+            }
+
+            if (assetRaw.GetType() != typeof(ITestAsset))
+            {
+                Debug.LogError($"Asset property was expected to be {nameof(ITestAsset)}");
+                return;
+            }
+
+            InitAsset((ITestAsset)assetRaw, TestFrameworkRuntime.ResourcesPath,
+                path =>
+                {
+                    var inner = field.FindPropertyRelative(OnceOnlyPath.InnerFieldName);
+                    inner.stringValue = path;
+                    inner.serializedObject.ApplyModifiedProperties();
+                });
         }
 
         private static void InjectFieldScene(Type fieldType, SerializedProperty field)
@@ -459,6 +536,7 @@ namespace Editor
                 EditorSceneManager.CloseScene(scene, true);
 
                 field.stringValue = scenePath;
+                HelperEditor.DelaySaveOpenScenes();
             }
             else
             {
@@ -487,9 +565,9 @@ namespace Editor
 
             var prefabBase = new GameObject();
 
-            const string prefabName = "generated.prefab";
             var prefabPath =
-                AssetDatabase.GenerateUniqueAssetPath(Path.Combine(TestFrameworkRuntime.PrefabAssetPath, prefabName));
+                AssetDatabase.GenerateUniqueAssetPath(Path.Combine(TestFrameworkRuntime.PrefabAssetPath,
+                    "generated.prefab"));
             Debug.Log($"Creating prefab at `{prefabPath}`");
             PrefabUtility.SaveAsPrefabAsset(prefabBase, prefabPath, out var success);
             Object.DestroyImmediate(prefabBase);
@@ -503,6 +581,40 @@ namespace Editor
 
             if (!success)
                 Debug.LogError("Failed to save prefab");
+        }
+
+        private static void InitAsset(ITestAsset testAsset, string pathPrefix, Action<string> assetReady)
+        {
+            switch (testAsset)
+            {
+                case GameObjectAsset:
+                {
+                    var prefab = new GameObject();
+                    var path = "asset.prefab";
+                    if (pathPrefix != null)
+                    {
+                        path = Path.Combine(pathPrefix, path);
+                    }
+
+                    path = AssetDatabase.GenerateUniqueAssetPath(path);
+                    Debug.Log($"Creating prefab at `{path}`");
+                    PrefabUtility.SaveAsPrefabAsset(prefab, path, out var success);
+                    Object.DestroyImmediate(prefab);
+
+                    EditorApplication.delayCall += () =>
+                    {
+                        assetReady(path);
+                        HelperEditor.DelaySaveOpenScenes();
+                    };
+
+                    if (!success)
+                        Debug.LogError("Failed to save prefab");
+
+                    break;
+                }
+                default:
+                    throw new InvalidOperationException(string.Format("Asset type `{0}` is not handled", testAsset));
+            }
         }
 
         [MenuItem("Test/Run General Tests")]
