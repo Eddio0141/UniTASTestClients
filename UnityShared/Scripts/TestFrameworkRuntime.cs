@@ -1028,14 +1028,15 @@ public static class Helper
 [Serializable]
 public class OnceOnlyPath
 {
-    public const string InnerFieldName = nameof(_inner);
+    public const string InnerFieldName = nameof(inner);
     
-    private string _inner;
+    [SerializeField]
+    private string inner;
     private bool _used;
 
     private OnceOnlyPath(string inner)
     {
-        _inner = inner;
+        this.inner = inner;
     }
 
     public static implicit operator OnceOnlyPath(string from)
@@ -1051,6 +1052,6 @@ public class OnceOnlyPath
         }
 
         from._used = true;
-        return from._inner;
+        return from.inner;
     }
 }

@@ -431,6 +431,12 @@ namespace Editor
         private static void InjectAssetBundle(Type monoBehType, Type fieldType, SerializedProperty field,
             TestInjectAssetBundle assetBundle)
         {
+            var inner = field.FindPropertyRelative(OnceOnlyPath.InnerFieldName);
+            if (!string.IsNullOrEmpty(inner.stringValue) && File.Exists(inner.stringValue))
+            {
+                return;
+            }
+
             if (fieldType != typeof(OnceOnlyPath))
             {
                 Debug.LogError($"Field type is not `{nameof(OnceOnlyPath)}`");
@@ -451,29 +457,65 @@ namespace Editor
                 return;
             }
 
-            if (assetRaw.GetType() != typeof(Dictionary<string, ITestAsset>))
+            if (assetRaw.GetType().GetInterfaces().All(t => t != typeof(Dictionary<string, ITestAsset>)))
             {
                 Debug.LogError($"Asset property was expected to be {nameof(Dictionary<string, ITestAsset>)}");
                 return;
             }
 
-            foreach (var (assetBundlePath, asset) in (Dictionary<string, ITestAsset>)assetRaw)
+            var assets = (Dictionary<string, ITestAsset>)assetRaw;
+            var paths = new string[assets.Count];
+            var assetsIter = assets.GetEnumerator();
+
+            for (var i = 0; i < assets.Count; i++)
             {
-                InitAsset(asset, TestFrameworkRuntime.AssetBundlePath,
+                assetsIter.MoveNext();
+                // TODO: ?
+                var (assetPath, asset) = assetsIter.Current;
+
+                var j = i;
+                InitAsset(asset, Path.Combine(TestFrameworkRuntime.AssetBundlePath, "assets"),
                     path =>
                     {
-                        var inner = field.FindPropertyRelative(OnceOnlyPath.InnerFieldName);
-                        inner.stringValue = path;
+                        paths[j] = path;
+
+                        if (j + 1 < assets.Count)
+                            return;
+
+                        // last entry is done
+                        var assetBundlePath =
+                            AssetDatabase.GenerateUniqueAssetPath(Path.Combine(TestFrameworkRuntime.AssetBundlePath,
+                                "bundle"));
+                        var assetBundleName = Path.GetFileNameWithoutExtension(assetBundlePath);
+
+                        BuildPipeline.BuildAssetBundles(new BuildAssetBundlesParameters
+                        {
+                            bundleDefinitions = new AssetBundleBuild[]
+                            {
+                                new AssetBundleBuild()
+                                {
+                                    assetBundleName = assetBundleName,
+                                    assetNames = paths
+                                }
+                            },
+                            outputPath = assetBundlePath,
+                        });
+
+                        inner.stringValue = assetBundlePath;
                         inner.serializedObject.ApplyModifiedProperties();
                     });
             }
-
-            BuildPipeline.BuildAssetBundles();
         }
 
         private static void InjectFieldResource(Type monoBehType, Type fieldType, SerializedProperty field,
             TestInjectResource resource)
         {
+            var inner = field.FindPropertyRelative(OnceOnlyPath.InnerFieldName);
+            if (!string.IsNullOrEmpty(inner.stringValue) && File.Exists(inner.stringValue))
+            {
+                return;
+            }
+
             if (fieldType != typeof(OnceOnlyPath))
             {
                 Debug.LogError($"Field type is not `{nameof(OnceOnlyPath)}`");
@@ -494,7 +536,7 @@ namespace Editor
                 return;
             }
 
-            if (assetRaw.GetType() != typeof(ITestAsset))
+            if (assetRaw.GetType().GetInterfaces().All(t => t != typeof(ITestAsset)))
             {
                 Debug.LogError($"Asset property was expected to be {nameof(ITestAsset)}");
                 return;
@@ -503,7 +545,6 @@ namespace Editor
             InitAsset((ITestAsset)assetRaw, TestFrameworkRuntime.ResourcesPath,
                 path =>
                 {
-                    var inner = field.FindPropertyRelative(OnceOnlyPath.InnerFieldName);
                     inner.stringValue = path;
                     inner.serializedObject.ApplyModifiedProperties();
                 });
