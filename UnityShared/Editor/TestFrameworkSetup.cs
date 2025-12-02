@@ -29,13 +29,10 @@ namespace Editor
 
         private static void DomainReload()
         {
-#if UNITY_2019_3_OR_NEWER
-            EditorUtility.RequestScriptReload();
-#else
+            // note that we want to force recompilation, and this isn't possible even on latest unity
             var dummyScript = Path.Combine(TestFrameworkRuntime.AssetPath, "dummyScript.cs");
             File.Create(dummyScript).Dispose();
             AssetDatabase.ImportAsset(dummyScript);
-#endif
         }
 
         private static bool _preventAfterReload;
@@ -58,6 +55,9 @@ namespace Editor
             if (EditorApplication.isPlaying) return;
 
             _preventAfterReload = true;
+
+            // safety, because directory can be deleted and domain reload can happen
+            InitDirs();
 
             var testObj = Object.FindObjectsByType<GameObject>(FindObjectsSortMode.None)
                 .FirstOrDefault(o => o.name == TestObjName);
@@ -112,7 +112,7 @@ namespace Editor
             var createPaths = new[]
             {
                 TestFrameworkRuntime.SceneAssetPath, TestFrameworkRuntime.PrefabAssetPath, TestsDir,
-                TestFrameworkRuntime.ResourcesPath
+                TestFrameworkRuntime.ResourcesPath, TestFrameworkRuntime.AssetBundlePath
             };
             foreach (var path in createPaths)
             {
@@ -358,7 +358,7 @@ namespace Editor
             }
 
             if (saveScene) EditorSceneManager.SaveScene(scene, TestFrameworkRuntime.TestingScenePath);
-            EditorBuildSettings.scenes = new EditorBuildSettingsScene[]
+            EditorBuildSettings.scenes = new[]
                 { new EditorBuildSettingsScene(TestFrameworkRuntime.TestingScenePath, true) };
         }
 
@@ -424,7 +424,7 @@ namespace Editor
                     InjectAssetBundle(monoBehType, fieldType, field, assetBundle);
                     break;
                 default:
-                    throw new InvalidOperationException(string.Format("Injection type `{0}` is not handled", attr));
+                    throw new InvalidOperationException($"Injection type `{attr}` is not handled");
             }
         }
 
@@ -434,6 +434,7 @@ namespace Editor
             var inner = field.FindPropertyRelative(OnceOnlyPath.InnerFieldName);
             if (!string.IsNullOrEmpty(inner.stringValue) && File.Exists(inner.stringValue))
             {
+                Debug.Log(AlreadyInjected);
                 return;
             }
 
@@ -457,7 +458,7 @@ namespace Editor
                 return;
             }
 
-            if (assetRaw.GetType().GetInterfaces().All(t => t != typeof(Dictionary<string, ITestAsset>)))
+            if (assetRaw.GetType() != typeof(Dictionary<string, ITestAsset>))
             {
                 Debug.LogError($"Asset property was expected to be {nameof(Dictionary<string, ITestAsset>)}");
                 return;
@@ -467,43 +468,47 @@ namespace Editor
             var paths = new string[assets.Count];
             var assetsIter = assets.GetEnumerator();
 
+            var assetsPath = Path.Combine(TestFrameworkRuntime.AssetBundlePath, "assets");
+            assetsPath = AssetDatabase.GenerateUniqueAssetPath(assetsPath);
+            Directory.CreateDirectory(assetsPath);
+
             for (var i = 0; i < assets.Count; i++)
             {
                 assetsIter.MoveNext();
-                // TODO: ?
                 var (assetPath, asset) = assetsIter.Current;
 
                 var j = i;
-                InitAsset(asset, Path.Combine(TestFrameworkRuntime.AssetBundlePath, "assets"),
-                    path =>
+                var assetReady = new Action<string>(path =>
+                {
+                    paths[j] = path;
+
+                    if (j + 1 < assets.Count)
+                        return;
+
+                    // last entry is done
+                    var assetBundlePath =
+                        AssetDatabase.GenerateUniqueAssetPath(Path.Combine(TestFrameworkRuntime.AssetBundlePath,
+                            "bundle.bundle"));
+                    var assetBundleName = Path.GetFileName(assetBundlePath);
+
+                    BuildPipeline.BuildAssetBundles(new BuildAssetBundlesParameters
                     {
-                        paths[j] = path;
-
-                        if (j + 1 < assets.Count)
-                            return;
-
-                        // last entry is done
-                        var assetBundlePath =
-                            AssetDatabase.GenerateUniqueAssetPath(Path.Combine(TestFrameworkRuntime.AssetBundlePath,
-                                "bundle"));
-                        var assetBundleName = Path.GetFileNameWithoutExtension(assetBundlePath);
-
-                        BuildPipeline.BuildAssetBundles(new BuildAssetBundlesParameters
+                        bundleDefinitions = new[]
                         {
-                            bundleDefinitions = new AssetBundleBuild[]
+                            new AssetBundleBuild
                             {
-                                new AssetBundleBuild()
-                                {
-                                    assetBundleName = assetBundleName,
-                                    assetNames = paths
-                                }
-                            },
-                            outputPath = assetBundlePath,
-                        });
-
-                        inner.stringValue = assetBundlePath;
-                        inner.serializedObject.ApplyModifiedProperties();
+                                assetBundleName = assetBundleName,
+                                assetNames = paths
+                            }
+                        },
+                        outputPath = TestFrameworkRuntime.AssetBundlePath
                     });
+
+                    inner.stringValue = assetBundlePath;
+                    inner.serializedObject.ApplyModifiedProperties();
+                });
+
+                InitAsset(asset, assetsPath, assetReady, assetPath);
             }
         }
 
@@ -513,6 +518,7 @@ namespace Editor
             var inner = field.FindPropertyRelative(OnceOnlyPath.InnerFieldName);
             if (!string.IsNullOrEmpty(inner.stringValue) && File.Exists(inner.stringValue))
             {
+                Debug.Log(AlreadyInjected);
                 return;
             }
 
@@ -624,21 +630,31 @@ namespace Editor
                 Debug.LogError("Failed to save prefab");
         }
 
-        private static void InitAsset(ITestAsset testAsset, string pathPrefix, Action<string> assetReady)
+        private static void InitAsset(ITestAsset testAsset, string pathPrefix, Action<string> assetReady,
+            string fileName = null)
         {
             switch (testAsset)
             {
                 case GameObjectAsset:
                 {
                     var prefab = new GameObject();
-                    var path = "asset.prefab";
+
+                    var path = fileName ?? "asset.prefab";
                     if (pathPrefix != null)
                     {
+                        if (!Directory.Exists(pathPrefix))
+                        {
+                            Directory.CreateDirectory(pathPrefix);
+                        }
+
                         path = Path.Combine(pathPrefix, path);
                     }
 
-                    path = AssetDatabase.GenerateUniqueAssetPath(path);
-                    Debug.Log($"Creating prefab at `{path}`");
+                    if (fileName == null)
+                    {
+                        path = AssetDatabase.GenerateUniqueAssetPath(path);
+                    }
+
                     PrefabUtility.SaveAsPrefabAsset(prefab, path, out var success);
                     Object.DestroyImmediate(prefab);
 
@@ -653,8 +669,9 @@ namespace Editor
 
                     break;
                 }
+
                 default:
-                    throw new InvalidOperationException(string.Format("Asset type `{0}` is not handled", testAsset));
+                    throw new InvalidOperationException($"Asset type `{testAsset}` is not handled");
             }
         }
 

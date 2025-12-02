@@ -19,7 +19,6 @@ public class AssetAsync__2022_3_6000_0_4 : MonoBehaviour
     [TestInjectAssetBundle(nameof(assetBundleEmptyObjs))]
     public OnceOnlyPath loadOnInitNonBlockingAssetBundle;
 
-
     [Test(InitTestTiming.Awake)]
     public void LoadOnInitNonBlocking()
     {

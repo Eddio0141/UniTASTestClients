@@ -8,7 +8,6 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using JetBrains.Annotations;
 using UnityEngine;
-using Object = UnityEngine.Object;
 
 [SuppressMessage("ReSharper", "UseStringInterpolation")]
 [SuppressMessage("ReSharper", "ArrangeObjectCreationWhenTypeEvident")]
@@ -980,7 +979,7 @@ public class TestInjectPrefabAttribute : TestInjectAttribute
 /// <summary>
 /// <para>Injects an asset accessible by <see cref="Resources"/> API</para>
 /// <para>Accepted forms:</para>
-/// <para>- <see cref="OnceOnlyPath{T}"/> - Path to resource. Resource can only be used in a single test</para>
+/// <para>- <see cref="OnceOnlyPath"/> - Path to resource. Resource can only be used in a single test</para>
 /// </summary>
 public class TestInjectResource : TestInjectAttribute
 {
@@ -996,7 +995,7 @@ public class TestInjectResource : TestInjectAttribute
 /// <summary>
 /// <para>Injects an asset bundle accessible by <see cref="AssetBundle"/> API</para>
 /// <para>Accepted forms:</para>
-/// <para>- <see cref="OnceOnlyPath{T}"/> - Path to asset bundle. Asset can only be used in a single test</para>
+/// <para>- <see cref="OnceOnlyPath"/> - Path to asset bundle. Asset can only be used in a single test</para>
 /// </summary>
 public class TestInjectAssetBundle : TestInjectAttribute
 {
