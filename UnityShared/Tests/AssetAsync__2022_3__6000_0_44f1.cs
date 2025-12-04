@@ -8,7 +8,7 @@ public class AssetAsync__2022_3_6000_0_4 : MonoBehaviour
     public ITestAsset emptyObjectAsset => new GameObjectAsset();
 
     [TestInjectResource(nameof(emptyObjectAsset))]
-    public OnceOnlyPath resource;
+    public OnceOnlyPath loadOnInitBlockingAwakeResource;
 
     public Dictionary<string, ITestAsset> assetBundleEmptyObjs => new()
     {
@@ -20,20 +20,48 @@ public class AssetAsync__2022_3_6000_0_4 : MonoBehaviour
     public OnceOnlyPath loadOnInitNonBlockingAssetBundle;
 
     [Test(InitTestTiming.Awake)]
-    public void LoadOnInitNonBlocking()
+    public void LoadOnInitBlockingAwake()
     {
-        var fooResource = Resources.LoadAsync(resource);
+        var resource = Resources.LoadAsync(loadOnInitBlockingAwakeResource);
 
         var op = AssetBundle.LoadFromFileAsync(loadOnInitNonBlockingAssetBundle);
         var callback = false;
-        op.completed += _ => { callback = true; };
+        op.completed += _ => callback = true;
 
         // touching the property will force it to load
         var asset = op.assetBundle;
         Assert.NotNull(asset);
         Assert.True(op.isDone);
         Assert.True(callback);
-        Assert.True(fooResource.isDone);
+        Assert.True(resource.isDone);
+    }
+
+    [Test(EventTiming.Awake)]
+    public IEnumerator<TestYield> UnloadUnusedAssetsAwake()
+    {
+        var unusedUnusedTime = Time.frameCount;
+        var unloadUnused = Resources.UnloadUnusedAssets();
+        var callback = false;
+        unloadUnused.completed += _ => callback = true;
+        yield return new UnityYield(unloadUnused);
+        Assert.Equal(1, Time.frameCount - unusedUnusedTime);
+        Assert.True(callback);
+    }
+
+    [TestInjectResource(nameof(emptyObjectAsset))]
+    public OnceOnlyPath loadResource;
+
+    [Test]
+    public IEnumerator<TestYield> LoadResource()
+    {
+        var resource = Resources.LoadAsync(loadResource);
+        var resourceTime = Time.frameCount;
+        var callback = false;
+        resource.completed += _ => { callback = true; };
+        yield return new UnityYield(resource);
+        Assert.Equal(1, Time.frameCount - resourceTime);
+        Assert.True(callback);
+        Assert.NotNull(resource.asset);
     }
 
     // public static AsyncOperation LoadEmpty2;
@@ -91,29 +119,10 @@ public class AssetAsync__2022_3_6000_0_4 : MonoBehaviour
     //
     // private IEnumerator Start()
     // {
-    //     var unusedUnusedTime = Time.frameCount;
-    //     var unloadUnused = Resources.UnloadUnusedAssets();
-    //     unloadUnused.completed += _ =>
-    //     {
-    //         Assert.Equal("resources.unload_unused.op.done_frame", 1, Time.frameCount - unusedUnusedTime);
-    //     };
-    //
-    //     yield return unloadUnused;
-    //
     //     var coroutine1 = StartCoroutine(TestCoroutine());
     //     var coroutine2 = StartCoroutine(TestCoroutine2());
     //     yield return coroutine1;
     //     yield return coroutine2;
-    //
-    //     var fooResource = Resources.LoadAsync("Foo");
-    //     var resourceTime = Time.frameCount;
-    //     fooResource.completed += _ =>
-    //     {
-    //         Assert.Equal("resources.LoadAsync.load_time", 1, Time.frameCount - resourceTime);
-    //     };
-    //     yield return fooResource;
-    //     Assert.NotNull("resources.LoadAsync.asset", fooResource.asset);
-    //     Assert.Equal("resources.LoadAsync.asset.name", "Foo", fooResource.asset.name);
     //
     //     var unscaledTime = Time.unscaledTime;
     //     var scaledTime = Time.time;

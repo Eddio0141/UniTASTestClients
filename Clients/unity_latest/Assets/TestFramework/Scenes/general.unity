@@ -235,10 +235,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 41cd6f9ff88743005b41669fbed11ff2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  resource:
-    inner: Assets/TestFramework/Resources/asset.prefab
+  loadOnInitBlockingAwakeResource:
+    inner: Assets/TestFramework/Resources/asset 1.prefab
   loadOnInitNonBlockingAssetBundle:
     inner: Assets/TestFramework/AssetBundles/bundle.bundle
+  loadResource:
+    inner: Assets/TestFramework/Resources/asset 2.prefab
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
