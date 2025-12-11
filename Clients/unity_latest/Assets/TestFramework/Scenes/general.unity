@@ -221,7 +221,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e714cd0143c173b83a95d5afd0e21f5e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  prefab: {fileID: 143913824554288452, guid: 824f58573ef950fd59a40fcd14d6c07e, type: 3}
+  prefab: {fileID: 7388484318406177699, guid: 824f58573ef950fd59a40fcd14d6c07e, type: 3}
   emptyScene: Assets/TestFramework/Scenes/generated.unity
 --- !u!114 &499555418
 MonoBehaviour:
@@ -236,11 +236,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   loadOnInitBlockingAwakeResource:
-    inner: Assets/TestFramework/Resources/asset 1.prefab
+    inner: asset
   loadOnInitNonBlockingAssetBundle:
     inner: Assets/TestFramework/AssetBundles/bundle.bundle
   loadResource:
-    inner: Assets/TestFramework/Resources/asset 2.prefab
+    inner: asset 1
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

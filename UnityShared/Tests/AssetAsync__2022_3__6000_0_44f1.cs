@@ -39,12 +39,14 @@ public class AssetAsync__2022_3_6000_0_4 : MonoBehaviour
     [Test(EventTiming.Awake)]
     public IEnumerator<TestYield> UnloadUnusedAssetsAwake()
     {
-        var unusedUnusedTime = Time.frameCount;
+        var startTime = Time.frameCount;
         var unloadUnused = Resources.UnloadUnusedAssets();
         var callback = false;
         unloadUnused.completed += _ => callback = true;
         yield return new UnityYield(unloadUnused);
-        Assert.Equal(1, Time.frameCount - unusedUnusedTime);
+        Assert.Equal(1, Time.frameCount - startTime);
+        Assert.False(callback);
+        yield return new UnityYield(new WaitForEndOfFrame());
         Assert.True(callback);
     }
 
@@ -54,12 +56,14 @@ public class AssetAsync__2022_3_6000_0_4 : MonoBehaviour
     [Test]
     public IEnumerator<TestYield> LoadResource()
     {
-        var resource = Resources.LoadAsync(loadResource);
-        var resourceTime = Time.frameCount;
+        var startTime = Time.frameCount;
         var callback = false;
-        resource.completed += _ => { callback = true; };
+        var resource = Resources.LoadAsync(loadResource);
+        resource.completed += _ => callback = true;
         yield return new UnityYield(resource);
-        Assert.Equal(1, Time.frameCount - resourceTime);
+        Assert.Equal(1, Time.frameCount - startTime);
+        Assert.False(callback);
+        yield return new UnityYield(new WaitForEndOfFrame());
         Assert.True(callback);
         Assert.NotNull(resource.asset);
     }
