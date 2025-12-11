@@ -516,7 +516,9 @@ namespace Editor
             TestInjectResource resource)
         {
             var inner = field.FindPropertyRelative(OnceOnlyPath.InnerFieldName);
-            if (!string.IsNullOrEmpty(inner.stringValue) && File.Exists(inner.stringValue))
+            var filename = inner.stringValue;
+            var resources = Directory.GetFiles(TestFrameworkRuntime.ResourcesPath);
+            if (!string.IsNullOrEmpty(filename) && resources.Any(v => Path.GetFileNameWithoutExtension(v) == filename))
             {
                 Debug.Log(AlreadyInjected);
                 return;
@@ -551,6 +553,19 @@ namespace Editor
             InitAsset((ITestAsset)assetRaw, TestFrameworkRuntime.ResourcesPath,
                 path =>
                 {
+                    const string key = "/Resources/";
+                    var idx = path.IndexOf(key, StringComparison.InvariantCulture);
+                    if (idx < 0)
+                    {
+                        Debug.LogWarning($"Somehow, the path `{path}` isn't in the resources directory");
+                        return;
+                    }
+
+                    path = path.Substring(idx + key.Length);
+                    var pathDir = Path.GetDirectoryName(path);
+                    var filename = Path.GetFileNameWithoutExtension(path);
+                    path = pathDir == null ? filename : Path.Combine(pathDir, filename);
+
                     inner.stringValue = path;
                     inner.serializedObject.ApplyModifiedProperties();
                 });
