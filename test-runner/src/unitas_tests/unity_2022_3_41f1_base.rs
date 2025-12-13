@@ -24,14 +24,14 @@ fn test(ctx: &mut TestCtx, mut args: TestArgs) -> Result<()> {
 
     let stream = &mut args.stream;
 
-    ctx.run_general_tests(stream)?;
+    ctx.run_init_and_general_tests(stream)?;
 
     // frame advancing test
 
     // sanity check
     stream.send("service('ITimeWrapper').capture_frame_time = 0.01 service('ISceneManagerWrapper').load_scene('FrameAdvancing')")?;
     ctx.print_test_results(stream, TestType::General)?;
-    ctx.reset_test_results(stream)?;
+    ctx.reset_general_tests(stream)?;
 
     // actual test
     /*

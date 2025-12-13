@@ -1,4 +1,5 @@
-pub const OLD_INPUT_SYSTEM: &str = include_str!("movies/old_input_system.lua");
+pub const OLD_INPUT_SYSTEM_2022_3_6000_0_44F1: &str =
+    include_str!("movies/old_input_system__2022_3__6000_0_44f1.lua");
 
 #[macro_export]
 macro_rules! movie_name_from_const {

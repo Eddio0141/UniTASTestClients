@@ -37,9 +37,9 @@ public class TestFrameworkRuntime : MonoBehaviour
     private bool _initTestsAwakeRan;
 
     /// <summary>
-    /// Movie test to run by name, setting this flag will make certain events check / start running movie tests
+    /// Movie test class to run by name, setting this flag will make certain events check / start running movie tests
     /// </summary>
-    private static string _movieTestToRun;
+    private static string _movieTestClassToRun;
 
     private bool _movieTestStarted;
 
@@ -121,18 +121,15 @@ public class TestFrameworkRuntime : MonoBehaviour
         _instance.StartCoroutine(_instance.RunGeneralInternal());
     }
 
-    public static void ResetTests()
+    public static void ResetGeneralTests()
     {
         if (!InstanceSetCheckAndLog()) return;
-        _instance.ResetTestsInternal();
+        _instance.ResetGeneralTestsInternal();
     }
 
-    private void ResetTestsInternal()
+    private void ResetGeneralTestsInternal()
     {
         _generalTestResults.Clear();
-        _initTestResults.Clear();
-        _movieTestResults.Clear();
-
         _generalTestsDone = false;
     }
 
@@ -234,13 +231,13 @@ public class TestFrameworkRuntime : MonoBehaviour
 
     private IEnumerator MovieTestCheckAndRun(MovieTestTiming movieTestTiming)
     {
-        if (_movieTestToRun != null && _movieTestStarted) yield break;
+        if (_movieTestClassToRun != null && _movieTestStarted) yield break;
         DiscoverTestsIfNot();
         var testPairIdx = Array.FindIndex(_movieTests, t => t.Item1.Timing == movieTestTiming);
         if (testPairIdx < 0) yield break;
         _movieTestStarted = true;
         var testPair = _movieTests[testPairIdx];
-        var tests = testPair.Item2.Where(t => t.TypeName == _movieTestToRun).ToArray();
+        var tests = testPair.Item2.Where(t => t.TypeName == _movieTestClassToRun).ToArray();
 
         Debug.Log($"Running {tests.Length} movie tests");
         foreach (var test in testPair.Item2)

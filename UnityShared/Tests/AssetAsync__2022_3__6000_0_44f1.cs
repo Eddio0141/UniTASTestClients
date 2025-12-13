@@ -3,6 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using UnityEngine;
 
 [SuppressMessage("ReSharper", "InconsistentNaming")]
+[SuppressMessage("ReSharper", "CheckNamespace")]
 public class AssetAsync__2022_3_6000_0_4 : MonoBehaviour
 {
     public ITestAsset emptyObjectAsset => new GameObjectAsset();

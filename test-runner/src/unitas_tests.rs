@@ -83,7 +83,8 @@ impl TestCtx {
         );
     }
 
-    fn run_general_tests(&mut self, stream: &mut UniTasStream) -> Result<()> {
+    fn run_init_and_general_tests(&mut self, stream: &mut UniTasStream) -> Result<()> {
+        self.print_test_results(stream, TestType::Init)?;
         self.run_general_tests_iter(stream)?;
 
         stream.send(
@@ -104,7 +105,12 @@ impl TestCtx {
             panic!("failed to soft restart");
         }
 
-        self.run_general_tests_iter(stream)
+        self.print_test_results(stream, TestType::Init)?;
+        self.run_general_tests_iter(stream)?;
+
+        thread::sleep(Duration::from_secs(1));
+
+        Ok(())
     }
 
     // single iteration version
@@ -128,13 +134,13 @@ impl TestCtx {
         }
 
         self.print_test_results(stream, TestType::General)?;
-        self.reset_test_results(stream)?;
+        self.reset_general_tests(stream)?;
 
         Ok(())
     }
 
-    fn reset_test_results(&self, stream: &mut UniTasStream) -> Result<()> {
-        stream.send("traverse('TestFrameworkRuntime').method('ResetTests').GetValue()")
+    fn reset_general_tests(&self, stream: &mut UniTasStream) -> Result<()> {
+        stream.send("traverse('TestFrameworkRuntime').method('ResetGeneralTests').GetValue()")
     }
 
     fn print_test_results(&mut self, stream: &mut UniTasStream, test_type: TestType) -> Result<()> {
@@ -185,36 +191,36 @@ impl TestCtx {
         fs::write(&dest, movie)
             .with_context(|| format!("failed to write movie file to `{}`", dest.display()))?;
 
+        // OnPreGameRestart event resets static fields, so an event after that is registered
         stream.send(&format!(
             r#"
-            local game_restart = service("IGameRestart")
-
             local function on_restart(_, pre_scene_load)
                 if not pre_scene_load then
-                    # I mean this is impossible lol
                     return
                 end
 
-                game_restart.OnGameRestart.remove(on_restart)
-
-                traverse("TestFrameworkRuntime").field("_generalTestsDone").SetValue("{name}")
+                traverse(game_restart).field("OnGameRestartResume").SetValue(restart_del)
+                traverse("TestFrameworkRuntime").field("_movieTestClassToRun").SetValue("{name}")
             end
 
-            game_restart.OnGameRestart.add(on_restart)
+            local game_restart = service("IGameRestart")
+            local restart_del = traverse("UniTAS.Patcher.Services.GameRestartResume").method(".ctor").GetValue(on_restart)
+
+            traverse(game_restart).field("OnGameRestartResume").SetValue(restart_del)
             play("{}")
             "#,
-            dest.display()
+            dest.to_string_lossy()
         ))?;
 
         // wait till movie ends
         let mut fail = true;
         for _ in 0..60 {
+            thread::sleep(Duration::from_secs(1));
             stream.send("print(movie_status().basically_running)")?;
             if stream.receive()? == "false" {
                 fail = false;
                 break;
             }
-            thread::sleep(Duration::from_secs(1));
         }
 
         if fail {
@@ -222,7 +228,6 @@ impl TestCtx {
         }
 
         self.print_test_results(stream, TestType::Movie)?;
-        self.reset_test_results(stream)?;
 
         Ok(())
     }

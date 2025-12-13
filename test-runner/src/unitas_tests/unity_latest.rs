@@ -12,14 +12,13 @@ pub fn get() -> Test {
 fn test(ctx: &mut TestCtx, mut args: TestArgs) -> Result<()> {
     let stream = &mut args.stream;
 
-    ctx.run_general_tests(stream)?;
-
-    // ctx.run_movie_test(
-    //     stream,
-    //     movies::OLD_INPUT_SYSTEM,
-    //     movie_name_from_const!(movies::OLD_INPUT_SYSTEM),
-    //     args.game_dir,
-    // )?;
+    ctx.run_init_and_general_tests(stream)?;
+    ctx.run_movie_test(
+        stream,
+        movies::OLD_INPUT_SYSTEM_2022_3_6000_0_44F1,
+        movie_name_from_const!(movies::OLD_INPUT_SYSTEM_2022_3_6000_0_44F1),
+        args.game_dir,
+    )?;
 
     Ok(())
 }
