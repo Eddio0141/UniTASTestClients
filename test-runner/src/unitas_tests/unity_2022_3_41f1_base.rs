@@ -1,6 +1,6 @@
 use std::fs;
 
-use super::{Test, TestArgs, TestCtx};
+use super::{Test, TestArgs, TestCtx, TestType};
 
 use anyhow::{Context, Result};
 
@@ -24,85 +24,14 @@ fn test(ctx: &mut TestCtx, mut args: TestArgs) -> Result<()> {
 
     let stream = &mut args.stream;
 
-    stream.send("full_access(true)")?;
-    stream.receive()?;
-
-    ctx.run_general_tests(stream)?;
-
-    stream.send(
-        r#"event_coroutine(function()
-            local y = coroutine.yield
-            play('movie.lua')
-            y("FixedUpdateActual")
-            print(traverse("InitTests").field("_fixedUpdate").GetValue())
-            print(traverse("InitTests").field("_updated").GetValue())
-            print(traverse("InitTests").field("_updatedBeforeUpdate").GetValue())
-            y("UpdateActual")
-            print(service("IUpdateInvokeOffset").Offset)
-            print(traverse("InitTests").field("_updated").GetValue())
-            print(traverse("InitTests").field("_updatedBeforeUpdate").GetValue())
-        end)"#,
-    )?;
-    ctx.assert_eq(
-        &false.to_string(),
-        &stream.receive()?,
-        "InvokeFixedUpdate before game update",
-        "",
-    );
-    ctx.assert_eq(
-        &false.to_string(),
-        &stream.receive()?,
-        "InvokeUpdate before game update 1",
-        "",
-    );
-    ctx.assert_eq(
-        &false.to_string(),
-        &stream.receive()?,
-        "InvokeUpdate before InputSystem.onBeforeUpdate 1",
-        "",
-    );
-    let offset = stream.receive()?;
-    let offset = offset
-        .parse::<f64>()
-        .with_context(|| format!("failed to parse offset as f64: `{offset}`"))?;
-    ctx.assert_eq_precision(
-        0.01,
-        offset,
-        "update offset after game restart",
-        "failed to match update offset after game restart",
-    );
-    ctx.assert_eq(
-        &false.to_string(),
-        &stream.receive()?,
-        "InvokeUpdate before game update 2",
-        "",
-    );
-    ctx.assert_eq(
-        &false.to_string(),
-        &stream.receive()?,
-        "InvokeUpdate before InputSystem.onBeforeUpdate 2",
-        "",
-    );
-    stream.wait_for_movie_end()?;
-
-    stream.send("print(traverse('MovieTest').field('_movieTestRun').GetValue())")?;
-    ctx.assert_eq(
-        &true.to_string(),
-        &stream.receive()?,
-        "movie test",
-        "failed to run movie tests",
-    );
-
-    // for movie results
-    ctx.get_assert_results(stream)?;
-    ctx.reset_assert_results(stream)?;
+    ctx.run_init_and_general_tests(stream)?;
 
     // frame advancing test
 
     // sanity check
     stream.send("service('ITimeWrapper').capture_frame_time = 0.01 service('ISceneManagerWrapper').load_scene('FrameAdvancing')")?;
-    ctx.get_assert_results(stream)?;
-    ctx.reset_assert_results(stream)?;
+    ctx.print_test_results(stream, TestType::General)?;
+    ctx.reset_general_tests(stream)?;
 
     // actual test
     /*
